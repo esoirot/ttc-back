@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserRepository } from './users.repository';
+import { UserRepository, type ClockifyUpdate } from './users.repository';
 import { PrismaService } from '../../prisma.service';
 import { UserModel } from '../types/user.type';
 import { CreateUserInput } from '../dto/create-user.input';
@@ -33,6 +33,17 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async update(id: number, data: UpdateUserInput): Promise<UserModel> {
+    try {
+      return await this.prisma.user.update({
+        where: { id },
+        data,
+      });
+    } catch {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+  }
+
+  async updateClockify(id: number, data: ClockifyUpdate): Promise<UserModel> {
     try {
       return await this.prisma.user.update({
         where: { id },

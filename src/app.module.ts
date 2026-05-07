@@ -10,6 +10,7 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { AuthModule } from './auth/auth.module';
+import { ClockifyModule } from './clockify/clockify.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AuthModule } from './auth/auth.module';
     AuthModule,
     UsersModule,
     ProjectsModule,
+    ClockifyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

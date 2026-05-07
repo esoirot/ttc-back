@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+Always use **pnpm** — never npm or yarn.
+
 ```bash
 pnpm install          # Install dependencies
 pnpm run start:dev    # Start in watch mode (loads .env)
@@ -12,6 +14,13 @@ pnpm run lint         # Lint and auto-fix
 pnpm run test         # Run unit tests (Jest, rootDir: src)
 pnpm run test:e2e     # Run e2e tests
 pnpm run test:cov     # Coverage report
+pnpm run typecheck    # tsc --noEmit
+pnpm run circular     # Detect circular dependencies (madge)
+pnpm run audit        # pnpm audit
+pnpm run prune        # Find unused exports (ts-prune)
+pnpm run format       # Prettier write
+pnpm run format:check # Prettier check
+pnpm run check        # Run all checks in sequence
 ```
 
 Run a single test file:
@@ -26,30 +35,33 @@ Local Postgres runs via Docker Compose (port **51214**, db: `ttc-postgres-db`):
 
 ```bash
 docker compose up -d
-npx prisma migrate dev --name <migration-name>   # Apply schema changes
-npx prisma db pull --print                       # Introspect DB into schema
+pnpm prisma migrate dev --name <migration-name>   # Apply schema changes
+pnpm prisma db pull --print                       # Introspect DB into schema
 ```
 
 Prisma generates the client to `src/generated/prisma/` (not `node_modules`). After schema changes, regenerate with:
 
 ```bash
-npx prisma generate
+pnpm prisma generate
 ```
 
 Required `.env` keys: `DATABASE_URL`, `SENTRY_DSN`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `COOKIE_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `FRONTEND_URL`.
+
+Optional `.env` key: `CLOCKIFY_API_URL` (defaults to `https://api.clockify.me/api/v1`).
 
 ## Architecture
 
 **Stack**: NestJS 11 + Fastify, GraphQL (code-first, Apollo driver), Prisma 7 + `@prisma/adapter-pg`, Passport.js, Sentry, Swagger at `/api`.
 
-**Module layout** — each domain module (`users`, `projects`, `auth`) follows this layering:
+**Module layout** — each domain module (`users`, `projects`, `auth`, `clockify`) follows this layering:
 
 - `*.resolver.ts` — GraphQL resolver (mutations/queries), delegates to service
+- `*.controller.ts` — REST controller (used by `clockify` and `auth`), delegates to service
 - `*.service.ts` — business logic, calls repository interface
 - `repositories/*.repository.ts` — abstract class defining the data contract
 - `repositories/prisma-*.repository.ts` — Prisma implementation of the abstract repo
 - `entities/*.entity.ts` — GraphQL `@ObjectType` (used by resolver return types)
-- `dto/*.input.ts` — GraphQL `@InputType` for mutations
+- `dto/*.input.ts` — GraphQL `@InputType` for mutations; plain class for REST body DTOs
 - `types/*.type.ts` — plain TypeScript interface for internal model (not GraphQL)
 
 **Dependency injection**: The abstract repository class is used as the DI token, bound to the Prisma implementation in the module's providers array:
@@ -131,11 +143,53 @@ src/auth/
 ## Prisma Schema — Key Models
 
 ```
-User           — id, email, name, password?, role (ADMIN/MANAGER/USER), twoFactorSecret?, twoFactorEnabled, timestamps
+User           — id, email, name, password?, role (ADMIN/MANAGER/USER), twoFactorSecret?, twoFactorEnabled,
+                 clockifyApiKey?, clockifyUserId?, clockifyWorkspaceId?, timestamps
 RefreshToken   — tokenHash (SHA-256), userId, expiresAt
 OAuthAccount   — provider, providerId, userId  (unique on [provider, providerId])
 Project        — id, title, description, userId?
 ```
+
+## Clockify Module (`src/clockify/`)
+
+Pure REST module — no GraphQL. All endpoints at `/clockify/*`, guarded by `AuthGuard('jwt')`.
+
+```
+src/clockify/
+├── clockify.module.ts
+├── clockify.controller.ts   — REST endpoints (see table below)
+├── clockify.service.ts      — wraps Clockify REST API via native fetch; reads API key from user record
+├── dto/
+│   ├── set-credentials.dto.ts    — { apiKey: string; workspaceId?: string }
+│   └── start-time-entry.dto.ts   — { description?, projectId?, tagIds?, start?, billable? }
+└── types/
+    ├── clockify-workspace.type.ts
+    ├── clockify-project.type.ts
+    └── time-entry.type.ts
+```
+
+**Endpoints:**
+
+| Method   | Path                                         | Purpose                                                                |
+| -------- | -------------------------------------------- | ---------------------------------------------------------------------- |
+| `GET`    | `/clockify/status`                           | `{ connected: boolean; workspaceId: string \| null }`                  |
+| `POST`   | `/clockify/credentials`                      | Validate API key against Clockify, save key + `clockifyUserId` to user |
+| `PATCH`  | `/clockify/workspace`                        | Update preferred workspace ID only (no re-validation)                  |
+| `GET`    | `/clockify/workspaces`                       | List user's Clockify workspaces                                        |
+| `GET`    | `/clockify/workspaces/:id/projects`          | List projects in workspace                                             |
+| `GET`    | `/clockify/workspaces/:id/entries`           | List time entries (query: `start?`, `end?`)                            |
+| `GET`    | `/clockify/workspaces/:id/entries/active`    | Running timer or `null`                                                |
+| `POST`   | `/clockify/workspaces/:id/entries`           | Start new timer                                                        |
+| `PATCH`  | `/clockify/workspaces/:id/entries/:eid/stop` | Stop running timer                                                     |
+| `DELETE` | `/clockify/workspaces/:id/entries/:eid`      | Delete entry                                                           |
+
+**Key rules:**
+
+- `ClockifyService` uses native `fetch` (no `@nestjs/axios`) — Node 18+ has `fetch` globally; `@types/node@24` types it.
+- API key stored per-user in `User.clockifyApiKey` (plain text). Never expose the raw key in any response.
+- `clockifyUserId` (Clockify's UUID for the user) is fetched from `GET /user` during `setCredentials` and stored in `User.clockifyUserId` — required for time entry list endpoints.
+- For REST controllers, use `@Req() req: FastifyRequest & { user: RequestUser }` — no `@CurrentUser()` decorator (that only works in GraphQL context).
+- `UsersModule` exports `UsersService` so `ClockifyModule` can import it.
 
 ## Status & Known Gaps
 
@@ -143,6 +197,7 @@ Project        — id, title, description, userId?
 - `disableTwoFactor` service method exists in the repository contract but is not yet exposed as a GraphQL mutation or called from the frontend.
 - `refreshToken` mutation exists but the frontend does not yet call it automatically on 401 — an Apollo error link needs to be wired up.
 - Microsoft OAuth is not implemented (no `passport-microsoft` strategy or controller endpoints).
+- Clockify API key stored in plaintext — consider encrypting at rest with an app-level secret.
 
 ## Docs
 
@@ -150,3 +205,7 @@ Implementation logs live in `../docs/implementations/`:
 
 - `auth-implementation.md` — backend auth system (Passport strategies, JWT, cookies, schema)
 - `auth-ui.md` — frontend auth pages and routing
+
+Plans live in `../docs/plans/`:
+
+- `clockify-integration.md` — Clockify REST integration design
