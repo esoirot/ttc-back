@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: the-translator-companion-postgresql
+    restart: always
+    environment:
+      POSTGRES_USER: ttc-postgres-user
+      POSTGRES_PASSWORD: ttc-postgres-user
+      POSTGRES_DB: ttc-postgres-db
+    ports:
+      - '51214:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

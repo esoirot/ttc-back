@@ -11,8 +11,8 @@ export class AppController {
   }
 
   // REMOVE AFTER TEST IS DONE
-  @Get("debug-sentry")
+  @Get('debug-sentry')
   getError() {
-    throw new Error("My first Sentry error!");
+    throw new Error('My first Sentry error!');
   }
 }

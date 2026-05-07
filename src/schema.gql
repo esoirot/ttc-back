@@ -1,0 +1,109 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateProjectInput {
+  description: String
+  title: String!
+  userId: Int
+}
+
+input CreateUserInput {
+  email: String!
+  name: String
+}
+
+type DeleteProjectResponse {
+  id: Int!
+}
+
+type DeleteUserResponse {
+  id: Int!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type LoginResponse {
+  requiresTwoFactor: Boolean
+  tempToken: String
+  user: User
+}
+
+type Mutation {
+  createProject(createProjectInput: CreateProjectInput!): Project!
+  createUser(createUserInput: CreateUserInput!): User!
+  enableTwoFactor(code: String!): Boolean!
+  login(input: LoginInput!): LoginResponse!
+  logout: Boolean!
+  refreshToken: Boolean!
+  register(input: RegisterInput!): User!
+  removeProject(id: Int!): DeleteProjectResponse!
+  removeUser(id: Int!): DeleteUserResponse!
+  setupTwoFactor: SetupTwoFactorResponse!
+  updateProject(updateProjectInput: UpdateProjectInput!): Project!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+  verifyTwoFactor(input: VerifyTwoFactorInput!): LoginResponse!
+}
+
+type Project {
+  description: String
+  id: Int!
+  title: String!
+  user: User
+  userId: Int
+}
+
+type Query {
+  me: User!
+  project(id: Int!): Project!
+  projects: [Project!]!
+  user(id: Int!): User!
+  users: [User!]!
+}
+
+input RegisterInput {
+  email: String!
+  name: String
+  password: String!
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+type SetupTwoFactorResponse {
+  qrCodeUrl: String!
+  secret: String!
+}
+
+input UpdateProjectInput {
+  description: String
+  id: Int!
+  title: String
+  userId: Int
+}
+
+input UpdateUserInput {
+  email: String
+  id: Int!
+  name: String
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String
+  projects: [Project!]
+  role: Role!
+  twoFactorEnabled: Boolean!
+}
+
+input VerifyTwoFactorInput {
+  code: String!
+  tempToken: String!
+}
