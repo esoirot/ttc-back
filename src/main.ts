@@ -19,7 +19,7 @@ type CompatReply = FastifyReply & {
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: true }),
+    new FastifyAdapter(),
   );
 
   // Passport.js was written for Express and calls res.setHeader / res.end during
@@ -32,6 +32,21 @@ async function bootstrap() {
       secret:
         process.env.COOKIE_SECRET ?? 'fallback-secret-change-in-production',
     } as FastifyCookieOptions,
+  );
+
+  // Capture raw JSON body string for webhook HMAC verification.
+  // Replaces the built-in JSON parser; behavior is identical except rawBody is set.
+  fastifyInstance.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (_req, body, done) => {
+      (_req as { rawBody?: string }).rawBody = body as string;
+      try {
+        done(null, JSON.parse(body as string) as unknown);
+      } catch {
+        done(new Error('Invalid JSON body'), undefined);
+      }
+    },
   );
 
   fastifyInstance.addHook('onRequest', async (_req, reply) => {
@@ -51,6 +66,7 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   const config = new DocumentBuilder()

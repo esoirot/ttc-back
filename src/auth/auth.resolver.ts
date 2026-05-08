@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { LoginInput } from './dto/login.input';
 import { RegisterInput } from './dto/register.input';
 import { VerifyTwoFactorInput } from './dto/verify-2fa.input';
+import { UpdateMeInput } from './dto/update-me.input';
 import { LoginResponse } from './types/login-response.type';
 import { SetupTwoFactorResponse } from './types/setup-2fa-response.type';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
@@ -24,6 +25,15 @@ export class AuthResolver {
   @Query(() => User)
   me(@CurrentUser() user: { id: number }) {
     return this.authService.getUser(user.id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => User)
+  updateMe(
+    @CurrentUser() user: { id: number },
+    @Args('input') input: UpdateMeInput,
+  ) {
+    return this.authService.updateMe(user.id, input);
   }
 
   @Mutation(() => User)
@@ -79,6 +89,15 @@ export class AuthResolver {
     @Args('code') code: string,
   ) {
     return this.authService.enableTwoFactor(user.id, code);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  disableTwoFactor(
+    @CurrentUser() user: { id: number },
+    @Args('code') code: string,
+  ) {
+    return this.authService.disableTwoFactor(user.id, code);
   }
 
   @Mutation(() => LoginResponse)

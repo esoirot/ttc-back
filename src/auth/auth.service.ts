@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -119,6 +120,13 @@ export class AuthService {
     await this.issueTokens(user, res);
   }
 
+  async updateMe(
+    userId: number,
+    data: { name?: string; email?: string },
+  ): Promise<AuthUser> {
+    return this.repo.updateUser(userId, data);
+  }
+
   async setupTwoFactor(userId: number) {
     const user = await this.repo.findUserById(userId);
     if (!user) throw new UnauthorizedException();
@@ -145,6 +153,25 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Invalid 2FA code');
 
     await this.repo.enableTwoFactor(userId);
+    return true;
+  }
+
+  async disableTwoFactor(userId: number, code: string): Promise<boolean> {
+    const user = await this.repo.findUserById(userId);
+    if (!user) throw new UnauthorizedException();
+    if (!user.twoFactorEnabled)
+      throw new BadRequestException('2FA is not enabled');
+    if (!user.twoFactorSecret) throw new UnauthorizedException();
+
+    const valid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: code,
+      window: 1,
+    });
+    if (!valid) throw new UnauthorizedException('Invalid 2FA code');
+
+    await this.repo.disableTwoFactor(userId);
     return true;
   }
 

@@ -27,10 +27,14 @@ model User {
   role             Role           @default(USER)
   twoFactorSecret     String?
   twoFactorEnabled    Boolean        @default(false)
-  clockifyApiKey      String?
-  clockifyUserId      String?
-  clockifyWorkspaceId String?
-  refreshTokens       RefreshToken[]
+  clockifyApiKey        String?
+  clockifyUserId        String?
+  clockifyWorkspaceId   String?
+  hubspotAccessToken    String?
+  hubspotRefreshToken   String?
+  hubspotTokenExpiresAt DateTime?
+  hubspotPortalId       String?
+  refreshTokens         RefreshToken[]
   oauthAccounts       OAuthAccount[]
   projects            Project[]
   createdAt           DateTime       @default(now())

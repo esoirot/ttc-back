@@ -43,6 +43,14 @@ NestJS + Fastify backend for the TranslatorAssistant platform. Exposes a GraphQL
    SENTRY_DSN=your_sentry_dsn
    # Optional — defaults to https://api.clockify.me/api/v1
    CLOCKIFY_API_URL=https://api.clockify.me/api/v1
+   # Required for production — 32-byte hex key for AES-256-GCM encryption of Clockify/HubSpot credentials at rest
+   # Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   APP_ENCRYPTION_KEY=your_32_byte_hex_key
+   # Optional — HubSpot OAuth integration
+   HUBSPOT_CLIENT_ID=your_hubspot_client_id
+   HUBSPOT_CLIENT_SECRET=your_hubspot_client_secret
+   HUBSPOT_REDIRECT_URI=http://localhost:3000/hubspot/auth/callback
+   HUBSPOT_WEBHOOK_SECRET=your_hubspot_webhook_secret
    ```
 
 3. **Start the database**
@@ -105,27 +113,53 @@ pnpm run test:e2e       # end-to-end tests
 
 ## API overview
 
-| Layer                           | Path                                            | Transport          |
-| ------------------------------- | ----------------------------------------------- | ------------------ |
-| Auth (login, register, 2FA, me) | `/graphql`                                      | GraphQL            |
-| Users, Projects                 | `/graphql`                                      | GraphQL            |
-| Google OAuth                    | `GET /auth/google`, `GET /auth/google/callback` | REST               |
-| Clockify proxy                  | `/clockify/*`                                   | REST (JWT-guarded) |
-| Swagger docs                    | `/api`                                          | —                  |
+| Layer                                     | Path                                            | Transport                       |
+| ----------------------------------------- | ----------------------------------------------- | ------------------------------- |
+| Auth (login, register, 2FA, me, updateMe) | `/graphql`                                      | GraphQL                         |
+| Users, Projects                           | `/graphql`                                      | GraphQL                         |
+| Google OAuth                              | `GET /auth/google`, `GET /auth/google/callback` | REST                            |
+| Clockify proxy                            | `/clockify/*`                                   | REST (JWT-guarded)              |
+| HubSpot CRM proxy                         | `/hubspot/*`                                    | REST (JWT-guarded + OAuth flow) |
+| Swagger docs                              | `/api`                                          | —                               |
 
 ### Clockify endpoints
 
 All require a valid JWT cookie (`access_token`). Users must first `POST /clockify/credentials` with their personal Clockify API key.
 
-| Method   | Path                                         | Purpose                               |
-| -------- | -------------------------------------------- | ------------------------------------- |
-| `GET`    | `/clockify/status`                           | Connection status + default workspace |
-| `POST`   | `/clockify/credentials`                      | Save + validate Clockify API key      |
-| `PATCH`  | `/clockify/workspace`                        | Update default workspace              |
-| `GET`    | `/clockify/workspaces`                       | List workspaces                       |
-| `GET`    | `/clockify/workspaces/:id/projects`          | List projects                         |
-| `GET`    | `/clockify/workspaces/:id/entries`           | List time entries                     |
-| `GET`    | `/clockify/workspaces/:id/entries/active`    | Running timer                         |
-| `POST`   | `/clockify/workspaces/:id/entries`           | Start timer                           |
-| `PATCH`  | `/clockify/workspaces/:id/entries/:eid/stop` | Stop timer                            |
-| `DELETE` | `/clockify/workspaces/:id/entries/:eid`      | Delete entry                          |
+| Method   | Path                                      | Purpose                                                    |
+| -------- | ----------------------------------------- | ---------------------------------------------------------- |
+| `GET`    | `/clockify/status`                        | Connection status + default workspace                      |
+| `POST`   | `/clockify/credentials`                   | Save + validate Clockify API key                           |
+| `PATCH`  | `/clockify/workspace`                     | Update default workspace                                   |
+| `GET`    | `/clockify/workspaces`                    | List workspaces                                            |
+| `GET`    | `/clockify/workspaces/:id/projects`       | List projects                                              |
+| `GET`    | `/clockify/workspaces/:id/entries`        | List time entries (`?start=` `?end=`)                      |
+| `GET`    | `/clockify/workspaces/:id/entries/active` | Running timer or `null`                                    |
+| `POST`   | `/clockify/workspaces/:id/entries`        | Start timer                                                |
+| `PATCH`  | `/clockify/workspaces/:id/entries/stop`   | Stop running timer (no entry ID needed)                    |
+| `PATCH`  | `/clockify/workspaces/:id/entries/:eid`   | Update entry (description, project, tags, billable, times) |
+| `DELETE` | `/clockify/workspaces/:id/entries/:eid`   | Delete entry                                               |
+| `GET`    | `/clockify/workspaces/:id/tags`           | List tags                                                  |
+| `POST`   | `/clockify/workspaces/:id/tags`           | Create tag (`{ name }`)                                    |
+
+### HubSpot endpoints
+
+OAuth endpoints redirect — no JWT needed. All CRM endpoints require a valid JWT cookie (`access_token`). Connect via `GET /hubspot/auth` first.
+
+| Method   | Path                     | Purpose                                                  |
+| -------- | ------------------------ | -------------------------------------------------------- |
+| `GET`    | `/hubspot/auth`          | Redirect to HubSpot OAuth consent (JWT required)         |
+| `GET`    | `/hubspot/auth/callback` | OAuth callback — exchanges code, saves tokens, redirects |
+| `GET`    | `/hubspot/status`        | `{ connected, portalId }`                                |
+| `DELETE` | `/hubspot/disconnect`    | Clear HubSpot tokens                                     |
+| `GET`    | `/hubspot/contacts`      | List contacts (`?after=` `?limit=`)                      |
+| `GET`    | `/hubspot/contacts/:id`  | Single contact                                           |
+| `POST`   | `/hubspot/contacts`      | Create contact                                           |
+| `PATCH`  | `/hubspot/contacts/:id`  | Update contact                                           |
+| `GET`    | `/hubspot/companies`     | List companies                                           |
+| `GET`    | `/hubspot/companies/:id` | Single company                                           |
+| `GET`    | `/hubspot/deals`         | List deals                                               |
+| `GET`    | `/hubspot/deals/:id`     | Single deal                                              |
+| `POST`   | `/hubspot/deals`         | Create deal                                              |
+| `PATCH`  | `/hubspot/deals/:id`     | Update deal                                              |
+| `POST`   | `/hubspot/webhooks`      | Receive HubSpot CRM events (HMAC-verified, no JWT)       |

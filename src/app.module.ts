@@ -11,6 +11,7 @@ import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { AuthModule } from './auth/auth.module';
 import { ClockifyModule } from './clockify/clockify.module';
+import { HubspotModule } from './hubspot/hubspot.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ClockifyModule } from './clockify/clockify.module';
     UsersModule,
     ProjectsModule,
     ClockifyModule,
+    HubspotModule,
   ],
   controllers: [AppController],
   providers: [AppService],

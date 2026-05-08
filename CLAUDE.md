@@ -47,13 +47,19 @@ pnpm prisma generate
 
 Required `.env` keys: `DATABASE_URL`, `SENTRY_DSN`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `COOKIE_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `FRONTEND_URL`.
 
-Optional `.env` key: `CLOCKIFY_API_URL` (defaults to `https://api.clockify.me/api/v1`).
+Optional `.env` keys:
+
+- `CLOCKIFY_API_URL` (defaults to `https://api.clockify.me/api/v1`)
+- `HUBSPOT_CLIENT_ID`, `HUBSPOT_CLIENT_SECRET`, `HUBSPOT_REDIRECT_URI` (defaults to `http://localhost:3000/hubspot/auth/callback`), `HUBSPOT_WEBHOOK_SECRET`
+- `HUBSPOT_APP_ID` — HubSpot developer app ID; required for `POST /hubspot/webhooks/subscribe`
+- `HUBSPOT_PRIVATE_APP_TOKEN` — HubSpot private app access token (developer portal); required for webhook subscription management
+- `APP_ENCRYPTION_KEY` — 32-byte hex string for AES-256-GCM at-rest encryption of `clockifyApiKey`, `hubspotAccessToken`, `hubspotRefreshToken`. If absent, credentials are stored plaintext. Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. If adding to an existing DB, the repository's decrypt path falls back to plaintext on parse failure — existing rows remain readable.
 
 ## Architecture
 
 **Stack**: NestJS 11 + Fastify, GraphQL (code-first, Apollo driver), Prisma 7 + `@prisma/adapter-pg`, Passport.js, Sentry, Swagger at `/api`.
 
-**Module layout** — each domain module (`users`, `projects`, `auth`, `clockify`) follows this layering:
+**Module layout** — each domain module (`users`, `projects`, `auth`, `clockify`, `hubspot`) follows this layering:
 
 - `*.resolver.ts` — GraphQL resolver (mutations/queries), delegates to service
 - `*.controller.ts` — REST controller (used by `clockify` and `auth`), delegates to service
@@ -91,7 +97,7 @@ Full auth system implemented with Passport.js. Layout:
 ```
 src/auth/
 ├── auth.module.ts
-├── auth.resolver.ts          — GraphQL: me, login, register, logout, refreshToken, setupTwoFactor, enableTwoFactor, verifyTwoFactor
+├── auth.resolver.ts          — GraphQL: me, updateMe, login, register, logout, refreshToken, setupTwoFactor, enableTwoFactor, disableTwoFactor, verifyTwoFactor
 ├── auth.controller.ts        — REST: GET /auth/google, GET /auth/google/callback
 ├── auth.service.ts
 ├── strategies/
@@ -108,7 +114,12 @@ src/auth/
 ├── repositories/
 │   ├── auth.repository.ts          — abstract (DI token)
 │   └── prisma-auth.repository.ts   — Prisma implementation
-└── dto/ + types/
+├── dto/
+│   ├── login.input.ts
+│   ├── register.input.ts
+│   ├── verify-2fa.input.ts
+│   └── update-me.input.ts      — UpdateMeInput { name?, email? } for updateMe mutation
+└── types/
 ```
 
 **TypeScript rules:**
@@ -144,11 +155,25 @@ src/auth/
 
 ```
 User           — id, email, name, password?, role (ADMIN/MANAGER/USER), twoFactorSecret?, twoFactorEnabled,
-                 clockifyApiKey?, clockifyUserId?, clockifyWorkspaceId?, timestamps
+                 clockifyApiKey?, clockifyUserId?, clockifyWorkspaceId?,
+                 hubspotAccessToken?, hubspotRefreshToken?, hubspotTokenExpiresAt?, hubspotPortalId?,
+                 timestamps
 RefreshToken   — tokenHash (SHA-256), userId, expiresAt
 OAuthAccount   — provider, providerId, userId  (unique on [provider, providerId])
 Project        — id, title, description, userId?
 ```
+
+`UserRepository` exposes `updateHubspot(id, HubspotUpdate)` alongside `updateClockify` — both follow the same partial-update pattern and are the only way to write HubSpot token fields.
+
+## Credential Encryption (`src/common/crypto.util.ts`)
+
+`clockifyApiKey`, `hubspotAccessToken`, and `hubspotRefreshToken` are encrypted at rest with AES-256-GCM.
+
+- **Key**: `APP_ENCRYPTION_KEY` in `.env` — 32-byte hex string. Must be set in all environments; without it, credentials are stored and returned plaintext.
+- **Format stored in DB**: `iv:ciphertext:authtag` (all hex), single string per column.
+- **Where**: encrypt on write and decrypt on read happen only in `PrismaUserRepository` (`updateClockify`, `updateHubspot`, `findById`, `findAll`). No other layer is aware of encryption.
+- **Backward compat**: if the key is introduced on a DB that already has plaintext values, `decryptField` catches the parse error and returns the original string — existing rows remain readable.
+- **Key rule**: never import `encrypt`/`decrypt` from `src/common/crypto.util.ts` outside `PrismaUserRepository`. Encryption is a repository-layer concern only.
 
 ## Clockify Module (`src/clockify/`)
 
@@ -161,43 +186,113 @@ src/clockify/
 ├── clockify.service.ts      — wraps Clockify REST API via native fetch; reads API key from user record
 ├── dto/
 │   ├── set-credentials.dto.ts    — { apiKey: string; workspaceId?: string }
-│   └── start-time-entry.dto.ts   — { description?, projectId?, tagIds?, start?, billable? }
+│   ├── start-time-entry.dto.ts   — { description?, projectId?, tagIds?, start?, billable? }
+│   └── update-time-entry.dto.ts  — { start, end?, description?, projectId?, billable, tagIds[] }
 └── types/
     ├── clockify-workspace.type.ts
     ├── clockify-project.type.ts
+    ├── clockify-tag.type.ts       — { id, name, workspaceId, archived }
     └── time-entry.type.ts
 ```
 
 **Endpoints:**
 
-| Method   | Path                                         | Purpose                                                                |
-| -------- | -------------------------------------------- | ---------------------------------------------------------------------- |
-| `GET`    | `/clockify/status`                           | `{ connected: boolean; workspaceId: string \| null }`                  |
-| `POST`   | `/clockify/credentials`                      | Validate API key against Clockify, save key + `clockifyUserId` to user |
-| `PATCH`  | `/clockify/workspace`                        | Update preferred workspace ID only (no re-validation)                  |
-| `GET`    | `/clockify/workspaces`                       | List user's Clockify workspaces                                        |
-| `GET`    | `/clockify/workspaces/:id/projects`          | List projects in workspace                                             |
-| `GET`    | `/clockify/workspaces/:id/entries`           | List time entries (query: `start?`, `end?`)                            |
-| `GET`    | `/clockify/workspaces/:id/entries/active`    | Running timer or `null`                                                |
-| `POST`   | `/clockify/workspaces/:id/entries`           | Start new timer                                                        |
-| `PATCH`  | `/clockify/workspaces/:id/entries/:eid/stop` | Stop running timer                                                     |
-| `DELETE` | `/clockify/workspaces/:id/entries/:eid`      | Delete entry                                                           |
+| Method   | Path                                      | Purpose                                                                                    |
+| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `GET`    | `/clockify/status`                        | `{ connected: boolean; workspaceId: string \| null }`                                      |
+| `POST`   | `/clockify/credentials`                   | Validate API key against Clockify, save key + `clockifyUserId` to user                     |
+| `PATCH`  | `/clockify/workspace`                     | Update preferred workspace ID only (no re-validation)                                      |
+| `GET`    | `/clockify/workspaces`                    | List user's Clockify workspaces                                                            |
+| `GET`    | `/clockify/workspaces/:id/projects`       | List projects in workspace                                                                 |
+| `GET`    | `/clockify/workspaces/:id/entries`        | List time entries (query: `start?`, `end?`)                                                |
+| `GET`    | `/clockify/workspaces/:id/entries/active` | Running timer or `null`                                                                    |
+| `POST`   | `/clockify/workspaces/:id/entries`        | Start new timer                                                                            |
+| `PATCH`  | `/clockify/workspaces/:id/entries/stop`   | Stop running timer — no entry ID needed; calls Clockify `PATCH .../user/:uid/time-entries` |
+| `PATCH`  | `/clockify/workspaces/:id/entries/:eid`   | Update entry (full replace) — calls Clockify `PUT /workspaces/{wsId}/time-entries/{eid}`   |
+| `DELETE` | `/clockify/workspaces/:id/entries/:eid`   | Delete entry                                                                               |
+| `GET`    | `/clockify/workspaces/:id/tags`           | List tags in workspace                                                                     |
+| `POST`   | `/clockify/workspaces/:id/tags`           | Create new tag (`{ name }` body) — calls Clockify `POST /workspaces/{wsId}/tags`           |
 
 **Key rules:**
 
 - `ClockifyService` uses native `fetch` (no `@nestjs/axios`) — Node 18+ has `fetch` globally; `@types/node@24` types it.
 - API key stored per-user in `User.clockifyApiKey` (plain text). Never expose the raw key in any response.
-- `clockifyUserId` (Clockify's UUID for the user) is fetched from `GET /user` during `setCredentials` and stored in `User.clockifyUserId` — required for time entry list endpoints.
+- `clockifyUserId` (Clockify's UUID for the user) is fetched from `GET /user` during `setCredentials` and stored in `User.clockifyUserId` — required for time entry list and stop endpoints.
+- The private `request()` helper only sends `Content-Type: application/json` when a body is present. Body-less calls (DELETE, GET) omit the header — Fastify rejects `Content-Type: application/json` with no body as 400.
+- The Clockify stop endpoint is `PATCH /workspaces/{wsId}/user/{userId}/time-entries` with `{ end: ISO }`. The `PUT .../time-entries/{id}` endpoint is for full updates; `PATCH .../time-entries/{id}` does not exist.
 - For REST controllers, use `@Req() req: FastifyRequest & { user: RequestUser }` — no `@CurrentUser()` decorator (that only works in GraphQL context).
 - `UsersModule` exports `UsersService` so `ClockifyModule` can import it.
+- CORS in `main.ts` must include all needed methods explicitly: `['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']`. The default `enableCors()` omits PATCH and DELETE.
+- `PATCH entries/stop` (static segment) must be registered in the controller **before** `PATCH entries/:entryId` (dynamic). Fastify's radix tree gives static precedence regardless of registration order in theory, but NestJS registers routes in declaration order — declare the static route first to be safe.
+- `ClockifyService.updateEntry` calls Clockify `PUT /workspaces/{wsId}/time-entries/{eid}` (full replace). Clockify has no `PATCH` for individual entries — only `PATCH /user/{uid}/time-entries` for stopping the active timer.
+
+## HubSpot Module (`src/hubspot/`)
+
+Pure REST module — no GraphQL. All CRM endpoints at `/hubspot/*`, guarded by `AuthGuard('jwt')`. OAuth endpoints are unguarded (OAuth redirect flow). Webhook endpoint is unguarded but HMAC-verified.
+
+```
+src/hubspot/
+├── hubspot.module.ts
+├── hubspot.controller.ts    — REST endpoints (OAuth + CRM proxy + webhooks)
+├── hubspot.service.ts       — HubSpot API calls via native fetch; per-request token refresh
+├── dto/
+│   ├── create-contact.dto.ts    — { email, firstname?, lastname?, phone?, company? }
+│   ├── update-contact.dto.ts    — Partial contact properties
+│   ├── create-deal.dto.ts       — { dealname, amount?, dealstage?, pipeline?, closedate? }
+│   └── update-deal.dto.ts       — Partial deal properties
+└── types/
+    ├── hubspot-contact.type.ts
+    ├── hubspot-company.type.ts
+    ├── hubspot-deal.type.ts
+    └── hubspot-webhook.type.ts
+```
+
+**Endpoints:**
+
+| Method   | Path                          | Auth          | Purpose                                                                    |
+| -------- | ----------------------------- | ------------- | -------------------------------------------------------------------------- |
+| `GET`    | `/hubspot/auth`               | JWT           | Redirect to HubSpot OAuth consent (HMAC-signed state)                      |
+| `GET`    | `/hubspot/auth/callback`      | none          | Exchange code → tokens; store on user; redirect to frontend                |
+| `GET`    | `/hubspot/status`             | JWT           | `{ connected, portalId }`                                                  |
+| `DELETE` | `/hubspot/disconnect`         | JWT           | Clear tokens + revoke refresh token server-side (fire-and-forget)          |
+| `GET`    | `/hubspot/contacts`           | JWT           | List contacts (`?after=`, `?limit=`)                                       |
+| `POST`   | `/hubspot/contacts/search`    | JWT           | Search contacts (`{ filterGroups?, sorts?, properties?, limit?, after? }`) |
+| `GET`    | `/hubspot/contacts/:id`       | JWT           | Single contact                                                             |
+| `POST`   | `/hubspot/contacts`           | JWT           | Create contact                                                             |
+| `PATCH`  | `/hubspot/contacts/:id`       | JWT           | Update contact                                                             |
+| `GET`    | `/hubspot/companies`          | JWT           | List companies (`?after=`, `?limit=`)                                      |
+| `POST`   | `/hubspot/companies/search`   | JWT           | Search companies                                                           |
+| `GET`    | `/hubspot/companies/:id`      | JWT           | Single company                                                             |
+| `GET`    | `/hubspot/deals`              | JWT           | List deals (`?after=`, `?limit=`)                                          |
+| `POST`   | `/hubspot/deals/search`       | JWT           | Search deals                                                               |
+| `GET`    | `/hubspot/deals/:id`          | JWT           | Single deal                                                                |
+| `POST`   | `/hubspot/deals`              | JWT           | Create deal                                                                |
+| `PATCH`  | `/hubspot/deals/:id`          | JWT           | Update deal                                                                |
+| `POST`   | `/hubspot/associations`       | JWT           | Create association between two objects                                     |
+| `POST`   | `/hubspot/webhooks/subscribe` | JWT + ADMIN   | Programmatically create HubSpot webhook subscription                       |
+| `POST`   | `/hubspot/webhooks`           | HMAC (no JWT) | Receive HubSpot CRM events (HMAC + timestamp verified)                     |
+
+**Key rules:**
+
+- `HubspotService.request()` calls `getValidToken()` before every API call. If token expires within 5 min, it refreshes via `POST /oauth/v1/token` (grant_type=refresh_token) and saves new tokens before proceeding. Concurrent refresh calls for the same user are coalesced via a per-user `refreshLocks: Map<number, Promise<string>>` — only one refresh runs at a time.
+- `HubspotService.request()` and `ClockifyService.request()` both use `fetchWithRetry` from `src/common/retry.util.ts` — retries up to 3 times on 429, honouring `Retry-After` header or using exponential backoff capped at 30 s.
+- `disconnect(userId)` reads the refresh token before clearing the DB, then fire-and-forgets `DELETE /oauth/v1/refresh-tokens/:token` to revoke server-side. Never block disconnect on revocation failure.
+- Association endpoint: `POST /hubspot/associations` calls `PUT /crm/v3/associations/{from}/{to}/batch/create`. Default `associationTypeId` is inferred for common pairs (contact→company: 1, contact→deal: 4). Pass `associationTypeId` explicitly for other pairs.
+- OAuth `state` is a signed token: `base64url(JSON.stringify({ payload: JSON.stringify({ userId, nonce, exp }), sig: HMAC-SHA256(JWT_SECRET, payload) }))`. 10-min TTL. Verified in callback with `timingSafeEqual`. Never pass a bare `userId` integer as state.
+- Webhook signature: `SHA256(HUBSPOT_WEBHOOK_SECRET + rawBody)`, compared via `timingSafeEqual`. `HUBSPOT_WEBHOOK_SECRET` left empty skips verification (dev convenience only).
+- Webhook replay protection: `verifyWebhookSignature` checks `x-hubspot-request-timestamp` header; requests older than 5 minutes are rejected with 401.
+- `main.ts` registers a custom `application/json` content-type parser that stores the raw body string on `req.rawBody` before parsing — needed for exact-byte HMAC verification. This replaces Fastify's built-in JSON parser but parses identically.
+- `HubspotModule` imports `UsersModule` (which exports `UsersService`) — same pattern as `ClockifyModule`.
+- Never expose `hubspotAccessToken` or `hubspotRefreshToken` in any response.
+- HubSpot OAuth scopes required: `crm.objects.contacts.read/write`, `crm.objects.companies.read`, `crm.objects.deals.read/write`.
 
 ## Status & Known Gaps
 
-- `users.resolver.ts` and `projects.resolver.ts` are **not yet guarded**. Add `@UseGuards(GqlAuthGuard)` to all queries/mutations that require authentication.
-- `disableTwoFactor` service method exists in the repository contract but is not yet exposed as a GraphQL mutation or called from the frontend.
-- `refreshToken` mutation exists but the frontend does not yet call it automatically on 401 — an Apollo error link needs to be wired up.
 - Microsoft OAuth is not implemented (no `passport-microsoft` strategy or controller endpoints).
-- Clockify API key stored in plaintext — consider encrypting at rest with an app-level secret.
+- HubSpot webhook handler (`dispatchEvent`) logs events via NestJS Logger — add `switch` cases per `subscriptionType` for real business logic handlers.
+- HubSpot company write operations (`POST /hubspot/companies`, `PATCH /hubspot/companies/:id`) are not implemented — read-only.
+- HubSpot pagination FRONT: `HubspotPage` loads only the first page; "Load more" UI not yet wired.
+- Audit log for third-party writes (#15) not yet implemented.
 
 ## Docs
 
@@ -205,7 +300,10 @@ Implementation logs live in `../docs/implementations/`:
 
 - `auth-implementation.md` — backend auth system (Passport strategies, JWT, cookies, schema)
 - `auth-ui.md` — frontend auth pages and routing
+- `auth-remaining.md` — persistent redirect, cross-tab logout, resolver guards, disable 2FA, Apollo token refresh
 
 Plans live in `../docs/plans/`:
 
 - `clockify-integration.md` — Clockify REST integration design
+- `auth-remaining.md` — plan for the auth follow-up items above
+- `hubspot-upgrades.md` — HubSpot backend upgrades (associations, search, security, retry, refresh lock, webhook dispatch/subscription)

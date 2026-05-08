@@ -17,6 +17,7 @@ import type { RequestUser } from '../auth/types/gql-context.type.js';
 import { ClockifyService } from './clockify.service.js';
 import { SetCredentialsDto } from './dto/set-credentials.dto.js';
 import { StartTimeEntryDto } from './dto/start-time-entry.dto.js';
+import { UpdateTimeEntryDto } from './dto/update-time-entry.dto.js';
 
 type AuthRequest = FastifyRequest & { user: RequestUser };
 
@@ -85,13 +86,22 @@ export class ClockifyController {
     return this.clockify.startEntry(req.user.id, workspaceId, dto);
   }
 
-  @Patch('workspaces/:workspaceId/entries/:entryId/stop')
+  @Patch('workspaces/:workspaceId/entries/stop')
   stopEntry(
     @Req() req: AuthRequest,
     @Param('workspaceId') workspaceId: string,
-    @Param('entryId') entryId: string,
   ) {
-    return this.clockify.stopEntry(req.user.id, workspaceId, entryId);
+    return this.clockify.stopEntry(req.user.id, workspaceId);
+  }
+
+  @Patch('workspaces/:workspaceId/entries/:entryId')
+  updateEntry(
+    @Req() req: AuthRequest,
+    @Param('workspaceId') workspaceId: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: UpdateTimeEntryDto,
+  ) {
+    return this.clockify.updateEntry(req.user.id, workspaceId, entryId, dto);
   }
 
   @Delete('workspaces/:workspaceId/entries/:entryId')
@@ -102,5 +112,19 @@ export class ClockifyController {
     @Param('entryId') entryId: string,
   ) {
     return this.clockify.deleteEntry(req.user.id, workspaceId, entryId);
+  }
+
+  @Get('workspaces/:workspaceId/tags')
+  getTags(@Req() req: AuthRequest, @Param('workspaceId') workspaceId: string) {
+    return this.clockify.getTags(req.user.id, workspaceId);
+  }
+
+  @Post('workspaces/:workspaceId/tags')
+  createTag(
+    @Req() req: AuthRequest,
+    @Param('workspaceId') workspaceId: string,
+    @Body('name') name: string,
+  ) {
+    return this.clockify.createTag(req.user.id, workspaceId, name);
   }
 }

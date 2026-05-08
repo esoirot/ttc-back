@@ -93,4 +93,21 @@ export class PrismaAuthRepository implements AuthRepository {
       data: { twoFactorEnabled: true },
     });
   }
+
+  async disableTwoFactor(userId: number): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorEnabled: false, twoFactorSecret: null },
+    });
+  }
+
+  async updateUser(
+    userId: number,
+    data: { name?: string; email?: string },
+  ): Promise<AuthUser> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+  }
 }

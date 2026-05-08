@@ -1,11 +1,14 @@
 import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service.js';
+import { fetchWithRetry } from '../common/retry.util.js';
 import type { ClockifyWorkspace } from './types/clockify-workspace.type.js';
 import type { ClockifyProject } from './types/clockify-project.type.js';
 import type { ClockifyTimeEntry } from './types/time-entry.type.js';
+import type { ClockifyTag } from './types/clockify-tag.type.js';
 import type { SetCredentialsDto } from './dto/set-credentials.dto.js';
 import type { StartTimeEntryDto } from './dto/start-time-entry.dto.js';
+import type { UpdateTimeEntryDto } from './dto/update-time-entry.dto.js';
 
 type ClockifyUser = { id: string; email: string; name: string };
 
@@ -30,14 +33,17 @@ export class ClockifyService {
     path: string,
     body?: unknown,
   ): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method,
-      headers: {
-        'X-Api-Key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    const hasBody = body !== undefined;
+    const res = await fetchWithRetry(() =>
+      fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers: {
+          'X-Api-Key': apiKey,
+          ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: hasBody ? JSON.stringify(body) : undefined,
+      }),
+    );
 
     if (!res.ok) {
       const raw: unknown = await res.json().catch(() => ({}));
@@ -178,13 +184,12 @@ export class ClockifyService {
   async stopEntry(
     userId: number,
     workspaceId: string,
-    entryId: string,
   ): Promise<ClockifyTimeEntry> {
-    const apiKey = await this.getUserApiKey(userId);
+    const { apiKey, clockifyUserId } = await this.getUserClockifyId(userId);
     return this.request<ClockifyTimeEntry>(
       apiKey,
       'PATCH',
-      `/workspaces/${workspaceId}/time-entries/${entryId}`,
+      `/workspaces/${workspaceId}/user/${clockifyUserId}/time-entries`,
       { end: new Date().toISOString() },
     );
   }
@@ -199,6 +204,53 @@ export class ClockifyService {
       apiKey,
       'DELETE',
       `/workspaces/${workspaceId}/time-entries/${entryId}`,
+    );
+  }
+
+  async getTags(userId: number, workspaceId: string): Promise<ClockifyTag[]> {
+    const apiKey = await this.getUserApiKey(userId);
+    return this.request<ClockifyTag[]>(
+      apiKey,
+      'GET',
+      `/workspaces/${workspaceId}/tags`,
+    );
+  }
+
+  async createTag(
+    userId: number,
+    workspaceId: string,
+    name: string,
+  ): Promise<ClockifyTag> {
+    const apiKey = await this.getUserApiKey(userId);
+    return this.request<ClockifyTag>(
+      apiKey,
+      'POST',
+      `/workspaces/${workspaceId}/tags`,
+      {
+        name,
+      },
+    );
+  }
+
+  async updateEntry(
+    userId: number,
+    workspaceId: string,
+    entryId: string,
+    dto: UpdateTimeEntryDto,
+  ): Promise<ClockifyTimeEntry> {
+    const apiKey = await this.getUserApiKey(userId);
+    return this.request<ClockifyTimeEntry>(
+      apiKey,
+      'PUT',
+      `/workspaces/${workspaceId}/time-entries/${entryId}`,
+      {
+        start: dto.start,
+        ...(dto.end !== undefined ? { end: dto.end } : {}),
+        description: dto.description ?? '',
+        projectId: dto.projectId ?? null,
+        billable: dto.billable,
+        tagIds: dto.tagIds,
+      },
     );
   }
 }

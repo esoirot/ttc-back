@@ -37,4 +37,9 @@ export abstract class AuthRepository {
   ): Promise<AuthUser>;
   abstract setTwoFactorSecret(userId: number, secret: string): Promise<void>;
   abstract enableTwoFactor(userId: number): Promise<void>;
+  abstract disableTwoFactor(userId: number): Promise<void>;
+  abstract updateUser(
+    userId: number,
+    data: { name?: string; email?: string },
+  ): Promise<AuthUser>;
 }

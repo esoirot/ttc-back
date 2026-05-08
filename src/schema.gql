@@ -43,6 +43,7 @@ type Mutation {
   removeProject(id: Int!): DeleteProjectResponse!
   removeUser(id: Int!): DeleteUserResponse!
   setupTwoFactor: SetupTwoFactorResponse!
+  updateMe(input: UpdateMeInput!): User!
   updateProject(updateProjectInput: UpdateProjectInput!): Project!
   updateUser(updateUserInput: UpdateUserInput!): User!
   verifyTwoFactor(input: VerifyTwoFactorInput!): LoginResponse!
@@ -52,7 +53,6 @@ type Project {
   description: String
   id: Int!
   title: String!
-  user: User
   userId: Int
 }
 
@@ -79,6 +79,11 @@ enum Role {
 type SetupTwoFactorResponse {
   qrCodeUrl: String!
   secret: String!
+}
+
+input UpdateMeInput {
+  email: String
+  name: String
 }
 
 input UpdateProjectInput {

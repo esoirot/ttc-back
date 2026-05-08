@@ -4,6 +4,7 @@ import { UpdateUserInput } from './dto/update-user.input';
 import {
   UserRepository,
   type ClockifyUpdate,
+  type HubspotUpdate,
 } from './repositories/users.repository';
 import { UserModel } from './types/user.type';
 import { DeleteUserResponse } from './types/delete-user.response';
@@ -30,6 +31,10 @@ export class UsersService {
 
   updateClockify(id: number, data: ClockifyUpdate): Promise<UserModel> {
     return this.repo.updateClockify(id, data);
+  }
+
+  updateHubspot(id: number, data: HubspotUpdate): Promise<UserModel> {
+    return this.repo.updateHubspot(id, data);
   }
 
   async delete(id: number): Promise<DeleteUserResponse> {
