@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
@@ -19,14 +17,42 @@ enum Role {
   USER
 }
 
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum RateType {
+  HOURLY
+  PER_WORD
+  FIXED
+}
+
 model User {
-  id               Int            @id @default(autoincrement())
-  email            String         @unique
-  name             String?
-  password         String?
-  role             Role           @default(USER)
-  twoFactorSecret     String?
-  twoFactorEnabled    Boolean        @default(false)
+  id                    Int            @id @default(autoincrement())
+  email                 String         @unique
+  name                  String?
+  password              String?
+  role                  Role           @default(USER)
+  twoFactorSecret       String?
+  twoFactorEnabled      Boolean        @default(false)
   clockifyApiKey        String?
   clockifyUserId        String?
   clockifyWorkspaceId   String?
@@ -34,11 +60,21 @@ model User {
   hubspotRefreshToken   String?
   hubspotTokenExpiresAt DateTime?
   hubspotPortalId       String?
+  logoUrl               String?
   refreshTokens         RefreshToken[]
-  oauthAccounts       OAuthAccount[]
-  projects            Project[]
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  oauthAccounts         OAuthAccount[]
+  passwordResetTokens   PasswordResetToken[]
+  twoFactorBackupCodes  TwoFactorBackupCode[]
+  projects              Project[]
+  clients               Client[]
+  tasks                 Task[]
+  taskComments          TaskComment[]
+  timeEntries           TimeEntry[]
+  invoices              Invoice[]
+  auditLogs             AuditLog[]
+  rates                 Rate[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 }
 
 model RefreshToken {
@@ -48,6 +84,15 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model OAuthAccount {
@@ -60,10 +105,180 @@ model OAuthAccount {
   @@unique([provider, providerId])
 }
 
+model Client {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  legalName String?
+  email     String?
+  phone     String?
+  company   String?
+  address   String?
+  city      String?
+  country   String?
+  postalCode String?
+  vatNumber String?
+  notes     String?
+  hubspotId String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  projects  Project[]
+  invoices  Invoice[]
+  contacts  CompanyContact[]
+}
+
+model CompanyContact {
+  id        Int      @id @default(autoincrement())
+  clientId  Int
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  firstName String?
+  lastName  String?
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Project {
-  id          Int     @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
+  userId         Int?
+  user           User?         @relation(fields: [userId], references: [id])
+  clientId       Int?
+  client         Client?       @relation(fields: [clientId], references: [id])
+  title          String
+  description    String?
+  status         ProjectStatus @default(DRAFT)
+  sourceLanguage String?
+  targetLanguage String?
+  wordCount      Int?
+  unitPrice      Decimal?      @db.Decimal(10, 4)
+  currency       String        @default("EUR")
+  deadline       DateTime?
+  startDate      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  tasks          Task[]
+  timeEntries    TimeEntry[]
+  invoiceItems   InvoiceItem[]
+}
+
+model Task {
+  id          Int           @id @default(autoincrement())
+  projectId   Int
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId  Int?
+  assignee    User?         @relation(fields: [assigneeId], references: [id])
   title       String
   description String?
-  user        User?   @relation(fields: [userId], references: [id])
-  userId      Int?
+  status      TaskStatus    @default(TODO)
+  dueDate     DateTime?
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  subtasks    Subtask[]
+  comments    TaskComment[]
+}
+
+model Subtask {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaskComment {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TimeEntry {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId       Int?
+  project         Project?      @relation(fields: [projectId], references: [id])
+  description     String?
+  startTime       DateTime
+  endTime         DateTime?
+  durationSeconds Int?
+  billable        Boolean       @default(true)
+  clockifyEntryId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  invoiceItems    InvoiceItem[]
+}
+
+model Invoice {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId  Int?
+  client    Client?       @relation(fields: [clientId], references: [id])
+  number    String        @unique
+  status    InvoiceStatus @default(DRAFT)
+  currency  String        @default("EUR")
+  issuedAt  DateTime?
+  dueDate   DateTime?
+  paidAt    DateTime?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  items     InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          Int        @id @default(autoincrement())
+  invoiceId   Int
+  invoice     Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  projectId   Int?
+  project     Project?   @relation(fields: [projectId], references: [id])
+  timeEntryId Int?
+  timeEntry   TimeEntry? @relation(fields: [timeEntryId], references: [id])
+  description String
+  quantity    Decimal    @db.Decimal(10, 4)
+  unitPrice   Decimal    @db.Decimal(10, 4)
+  total       Decimal    @db.Decimal(10, 4)
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String
+  resource  String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TwoFactorBackupCode {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Rate {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        RateType
+  name        String
+  amount      Float
+  currency    String   @default("EUR")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

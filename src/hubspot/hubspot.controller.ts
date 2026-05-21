@@ -6,6 +6,7 @@ import {
   Headers,
   HttpCode,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -27,6 +28,8 @@ import type { CreateAssociationDto } from './dto/create-association.dto.js';
 import type { SearchObjectsDto } from './dto/search-objects.dto.js';
 import type { CreateWebhookSubscriptionDto } from './dto/create-webhook-subscription.dto.js';
 import type { HubspotWebhookEvent } from './types/hubspot-webhook.type.js';
+import type { CreateCompanyDto } from './dto/create-company.dto.js';
+import type { UpdateCompanyDto } from './dto/update-company.dto.js';
 
 type AuthRequest = FastifyRequest & { user: RequestUser };
 type RawBodyRequest = FastifyRequest & { rawBody?: string };
@@ -111,6 +114,12 @@ export class HubspotController {
     return this.hubspot.updateContact(req.user.id, id, dto);
   }
 
+  @Post('contacts/:id/import-client')
+  @UseGuards(AuthGuard('jwt'))
+  importContact(@Req() req: AuthRequest, @Param('id') contactId: string) {
+    return this.hubspot.importContact(req.user.id, contactId);
+  }
+
   // --- Companies ---
 
   @Get('companies')
@@ -133,10 +142,26 @@ export class HubspotController {
     return this.hubspot.searchCompanies(req.user.id, dto);
   }
 
+  @Post('companies')
+  @UseGuards(AuthGuard('jwt'))
+  createCompany(@Req() req: AuthRequest, @Body() dto: CreateCompanyDto) {
+    return this.hubspot.createCompany(req.user.id, dto);
+  }
+
   @Get('companies/:id')
   @UseGuards(AuthGuard('jwt'))
   getCompany(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.hubspot.getCompany(req.user.id, id);
+  }
+
+  @Patch('companies/:id')
+  @UseGuards(AuthGuard('jwt'))
+  updateCompany(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateCompanyDto,
+  ) {
+    return this.hubspot.updateCompany(req.user.id, id, dto);
   }
 
   // --- Deals ---
@@ -192,6 +217,23 @@ export class HubspotController {
     @Body() dto: CreateAssociationDto,
   ) {
     return this.hubspot.createAssociation(req.user.id, dto);
+  }
+
+  // --- Admin: connection management ---
+
+  @Get('admin/connections')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
+  listConnections() {
+    return this.hubspot.listConnections();
+  }
+
+  @Delete('admin/connections/:userId')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
+  @HttpCode(204)
+  forceDisconnect(@Param('userId', ParseIntPipe) userId: number) {
+    return this.hubspot.disconnect(userId);
   }
 
   // --- Webhook subscriptions (#9) ---

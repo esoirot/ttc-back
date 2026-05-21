@@ -26,6 +26,12 @@ export class User {
   @Field()
   twoFactorEnabled!: boolean;
 
+  @Field({ nullable: true })
+  logoUrl?: string;
+
+  @Field()
+  createdAt!: Date;
+
   @Field(() => [Project], { nullable: true })
   projects?: Project[];
 }

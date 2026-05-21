@@ -1,8 +1,11 @@
+import { ProjectModel } from '../../projects/types/project.type';
+
 export type UserModel = {
   id: number;
   email: string;
   name: string | null;
   role: string;
+  createdAt?: Date;
   twoFactorEnabled: boolean;
   clockifyApiKey?: string | null;
   clockifyUserId?: string | null;
@@ -11,10 +14,6 @@ export type UserModel = {
   hubspotRefreshToken?: string | null;
   hubspotTokenExpiresAt?: Date | null;
   hubspotPortalId?: string | null;
-  projects?: {
-    id: number;
-    title: string;
-    description: string | null;
-    userId: number | null;
-  }[];
+  logoUrl?: string | null;
+  projects?: ProjectModel[];
 };

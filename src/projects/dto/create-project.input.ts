@@ -1,13 +1,38 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
+import { InputType, Field, Int, Float } from '@nestjs/graphql';
+import { ProjectStatus } from '../entities/project.entity';
 
 @InputType()
 export class CreateProjectInput {
-  @Field(() => String)
+  @Field()
   title!: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   description?: string;
 
   @Field(() => Int, { nullable: true })
-  userId?: number;
+  clientId?: number;
+
+  @Field(() => ProjectStatus, { nullable: true })
+  status?: ProjectStatus;
+
+  @Field({ nullable: true })
+  sourceLanguage?: string;
+
+  @Field({ nullable: true })
+  targetLanguage?: string;
+
+  @Field(() => Int, { nullable: true })
+  wordCount?: number;
+
+  @Field(() => Float, { nullable: true })
+  unitPrice?: number;
+
+  @Field({ nullable: true })
+  currency?: string;
+
+  @Field({ nullable: true })
+  deadline?: Date;
+
+  @Field({ nullable: true })
+  startDate?: Date;
 }

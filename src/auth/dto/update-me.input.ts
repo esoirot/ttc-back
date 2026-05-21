@@ -7,4 +7,7 @@ export class UpdateMeInput {
 
   @Field({ nullable: true })
   email?: string;
+
+  @Field({ nullable: true })
+  logoUrl?: string;
 }

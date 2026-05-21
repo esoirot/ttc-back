@@ -1,6 +1,17 @@
 export type ProjectModel = {
   id: number;
+  userId: number | null;
+  clientId: number | null;
   title: string;
   description: string | null;
-  userId: number | null;
+  status: string;
+  sourceLanguage: string | null;
+  targetLanguage: string | null;
+  wordCount: number | null;
+  unitPrice: number | null;
+  currency: string;
+  deadline: Date | null;
+  startDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 };

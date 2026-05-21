@@ -19,7 +19,7 @@ export class PrismaUserRepository implements UserRepository {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
   ) {
-    this.encKey = this.config.get<string>('APP_ENCRYPTION_KEY') ?? '';
+    this.encKey = this.config.getOrThrow<string>('APP_ENCRYPTION_KEY');
   }
 
   private encryptField(
@@ -50,10 +50,7 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async findById(id: number): Promise<UserModel> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: { projects: true },
-    });
+    const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -63,9 +60,7 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async findAll(): Promise<UserModel[]> {
-    const users = await this.prisma.user.findMany({
-      include: { projects: true },
-    });
+    const users = await this.prisma.user.findMany();
     return users.map((u) => this.decryptUser(u));
   }
 

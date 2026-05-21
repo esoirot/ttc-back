@@ -18,6 +18,7 @@ import { ClockifyService } from './clockify.service.js';
 import { SetCredentialsDto } from './dto/set-credentials.dto.js';
 import { StartTimeEntryDto } from './dto/start-time-entry.dto.js';
 import { UpdateTimeEntryDto } from './dto/update-time-entry.dto.js';
+import { ImportEntriesDto } from './dto/import-entries.dto.js';
 
 type AuthRequest = FastifyRequest & { user: RequestUser };
 
@@ -29,6 +30,12 @@ export class ClockifyController {
   @Get('status')
   getStatus(@Req() req: AuthRequest) {
     return this.clockify.getStatus(req.user.id);
+  }
+
+  @Delete('credentials')
+  @HttpCode(204)
+  clearCredentials(@Req() req: AuthRequest) {
+    return this.clockify.clearCredentials(req.user.id);
   }
 
   @Post('credentials')
@@ -75,6 +82,15 @@ export class ClockifyController {
     @Query('end') end?: string,
   ) {
     return this.clockify.getEntries(req.user.id, workspaceId, start, end);
+  }
+
+  @Post('workspaces/:workspaceId/entries/import')
+  importEntries(
+    @Req() req: AuthRequest,
+    @Param('workspaceId') workspaceId: string,
+    @Body() dto: ImportEntriesDto,
+  ) {
+    return this.clockify.importEntries(req.user.id, workspaceId, dto);
   }
 
   @Post('workspaces/:workspaceId/entries')

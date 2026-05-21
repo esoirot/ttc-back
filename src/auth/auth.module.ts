@@ -13,9 +13,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { EmailService } from './email.service';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
+    AuditModule,
     PassportModule.register({ session: false }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -40,6 +43,7 @@ import { RolesGuard } from './guards/roles.guard';
     GoogleStrategy,
     GqlAuthGuard,
     RolesGuard,
+    EmailService,
   ],
   exports: [AuthService, GqlAuthGuard, RolesGuard],
 })

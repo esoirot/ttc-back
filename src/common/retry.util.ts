@@ -1,11 +1,11 @@
 export async function fetchWithRetry(
-  fn: () => Promise<Response>,
+  fn: (signal: AbortSignal) => Promise<Response>,
   maxRetries = 3,
   baseDelayMs = 1000,
 ): Promise<Response> {
   let res!: Response;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    res = await fn();
+    res = await fn(AbortSignal.timeout(30_000));
     if (res.status !== 429 || attempt === maxRetries) return res;
     const retryAfterHeader = res.headers.get('Retry-After');
     const delay = retryAfterHeader

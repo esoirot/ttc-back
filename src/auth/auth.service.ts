@@ -6,13 +6,16 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
 import type { FastifyReply } from 'fastify';
 import type { JwtSignOptions } from '@nestjs/jwt';
 import { AuthRepository } from './repositories/auth.repository';
+import { AuditService } from '../audit/audit.service';
+import { EmailService } from './email.service';
+import { isAllowedLogoUrl } from '../common/logo-url.util';
 import { AuthUser } from './types/auth-user.type';
 import { JwtPayload } from './types/jwt-payload.type';
 import { GoogleProfile } from './strategies/google.strategy';
@@ -35,6 +38,8 @@ export class AuthService {
     private readonly repo: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
+    private readonly auditService: AuditService,
   ) {}
 
   async getUser(id: number): Promise<AuthUser | null> {
@@ -122,8 +127,11 @@ export class AuthService {
 
   async updateMe(
     userId: number,
-    data: { name?: string; email?: string },
+    data: { name?: string; email?: string; logoUrl?: string },
   ): Promise<AuthUser> {
+    if (data.logoUrl && !isAllowedLogoUrl(data.logoUrl)) {
+      throw new BadRequestException('Invalid or disallowed logo URL');
+    }
     return this.repo.updateUser(userId, data);
   }
 
@@ -140,7 +148,7 @@ export class AuthService {
     return { qrCodeUrl, secret: secretObj.base32 };
   }
 
-  async enableTwoFactor(userId: number, code: string): Promise<boolean> {
+  async enableTwoFactor(userId: number, code: string): Promise<string[]> {
     const user = await this.repo.findUserById(userId);
     if (!user?.twoFactorSecret) throw new UnauthorizedException();
 
@@ -152,8 +160,14 @@ export class AuthService {
     });
     if (!valid) throw new UnauthorizedException('Invalid 2FA code');
 
+    const plainCodes = Array.from({ length: 8 }, () =>
+      randomBytes(10).toString('hex'),
+    );
+    const hashes = await Promise.all(plainCodes.map((c) => bcrypt.hash(c, 10)));
+    await this.repo.deleteBackupCodes(userId);
+    await this.repo.createBackupCodes(userId, hashes);
     await this.repo.enableTwoFactor(userId);
-    return true;
+    return plainCodes;
   }
 
   async disableTwoFactor(userId: number, code: string): Promise<boolean> {
@@ -171,8 +185,32 @@ export class AuthService {
     });
     if (!valid) throw new UnauthorizedException('Invalid 2FA code');
 
+    await this.repo.deleteBackupCodes(userId);
     await this.repo.disableTwoFactor(userId);
     return true;
+  }
+
+  async verifyTwoFactorBackup(
+    tempToken: string,
+    backupCode: string,
+    res: FastifyReply,
+  ): Promise<LoginResponse> {
+    let payload: JwtPayload;
+    try {
+      payload = this.jwtService.verify<JwtPayload>(tempToken);
+    } catch {
+      throw new UnauthorizedException();
+    }
+    if (payload.type !== 'temp') throw new UnauthorizedException();
+
+    const user = await this.repo.findUserById(payload.sub);
+    if (!user) throw new UnauthorizedException();
+
+    const match = await this.repo.findMatchingBackupCode(user.id, backupCode);
+    if (!match) throw new UnauthorizedException('Invalid backup code');
+
+    await this.issueTokens(user, res);
+    return { user: this.toUserEntity(user) };
   }
 
   async verifyTwoFactor(
@@ -199,8 +237,74 @@ export class AuthService {
     });
     if (!valid) throw new UnauthorizedException('Invalid 2FA code');
 
+    if (!(await this.repo.isTwoFactorSecretEncrypted(user.id))) {
+      await this.repo.setTwoFactorSecret(user.id, user.twoFactorSecret);
+    }
+
     await this.issueTokens(user, res);
     return { user: this.toUserEntity(user) };
+  }
+
+  async regenerateBackupCodes(userId: number, code: string): Promise<string[]> {
+    const user = await this.repo.findUserById(userId);
+    if (!user?.twoFactorSecret) throw new UnauthorizedException();
+
+    const valid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: code,
+      window: 1,
+    });
+    if (!valid) throw new UnauthorizedException('Invalid 2FA code');
+
+    const plainCodes = Array.from({ length: 8 }, () =>
+      randomBytes(10).toString('hex'),
+    );
+    const hashes = await Promise.all(plainCodes.map((c) => bcrypt.hash(c, 10)));
+    await this.repo.deleteBackupCodes(userId);
+    await this.repo.createBackupCodes(userId, hashes);
+    return plainCodes;
+  }
+
+  async adminDisableTwoFactor(
+    adminId: number,
+    targetUserId: number,
+  ): Promise<boolean> {
+    await this.repo.deleteBackupCodes(targetUserId);
+    await this.repo.disableTwoFactor(targetUserId);
+    this.auditService.log(adminId, 'ADMIN_DISABLE_2FA', 'auth', {
+      targetUserId,
+    });
+    return true;
+  }
+
+  async getBackupCodeCount(userId: number): Promise<number> {
+    return this.repo.getBackupCodeCount(userId);
+  }
+
+  async requestPasswordReset(email: string): Promise<boolean> {
+    const user = await this.repo.findUserByEmail(email);
+    if (!user) return true;
+    await this.repo.deleteUserPasswordResetTokens(user.id);
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await this.repo.createPasswordResetToken(user.id, token, expiresAt);
+    await this.emailService.sendPasswordReset(email, token);
+    return true;
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<boolean> {
+    if (newPassword.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters');
+    }
+    const record = await this.repo.findPasswordResetToken(token);
+    if (!record || record.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await this.repo.updatePassword(record.userId, hashed);
+    await this.repo.deletePasswordResetToken(token);
+    return true;
   }
 
   private toUserEntity(authUser: AuthUser): User {

@@ -2,6 +2,8 @@ type HubspotCompanyProperties = {
   name?: string;
   domain?: string;
   phone?: string;
+  city?: string;
+  country?: string;
   createdate?: string;
   lastmodifieddate?: string;
 };

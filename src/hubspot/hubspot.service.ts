@@ -8,6 +8,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { UsersService } from '../users/users.service.js';
+import { AuditService } from '../audit/audit.service.js';
+import { ClientsService } from '../clients/clients.service.js';
+import type { ClientModel } from '../clients/types/client.type.js';
 import { fetchWithRetry } from '../common/retry.util.js';
 import type { HubspotContact } from './types/hubspot-contact.type.js';
 import type { HubspotCompany } from './types/hubspot-company.type.js';
@@ -20,6 +23,8 @@ import type { UpdateDealDto } from './dto/update-deal.dto.js';
 import type { CreateAssociationDto } from './dto/create-association.dto.js';
 import type { SearchObjectsDto } from './dto/search-objects.dto.js';
 import type { CreateWebhookSubscriptionDto } from './dto/create-webhook-subscription.dto.js';
+import type { CreateCompanyDto } from './dto/create-company.dto.js';
+import type { UpdateCompanyDto } from './dto/update-company.dto.js';
 
 const HUBSPOT_BASE = 'https://api.hubapi.com';
 const TOKEN_URL = `${HUBSPOT_BASE}/oauth/v1/token`;
@@ -61,7 +66,9 @@ export class HubspotService {
 
   constructor(
     private readonly usersService: UsersService,
+    private readonly auditService: AuditService,
     private readonly config: ConfigService,
+    private readonly clientsService: ClientsService,
   ) {
     this.clientId = this.config.get<string>('HUBSPOT_CLIENT_ID') ?? '';
     this.clientSecret = this.config.get<string>('HUBSPOT_CLIENT_SECRET') ?? '';
@@ -70,6 +77,11 @@ export class HubspotService {
       'http://localhost:3000/hubspot/auth/callback';
     this.webhookSecret =
       this.config.get<string>('HUBSPOT_WEBHOOK_SECRET') ?? '';
+    if (!this.webhookSecret) {
+      this.logger.warn(
+        'HUBSPOT_WEBHOOK_SECRET not set — webhook signature verification DISABLED',
+      );
+    }
     this.frontendUrl =
       this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
     this.jwtSecret = this.config.get<string>('JWT_SECRET') ?? '';
@@ -283,7 +295,7 @@ export class HubspotService {
   ): Promise<T> {
     const token = await this.getValidToken(userId);
     const hasBody = body !== undefined;
-    const res = await fetchWithRetry(() =>
+    const res = await fetchWithRetry((signal) =>
       fetch(`${HUBSPOT_BASE}${path}`, {
         method,
         headers: {
@@ -291,6 +303,7 @@ export class HubspotService {
           ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
         },
         body: hasBody ? JSON.stringify(body) : undefined,
+        signal,
       }),
     );
 
@@ -341,7 +354,7 @@ export class HubspotService {
     userId: number,
     dto: CreateContactDto,
   ): Promise<HubspotContact> {
-    return this.request<HubspotContact>(
+    const result = await this.request<HubspotContact>(
       userId,
       'POST',
       '/crm/v3/objects/contacts',
@@ -355,6 +368,13 @@ export class HubspotService {
         },
       },
     );
+    this.auditService.log(
+      userId,
+      'HUBSPOT_CREATE_CONTACT',
+      `hubspot:contacts/${result.id}`,
+      dto,
+    );
+    return result;
   }
 
   async updateContact(
@@ -362,12 +382,19 @@ export class HubspotService {
     contactId: string,
     dto: UpdateContactDto,
   ): Promise<HubspotContact> {
-    return this.request<HubspotContact>(
+    const result = await this.request<HubspotContact>(
       userId,
       'PATCH',
       `/crm/v3/objects/contacts/${contactId}`,
       { properties: dto },
     );
+    this.auditService.log(
+      userId,
+      'HUBSPOT_UPDATE_CONTACT',
+      `hubspot:contacts/${contactId}`,
+      dto,
+    );
+    return result;
   }
 
   async searchContacts(
@@ -389,6 +416,34 @@ export class HubspotService {
         ],
       },
     );
+  }
+
+  async importContact(userId: number, contactId: string): Promise<ClientModel> {
+    const contact = await this.getContact(userId, contactId);
+    const p = contact.properties;
+    const firstName = (p.firstname ?? '').trim();
+    const lastName = (p.lastname ?? '').trim();
+    const fullName =
+      [firstName, lastName].filter(Boolean).join(' ') ||
+      (p.company ?? '').trim() ||
+      'Unnamed';
+    const result = await this.clientsService.importFromHubspot(
+      userId,
+      contact.id,
+      {
+        name: fullName,
+        email: p.email?.trim() || undefined,
+        phone: p.phone?.trim() || undefined,
+        company: p.company?.trim() || undefined,
+      },
+    );
+    this.auditService.log(
+      userId,
+      'HUBSPOT_IMPORT_CLIENT',
+      `hubspot:contacts/${contactId}`,
+      { contactId, clientId: result.id, name: result.name },
+    );
+    return result;
   }
 
   // ─── Companies ────────────────────────────────────────────────────────────
@@ -414,8 +469,55 @@ export class HubspotService {
     return this.request<HubspotCompany>(
       userId,
       'GET',
-      `/crm/v3/objects/companies/${companyId}?properties=name,domain,phone`,
+      `/crm/v3/objects/companies/${companyId}?properties=name,domain,phone,city,country`,
     );
+  }
+
+  async createCompany(
+    userId: number,
+    dto: CreateCompanyDto,
+  ): Promise<HubspotCompany> {
+    const result = await this.request<HubspotCompany>(
+      userId,
+      'POST',
+      '/crm/v3/objects/companies',
+      {
+        properties: {
+          name: dto.name,
+          ...(dto.domain ? { domain: dto.domain } : {}),
+          ...(dto.phone ? { phone: dto.phone } : {}),
+          ...(dto.city ? { city: dto.city } : {}),
+          ...(dto.country ? { country: dto.country } : {}),
+        },
+      },
+    );
+    this.auditService.log(
+      userId,
+      'HUBSPOT_CREATE_COMPANY',
+      `hubspot:companies/${result.id}`,
+      dto,
+    );
+    return result;
+  }
+
+  async updateCompany(
+    userId: number,
+    companyId: string,
+    dto: UpdateCompanyDto,
+  ): Promise<HubspotCompany> {
+    const result = await this.request<HubspotCompany>(
+      userId,
+      'PATCH',
+      `/crm/v3/objects/companies/${companyId}`,
+      { properties: dto },
+    );
+    this.auditService.log(
+      userId,
+      'HUBSPOT_UPDATE_COMPANY',
+      `hubspot:companies/${companyId}`,
+      dto,
+    );
+    return result;
   }
 
   async searchCompanies(
@@ -461,15 +563,27 @@ export class HubspotService {
   }
 
   async createDeal(userId: number, dto: CreateDealDto): Promise<HubspotDeal> {
-    return this.request<HubspotDeal>(userId, 'POST', '/crm/v3/objects/deals', {
-      properties: {
-        dealname: dto.dealname,
-        ...(dto.amount ? { amount: dto.amount } : {}),
-        ...(dto.dealstage ? { dealstage: dto.dealstage } : {}),
-        ...(dto.pipeline ? { pipeline: dto.pipeline } : {}),
-        ...(dto.closedate ? { closedate: dto.closedate } : {}),
+    const result = await this.request<HubspotDeal>(
+      userId,
+      'POST',
+      '/crm/v3/objects/deals',
+      {
+        properties: {
+          dealname: dto.dealname,
+          ...(dto.amount ? { amount: dto.amount } : {}),
+          ...(dto.dealstage ? { dealstage: dto.dealstage } : {}),
+          ...(dto.pipeline ? { pipeline: dto.pipeline } : {}),
+          ...(dto.closedate ? { closedate: dto.closedate } : {}),
+        },
       },
-    });
+    );
+    this.auditService.log(
+      userId,
+      'HUBSPOT_CREATE_DEAL',
+      `hubspot:deals/${result.id}`,
+      dto,
+    );
+    return result;
   }
 
   async updateDeal(
@@ -477,12 +591,19 @@ export class HubspotService {
     dealId: string,
     dto: UpdateDealDto,
   ): Promise<HubspotDeal> {
-    return this.request<HubspotDeal>(
+    const result = await this.request<HubspotDeal>(
       userId,
       'PATCH',
       `/crm/v3/objects/deals/${dealId}`,
       { properties: dto },
     );
+    this.auditService.log(
+      userId,
+      'HUBSPOT_UPDATE_DEAL',
+      `hubspot:deals/${dealId}`,
+      dto,
+    );
+    return result;
   }
 
   async searchDeals(
@@ -532,6 +653,32 @@ export class HubspotService {
         ],
       },
     );
+    this.auditService.log(
+      userId,
+      'HUBSPOT_CREATE_ASSOCIATION',
+      `hubspot:associations/${dto.fromObjectType}/${dto.fromObjectId}->${dto.toObjectType}/${dto.toObjectId}`,
+    );
+  }
+
+  // ─── Admin: connections overview ──────────────────────────────────────────
+
+  async listConnections(): Promise<
+    {
+      userId: number;
+      email: string;
+      connected: boolean;
+      portalId: string | null;
+      expiresAt: Date | null;
+    }[]
+  > {
+    const users = await this.usersService.findAll();
+    return users.map((u) => ({
+      userId: u.id,
+      email: u.email,
+      connected: !!u.hubspotAccessToken,
+      portalId: u.hubspotPortalId ?? null,
+      expiresAt: u.hubspotTokenExpiresAt ?? null,
+    }));
   }
 
   // ─── Webhook management (#9) ──────────────────────────────────────────────
@@ -542,7 +689,7 @@ export class HubspotService {
         'HUBSPOT_APP_ID and HUBSPOT_PRIVATE_APP_TOKEN must be set',
       );
     }
-    const res = await fetchWithRetry(() =>
+    const res = await fetchWithRetry((signal) =>
       fetch(`${HUBSPOT_BASE}/webhooks/v3/${this.appId}/subscriptions`, {
         method: 'POST',
         headers: {
@@ -553,6 +700,7 @@ export class HubspotService {
           eventType: dto.subscriptionType,
           ...(dto.propertyName ? { propertyName: dto.propertyName } : {}),
         }),
+        signal,
       }),
     );
     if (!res.ok) {
@@ -582,7 +730,11 @@ export class HubspotService {
       throw new UnauthorizedException('Stale webhook request');
     }
 
-    if (!this.webhookSecret) return;
+    if (!this.webhookSecret) {
+      throw new UnauthorizedException(
+        'Webhook signature verification disabled — HUBSPOT_WEBHOOK_SECRET not configured',
+      );
+    }
     const expected = createHash('sha256')
       .update(this.webhookSecret + rawBody)
       .digest();
@@ -609,11 +761,39 @@ export class HubspotService {
       portalId: event.portalId,
       eventId: event.eventId,
     });
-    // Add handlers per subscriptionType here as business logic grows:
-    // switch (event.subscriptionType) {
-    //   case 'contact.creation': ...
-    //   case 'deal.propertyChange': ...
-    // }
+    void this.handleEvent(event).catch((err: unknown) => {
+      this.logger.error(
+        `Webhook handler error [${event.subscriptionType}]`,
+        String(err),
+      );
+    });
+  }
+
+  private async handleEvent(event: HubspotWebhookEvent): Promise<void> {
+    const hubspotId = String(event.objectId);
+    switch (event.subscriptionType) {
+      case 'contact.propertyChange': {
+        const client =
+          await this.clientsService.findByHubspotIdGlobal(hubspotId);
+        if (!client) break;
+        const FIELD_MAP: Record<string, string> = {
+          email: 'email',
+          phone: 'phone',
+          company: 'company',
+        };
+        const field = event.propertyName
+          ? FIELD_MAP[event.propertyName]
+          : undefined;
+        if (!field || event.propertyValue === undefined) break;
+        await this.clientsService.update(client.id, client.userId, {
+          id: client.id,
+          [field]: event.propertyValue,
+        });
+        break;
+      }
+      default:
+        break;
+    }
   }
 }
 

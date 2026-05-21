@@ -40,6 +40,28 @@ export abstract class AuthRepository {
   abstract disableTwoFactor(userId: number): Promise<void>;
   abstract updateUser(
     userId: number,
-    data: { name?: string; email?: string },
+    data: { name?: string; email?: string; logoUrl?: string },
   ): Promise<AuthUser>;
+  abstract createPasswordResetToken(
+    userId: number,
+    token: string,
+    expiresAt: Date,
+  ): Promise<void>;
+  abstract findPasswordResetToken(
+    token: string,
+  ): Promise<{ userId: number; expiresAt: Date } | null>;
+  abstract deletePasswordResetToken(token: string): Promise<void>;
+  abstract deleteUserPasswordResetTokens(userId: number): Promise<void>;
+  abstract updatePassword(
+    userId: number,
+    hashedPassword: string,
+  ): Promise<void>;
+  abstract createBackupCodes(userId: number, hashes: string[]): Promise<void>;
+  abstract findMatchingBackupCode(
+    userId: number,
+    plainCode: string,
+  ): Promise<{ id: number } | null>;
+  abstract deleteBackupCodes(userId: number): Promise<void>;
+  abstract getBackupCodeCount(userId: number): Promise<number>;
+  abstract isTwoFactorSecretEncrypted(userId: number): Promise<boolean>;
 }
