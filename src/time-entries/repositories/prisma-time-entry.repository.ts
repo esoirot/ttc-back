@@ -13,6 +13,30 @@ import { CreateTimeEntryInput } from '../dto/create-time-entry.input';
 import { StartTimerInput } from '../dto/start-timer.input';
 import { UpdateTimeEntryInput } from '../dto/update-time-entry.input';
 
+const TAG_INCLUDE = {
+  tags: { include: { tag: { select: { id: true, name: true } } } },
+} as const;
+
+type PrismaEntryWithTags = {
+  id: number;
+  userId: number;
+  projectId: number | null;
+  description: string | null;
+  startTime: Date;
+  endTime: Date | null;
+  durationSeconds: number | null;
+  billable: boolean;
+  clockifyEntryId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  tags: { tag: { id: number; name: string } }[];
+};
+
+function toModel(row: PrismaEntryWithTags): TimeEntryModel {
+  const { tags, ...rest } = row;
+  return { ...rest, tags: tags.map((t) => t.tag) };
+}
+
 function computeDuration(start: Date, end: Date): number {
   return Math.round((end.getTime() - start.getTime()) / 1000);
 }
@@ -24,9 +48,10 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
   async findById(id: number, userId: number): Promise<TimeEntryModel> {
     const entry = await this.prisma.timeEntry.findFirst({
       where: { id, userId },
+      include: TAG_INCLUDE,
     });
     if (!entry) throw new NotFoundException(`TimeEntry ${id} not found`);
-    return entry;
+    return toModel(entry);
   }
 
   async existsByClockifyEntryId(
@@ -73,6 +98,7 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     };
     const rows = await this.prisma.timeEntry.findMany({
       where,
+      include: TAG_INCLUDE,
       orderBy: { startTime: 'desc' },
       take: limit + 1,
     });
@@ -80,13 +106,15 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor = hasMore ? items[items.length - 1].id : null;
-    return { items, nextCursor, total };
+    return { items: items.map(toModel), nextCursor, total };
   }
 
   async findActive(userId: number): Promise<TimeEntryModel | null> {
-    return this.prisma.timeEntry.findFirst({
+    const entry = await this.prisma.timeEntry.findFirst({
       where: { userId, endTime: null },
+      include: TAG_INCLUDE,
     });
+    return entry ? toModel(entry) : null;
   }
 
   async create(
@@ -94,7 +122,7 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     data: CreateTimeEntryInput,
   ): Promise<TimeEntryModel> {
     const duration = computeDuration(data.startTime, data.endTime);
-    return this.prisma.timeEntry.create({
+    const entry = await this.prisma.timeEntry.create({
       data: {
         userId,
         projectId: data.projectId,
@@ -104,8 +132,13 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
         durationSeconds: duration,
         billable: data.billable ?? true,
         clockifyEntryId: data.clockifyEntryId,
+        ...(data.tagIds?.length
+          ? { tags: { create: data.tagIds.map((tagId) => ({ tagId })) } }
+          : {}),
       },
+      include: TAG_INCLUDE,
     });
+    return toModel(entry);
   }
 
   async startTimer(
@@ -114,15 +147,20 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
   ): Promise<TimeEntryModel> {
     const active = await this.findActive(userId);
     if (active) throw new ConflictException('A timer is already running');
-    return this.prisma.timeEntry.create({
+    const entry = await this.prisma.timeEntry.create({
       data: {
         userId,
         projectId: data.projectId,
         description: data.description,
         startTime: new Date(),
         billable: data.billable ?? true,
+        ...(data.tagIds?.length
+          ? { tags: { create: data.tagIds.map((tagId) => ({ tagId })) } }
+          : {}),
       },
+      include: TAG_INCLUDE,
     });
+    return toModel(entry);
   }
 
   async stopTimer(userId: number): Promise<TimeEntryModel> {
@@ -130,10 +168,12 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     if (!active) throw new NotFoundException('No active timer');
     const endTime = new Date();
     const durationSeconds = computeDuration(active.startTime, endTime);
-    return this.prisma.timeEntry.update({
+    const entry = await this.prisma.timeEntry.update({
       where: { id: active.id },
       data: { endTime, durationSeconds },
+      include: TAG_INCLUDE,
     });
+    return toModel(entry);
   }
 
   async update(
@@ -145,17 +185,30 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
       where: { id, userId },
     });
     if (!entry) throw new NotFoundException(`TimeEntry ${id} not found`);
-    const { id: _id, ...fields } = data;
+    const { id: _id, tagIds, ...fields } = data;
     const startTime = fields.startTime ?? entry.startTime;
     const endTime = fields.endTime ?? entry.endTime;
     const durationSeconds =
       endTime !== null && endTime !== undefined
         ? computeDuration(startTime, endTime)
         : entry.durationSeconds;
-    return this.prisma.timeEntry.update({
+    const updated = await this.prisma.timeEntry.update({
       where: { id },
-      data: { ...fields, durationSeconds },
+      data: {
+        ...fields,
+        durationSeconds,
+        ...(tagIds !== undefined
+          ? {
+              tags: {
+                deleteMany: {},
+                create: tagIds.map((tagId) => ({ tagId })),
+              },
+            }
+          : {}),
+      },
+      include: TAG_INCLUDE,
     });
+    return toModel(updated);
   }
 
   async delete(id: number, userId: number): Promise<TimeEntryModel> {
@@ -163,6 +216,10 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
       where: { id, userId },
     });
     if (!entry) throw new NotFoundException(`TimeEntry ${id} not found`);
-    return this.prisma.timeEntry.delete({ where: { id } });
+    const deleted = await this.prisma.timeEntry.delete({
+      where: { id },
+      include: TAG_INCLUDE,
+    });
+    return toModel(deleted);
   }
 }

@@ -26,6 +26,9 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { PubSubModule } from './common/pubsub.module';
 import { CleanupModule } from './common/cleanup/cleanup.module';
 import { RatesModule } from './rates/rates.module';
+import { ClientRatesModule } from './client-rates/client-rates.module';
+import { TagsModule } from './tags/tags.module';
+import { AdminModule } from './admin/admin.module';
 import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
 
 @Module({
@@ -102,6 +105,9 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
     PubSubModule,
     CleanupModule,
     RatesModule,
+    ClientRatesModule,
+    TagsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],

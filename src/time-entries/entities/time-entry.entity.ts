@@ -1,4 +1,5 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { EntryTag } from './entry-tag.entity';
 
 @ObjectType()
 export class TimeEntry {
@@ -28,6 +29,9 @@ export class TimeEntry {
 
   @Field(() => String, { nullable: true })
   clockifyEntryId?: string | null;
+
+  @Field(() => [EntryTag])
+  tags!: EntryTag[];
 
   @Field()
   createdAt!: Date;

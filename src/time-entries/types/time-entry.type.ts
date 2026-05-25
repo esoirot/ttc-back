@@ -8,6 +8,7 @@ export type TimeEntryModel = {
   durationSeconds: number | null;
   billable: boolean;
   clockifyEntryId: string | null;
+  tags: { id: number; name: string }[];
   createdAt: Date;
   updatedAt: Date;
 };

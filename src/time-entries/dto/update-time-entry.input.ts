@@ -22,4 +22,7 @@ export class UpdateTimeEntryInput {
 
   @Field({ nullable: true })
   clockifyEntryId?: string;
+
+  @Field(() => [Int], { nullable: true })
+  tagIds?: number[];
 }

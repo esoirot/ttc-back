@@ -20,6 +20,9 @@ function toModel(p: {
   targetLanguage: string | null;
   wordCount: number | null;
   unitPrice: { toNumber(): number } | null;
+  fixedFee: { toNumber(): number } | null;
+  hourlyRate: { toNumber(): number } | null;
+  perWordRate: { toNumber(): number } | null;
   currency: string;
   deadline: Date | null;
   startDate: Date | null;
@@ -29,6 +32,9 @@ function toModel(p: {
   return {
     ...p,
     unitPrice: p.unitPrice?.toNumber() ?? null,
+    fixedFee: p.fixedFee?.toNumber() ?? null,
+    hourlyRate: p.hourlyRate?.toNumber() ?? null,
+    perWordRate: p.perWordRate?.toNumber() ?? null,
   };
 }
 
@@ -79,12 +85,15 @@ export class PrismaProjectRepository implements ProjectRepository {
     userId: number,
     data: CreateProjectInput,
   ): Promise<ProjectModel> {
-    const { unitPrice, ...rest } = data;
+    const { unitPrice, fixedFee, hourlyRate, perWordRate, ...rest } = data;
     const project = await this.prisma.project.create({
       data: {
         ...rest,
         userId,
-        ...(unitPrice !== undefined && unitPrice !== null ? { unitPrice } : {}),
+        ...(unitPrice != null ? { unitPrice } : {}),
+        ...(fixedFee != null ? { fixedFee } : {}),
+        ...(hourlyRate != null ? { hourlyRate } : {}),
+        ...(perWordRate != null ? { perWordRate } : {}),
         currency: data.currency ?? 'EUR',
         status: (data.status as ProjectStatus | undefined) ?? 'DRAFT',
       },
@@ -97,7 +106,14 @@ export class PrismaProjectRepository implements ProjectRepository {
     userId: number,
     data: UpdateProjectInput,
   ): Promise<ProjectModel> {
-    const { id: _id, unitPrice, ...rest } = data;
+    const {
+      id: _id,
+      unitPrice,
+      fixedFee,
+      hourlyRate,
+      perWordRate,
+      ...rest
+    } = data;
     const existing = await this.prisma.project.findFirst({
       where: { id, userId },
     });
@@ -107,6 +123,9 @@ export class PrismaProjectRepository implements ProjectRepository {
       data: {
         ...rest,
         ...(unitPrice !== undefined ? { unitPrice } : {}),
+        ...(fixedFee !== undefined ? { fixedFee } : {}),
+        ...(hourlyRate !== undefined ? { hourlyRate } : {}),
+        ...(perWordRate !== undefined ? { perWordRate } : {}),
         ...(rest.status ? { status: rest.status } : {}),
       },
     });

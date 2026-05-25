@@ -1,4 +1,4 @@
-import { InputType, Field, Int, Float } from '@nestjs/graphql';
+import { InputType, Field, Int } from '@nestjs/graphql';
 
 @InputType()
 export class GenerateInvoiceInput {
@@ -13,7 +13,4 @@ export class GenerateInvoiceInput {
 
   @Field({ nullable: true })
   dueDate?: Date;
-
-  @Field(() => Float, { nullable: true })
-  hourlyRate?: number;
 }

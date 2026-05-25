@@ -23,6 +23,8 @@ enum ProjectStatus {
   COMPLETED
   CANCELLED
   ARCHIVED
+  INVOICE_SENT
+  INVOICE_PAID
 }
 
 enum TaskStatus {
@@ -61,6 +63,7 @@ model User {
   hubspotTokenExpiresAt DateTime?
   hubspotPortalId       String?
   logoUrl               String?
+  adminPermissions      String[]       @default([])
   refreshTokens         RefreshToken[]
   oauthAccounts         OAuthAccount[]
   passwordResetTokens   PasswordResetToken[]
@@ -73,6 +76,8 @@ model User {
   invoices              Invoice[]
   auditLogs             AuditLog[]
   rates                 Rate[]
+  clientRates           ClientRate[]
+  tags                  Tag[]
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 }
@@ -123,9 +128,10 @@ model Client {
   hubspotId String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-  projects  Project[]
-  invoices  Invoice[]
-  contacts  CompanyContact[]
+  projects     Project[]
+  invoices     Invoice[]
+  contacts     CompanyContact[]
+  clientRates  ClientRate[]
 }
 
 model CompanyContact {
@@ -153,6 +159,9 @@ model Project {
   targetLanguage String?
   wordCount      Int?
   unitPrice      Decimal?      @db.Decimal(10, 4)
+  fixedFee       Decimal?      @db.Decimal(10, 4)
+  hourlyRate     Decimal?      @db.Decimal(10, 4)
+  perWordRate    Decimal?      @db.Decimal(10, 4)
   currency       String        @default("EUR")
   deadline       DateTime?
   startDate      DateTime?
@@ -202,20 +211,41 @@ model TaskComment {
 }
 
 model TimeEntry {
-  id              Int           @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   userId          Int
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   projectId       Int?
-  project         Project?      @relation(fields: [projectId], references: [id])
+  project         Project?         @relation(fields: [projectId], references: [id])
   description     String?
   startTime       DateTime
   endTime         DateTime?
   durationSeconds Int?
-  billable        Boolean       @default(true)
+  billable        Boolean          @default(true)
   clockifyEntryId String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   invoiceItems    InvoiceItem[]
+  tags            TimeEntryTag[]
+}
+
+model Tag {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  name      String
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries   TimeEntryTag[]
+
+  @@unique([userId, name])
+}
+
+model TimeEntryTag {
+  timeEntryId Int
+  tagId       Int
+  timeEntry   TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([timeEntryId, tagId])
 }
 
 model Invoice {
@@ -277,6 +307,21 @@ model Rate {
   type        RateType
   name        String
   amount      Float
+  currency    String   @default("EUR")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ClientRate {
+  id          Int      @id @default(autoincrement())
+  clientId    Int
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        RateType
+  name        String
+  amount      Decimal  @db.Decimal(10, 4)
   currency    String   @default("EUR")
   description String?
   createdAt   DateTime @default(now())

@@ -159,23 +159,75 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     number: string,
     data: GenerateInvoiceInput,
   ): Promise<InvoiceModel> {
-    let hourlyRate = data.hourlyRate ?? null;
-    if (hourlyRate === null) {
-      const project = await this.prisma.project.findUnique({
-        where: { id: data.projectId },
-        select: { unitPrice: true },
-      });
-      hourlyRate = project?.unitPrice?.toNumber() ?? 0;
-    }
-
-    const entries = await this.prisma.timeEntry.findMany({
-      where: {
-        userId,
-        projectId: data.projectId,
-        billable: true,
-        endTime: { not: null },
+    const project = await this.prisma.project.findUnique({
+      where: { id: data.projectId },
+      select: {
+        fixedFee: true,
+        hourlyRate: true,
+        perWordRate: true,
+        wordCount: true,
+        unitPrice: true,
       },
     });
+
+    const fixedFee = project?.fixedFee?.toNumber() ?? null;
+    const hourlyRate =
+      project?.hourlyRate?.toNumber() ?? project?.unitPrice?.toNumber() ?? null;
+    const perWordRate = project?.perWordRate?.toNumber() ?? null;
+    const wordCount = project?.wordCount ?? 0;
+
+    type ItemCreate = {
+      projectId: number;
+      timeEntryId?: number;
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    };
+
+    const lineItems: ItemCreate[] = [];
+
+    if (fixedFee != null && fixedFee > 0) {
+      lineItems.push({
+        projectId: data.projectId,
+        description: 'Fixed fee',
+        quantity: 1,
+        unitPrice: fixedFee,
+        total: fixedFee,
+      });
+    }
+
+    if (hourlyRate != null) {
+      const entries = await this.prisma.timeEntry.findMany({
+        where: {
+          userId,
+          projectId: data.projectId,
+          billable: true,
+          endTime: { not: null },
+        },
+      });
+      for (const e of entries) {
+        const qty = (e.durationSeconds ?? 0) / 3600;
+        lineItems.push({
+          projectId: data.projectId,
+          timeEntryId: e.id,
+          description: e.description ?? 'Time tracked',
+          quantity: qty,
+          unitPrice: hourlyRate,
+          total: qty * hourlyRate,
+        });
+      }
+    }
+
+    if (perWordRate != null && perWordRate > 0 && wordCount > 0) {
+      lineItems.push({
+        projectId: data.projectId,
+        description: 'Word count',
+        quantity: wordCount,
+        unitPrice: perWordRate,
+        total: wordCount * perWordRate,
+      });
+    }
 
     const inv = await this.prisma.invoice.create({
       data: {
@@ -184,20 +236,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         clientId: data.clientId,
         currency: data.currency ?? 'EUR',
         dueDate: data.dueDate,
-        items: {
-          create: entries.map((e) => {
-            const qty = (e.durationSeconds ?? 0) / 3600;
-            const unit = hourlyRate;
-            return {
-              projectId: data.projectId,
-              timeEntryId: e.id,
-              description: e.description ?? 'Time tracked',
-              quantity: qty,
-              unitPrice: unit,
-              total: qty * unit,
-            };
-          }),
-        },
+        items: { create: lineItems },
       },
       include: { items: true },
     });

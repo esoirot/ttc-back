@@ -12,6 +12,8 @@ export enum ProjectStatus {
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
   ARCHIVED = 'ARCHIVED',
+  INVOICE_SENT = 'INVOICE_SENT',
+  INVOICE_PAID = 'INVOICE_PAID',
 }
 
 registerEnumType(ProjectStatus, { name: 'ProjectStatus' });
@@ -47,6 +49,15 @@ export class Project {
 
   @Field(() => Float, { nullable: true })
   unitPrice?: number | null;
+
+  @Field(() => Float, { nullable: true })
+  fixedFee?: number | null;
+
+  @Field(() => Float, { nullable: true })
+  hourlyRate?: number | null;
+
+  @Field(() => Float, { nullable: true })
+  perWordRate?: number | null;
 
   @Field(() => String)
   currency!: string;

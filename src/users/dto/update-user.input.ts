@@ -9,4 +9,7 @@ export class UpdateUserInput extends PartialType(CreateUserInput) {
 
   @Field(() => Role, { nullable: true })
   role?: Role;
+
+  @Field(() => [String], { nullable: true })
+  adminPermissions?: string[];
 }

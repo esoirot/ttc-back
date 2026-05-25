@@ -11,6 +11,213 @@ input AddInvoiceItemInput {
   unitPrice: Float!
 }
 
+type AdminClient {
+  address: String
+  city: String
+  company: String
+  contacts: [CompanyContact!]!
+  country: String
+  createdAt: DateTime!
+  email: String
+  hubspotId: String
+  id: Int!
+  legalName: String
+  name: String!
+  owner: AdminOwner!
+  phone: String
+  postalCode: String
+  updatedAt: DateTime!
+  userId: Int!
+  vatNumber: String
+}
+
+type AdminClientConnection {
+  items: [AdminClient!]!
+  nextCursor: Int
+  total: Int!
+}
+
+input AdminCreateClientInput {
+  address: String
+  city: String
+  country: String
+  email: String
+  hubspotId: String
+  legalName: String
+  name: String!
+  notes: String
+  phone: String
+  postalCode: String
+  userId: Int!
+  vatNumber: String
+}
+
+input AdminCreateProjectInput {
+  clientId: Int
+  currency: String
+  description: String
+  status: ProjectStatus
+  title: String!
+  unitPrice: Float
+  userId: Int!
+  wordCount: Int
+}
+
+input AdminCreateRateInput {
+  amount: Float!
+  currency: String!
+  description: String
+  name: String!
+  type: RateType!
+  userId: Int!
+}
+
+type AdminDeleteResult {
+  id: Int!
+}
+
+type AdminInvoice {
+  clientId: Int
+  createdAt: DateTime!
+  currency: String!
+  dueDate: DateTime
+  id: Int!
+  issuedAt: DateTime
+  items: [InvoiceItem!]
+  notes: String
+  number: String!
+  owner: AdminOwner!
+  paidAt: DateTime
+  status: InvoiceStatus!
+  updatedAt: DateTime!
+  userId: Int!
+}
+
+type AdminInvoiceConnection {
+  items: [AdminInvoice!]!
+  nextCursor: Int
+  total: Int!
+}
+
+type AdminOwner {
+  email: String!
+  id: Int!
+  name: String
+}
+
+type AdminProject {
+  clientId: Int
+  createdAt: DateTime!
+  currency: String!
+  deadline: DateTime
+  description: String
+  id: Int!
+  owner: AdminOwner
+  sourceLanguage: String
+  startDate: DateTime
+  status: ProjectStatus!
+  targetLanguage: String
+  title: String!
+  unitPrice: Float
+  updatedAt: DateTime!
+  userId: Int
+  wordCount: Int
+}
+
+type AdminProjectConnection {
+  items: [AdminProject!]!
+  nextCursor: Int
+  total: Int!
+}
+
+type AdminRate {
+  amount: Float!
+  createdAt: DateTime!
+  currency: String!
+  description: String
+  id: Int!
+  name: String!
+  owner: AdminOwner!
+  type: RateType!
+  updatedAt: DateTime!
+  userId: Int!
+}
+
+type AdminRateConnection {
+  items: [AdminRate!]!
+  nextCursor: Int
+  total: Int!
+}
+
+type AdminStats {
+  totalClients: Int!
+  totalInvoices: Int!
+  totalProjects: Int!
+  totalRevenue: Float!
+  totalTimeSeconds: Int!
+  totalUsers: Int!
+}
+
+type AdminTimeEntry {
+  billable: Boolean!
+  createdAt: DateTime!
+  description: String
+  durationSeconds: Int
+  endTime: DateTime
+  id: Int!
+  owner: AdminOwner!
+  projectId: Int
+  startTime: DateTime!
+  updatedAt: DateTime!
+  userId: Int!
+}
+
+type AdminTimeEntryConnection {
+  items: [AdminTimeEntry!]!
+  nextCursor: Int
+  total: Int!
+}
+
+input AdminUpdateClientInput {
+  address: String
+  city: String
+  country: String
+  email: String
+  hubspotId: String
+  id: Int!
+  legalName: String
+  name: String
+  notes: String
+  phone: String
+  postalCode: String
+  vatNumber: String
+}
+
+input AdminUpdateInvoiceInput {
+  dueDate: DateTime
+  id: Int!
+  notes: String
+  status: InvoiceStatus
+}
+
+input AdminUpdateProjectInput {
+  deadline: DateTime
+  description: String
+  id: Int!
+  status: ProjectStatus
+  title: String
+  unitPrice: Float
+  wordCount: Int
+}
+
+input AdminUpdateRateInput {
+  amount: Float
+  currency: String
+  description: String
+  id: Int!
+  name: String
+}
+
 type Client {
   address: String
   city: String
@@ -35,6 +242,19 @@ type ClientConnection {
   items: [Client!]!
   nextCursor: Int
   total: Int!
+}
+
+type ClientRate {
+  amount: Float!
+  clientId: Int!
+  createdAt: DateTime!
+  currency: String!
+  description: String
+  id: Int!
+  name: String!
+  type: RateType!
+  updatedAt: DateTime!
+  userId: Int!
 }
 
 type CompanyContact {
@@ -63,6 +283,15 @@ input CreateClientInput {
   vatNumber: String
 }
 
+input CreateClientRateInput {
+  amount: Float!
+  clientId: Int!
+  currency: String! = "EUR"
+  description: String
+  name: String!
+  type: RateType!
+}
+
 input CreateCommentInput {
   body: String!
   taskId: Int!
@@ -88,6 +317,9 @@ input CreateProjectInput {
   currency: String
   deadline: DateTime
   description: String
+  fixedFee: Float
+  hourlyRate: Float
+  perWordRate: Float
   sourceLanguage: String
   startDate: DateTime
   status: ProjectStatus
@@ -110,6 +342,10 @@ input CreateSubtaskInput {
   title: String!
 }
 
+input CreateTagInput {
+  name: String!
+}
+
 input CreateTaskInput {
   assigneeId: Int
   description: String
@@ -126,6 +362,7 @@ input CreateTimeEntryInput {
   endTime: DateTime!
   projectId: Int
   startTime: DateTime!
+  tagIds: [Int!]
 }
 
 input CreateUserInput {
@@ -169,11 +406,15 @@ type EnableTwoFactorResponse {
   backupCodes: [String!]!
 }
 
+type EntryTag {
+  id: Int!
+  name: String!
+}
+
 input GenerateInvoiceInput {
   clientId: Int
   currency: String
   dueDate: DateTime
-  hourlyRate: Float
   projectId: Int!
 }
 
@@ -231,23 +472,39 @@ type LoginResponse {
 
 type Mutation {
   addInvoiceItem(input: AddInvoiceItemInput!): InvoiceItem!
+  adminCreateClient(input: AdminCreateClientInput!): AdminClient!
+  adminCreateProject(input: AdminCreateProjectInput!): AdminProject!
+  adminCreateRate(input: AdminCreateRateInput!): AdminRate!
+  adminDeleteClient(id: Int!): AdminDeleteResult!
+  adminDeleteInvoice(id: Int!): AdminDeleteResult!
+  adminDeleteProject(id: Int!): AdminDeleteResult!
+  adminDeleteRate(id: Int!): AdminDeleteResult!
+  adminDeleteTimeEntry(id: Int!): AdminDeleteResult!
   adminDisableTwoFactor(userId: Int!): Boolean!
+  adminUpdateClient(input: AdminUpdateClientInput!): AdminClient!
+  adminUpdateInvoice(input: AdminUpdateInvoiceInput!): AdminInvoice!
+  adminUpdateProject(input: AdminUpdateProjectInput!): AdminProject!
+  adminUpdateRate(input: AdminUpdateRateInput!): AdminRate!
   createClient(input: CreateClientInput!): Client!
+  createClientRate(input: CreateClientRateInput!): ClientRate!
   createCompanyContact(input: CreateCompanyContactInput!): CompanyContact!
   createInvoice(input: CreateInvoiceInput!): Invoice!
   createProject(input: CreateProjectInput!): Project!
   createRate(input: CreateRateInput!): Rate!
   createSubtask(input: CreateSubtaskInput!): Subtask!
+  createTag(input: CreateTagInput!): Tag!
   createTask(input: CreateTaskInput!): Task!
   createTaskComment(input: CreateCommentInput!): TaskComment!
   createTimeEntry(input: CreateTimeEntryInput!): TimeEntry!
   createUser(createUserInput: CreateUserInput!): User!
   deleteClient(id: Int!): Boolean!
+  deleteClientRate(id: Int!): Boolean!
   deleteCompanyContact(id: Int!): Boolean!
   deleteInvoice(id: Int!): Boolean!
   deleteProject(id: Int!): Boolean!
   deleteRate(id: Int!): Boolean!
   deleteSubtask(id: Int!): Boolean!
+  deleteTag(id: Int!): Boolean!
   deleteTask(id: Int!): Boolean!
   deleteTaskComment(id: Int!): Boolean!
   deleteTimeEntry(id: Int!): Boolean!
@@ -267,6 +524,7 @@ type Mutation {
   startTimer(input: StartTimerInput!): TimeEntry!
   stopTimer: TimeEntry!
   updateClient(input: UpdateClientInput!): Client!
+  updateClientRate(input: UpdateClientRateInput!): ClientRate!
   updateCompanyContact(input: UpdateCompanyContactInput!): CompanyContact!
   updateInvoice(input: UpdateInvoiceInput!): Invoice!
   updateInvoiceItem(input: UpdateInvoiceItemInput!): InvoiceItem!
@@ -274,6 +532,7 @@ type Mutation {
   updateProject(input: UpdateProjectInput!): Project!
   updateRate(input: UpdateRateInput!): Rate!
   updateSubtask(input: UpdateSubtaskInput!): Subtask!
+  updateTag(input: UpdateTagInput!): Tag!
   updateTask(input: UpdateTaskInput!): Task!
   updateTaskComment(input: UpdateCommentInput!): TaskComment!
   updateTimeEntry(input: UpdateTimeEntryInput!): TimeEntry!
@@ -293,7 +552,10 @@ type Project {
   currency: String!
   deadline: DateTime
   description: String
+  fixedFee: Float
+  hourlyRate: Float
   id: Int!
+  perWordRate: Float
   sourceLanguage: String
   startDate: DateTime
   status: ProjectStatus!
@@ -317,12 +579,35 @@ enum ProjectStatus {
   CANCELLED
   COMPLETED
   DRAFT
+  INVOICE_PAID
+  INVOICE_SENT
 }
 
 type Query {
   activeTimer: TimeEntry
+  adminClients(
+    pagination: PaginationInput
+    search: String
+  ): AdminClientConnection!
+  adminInvoices(
+    pagination: PaginationInput
+    search: String
+    status: InvoiceStatus
+  ): AdminInvoiceConnection!
+  adminProjects(
+    pagination: PaginationInput
+    search: String
+    status: ProjectStatus
+  ): AdminProjectConnection!
+  adminRates(type: RateType): AdminRateConnection!
+  adminStats: AdminStats!
+  adminTimeEntries(
+    pagination: PaginationInput
+    userId: Int
+  ): AdminTimeEntryConnection!
   backupCodeCount: Int!
   client(id: Int!): Client!
+  clientRates(clientId: Int!): [ClientRate!]!
   clients(pagination: PaginationInput, search: String): ClientConnection!
   dashboard: DashboardData!
   invoice(id: Int!): Invoice!
@@ -343,6 +628,7 @@ type Query {
   ): ProjectConnection!
   rate(id: Int!): Rate!
   rates(type: RateType): [Rate!]!
+  tags: [Tag!]!
   task(id: Int!): Task!
   tasks(pagination: PaginationInput, projectId: Int!): TaskConnection!
   timeEntries(
@@ -395,6 +681,7 @@ input StartTimerInput {
   billable: Boolean
   description: String
   projectId: Int
+  tagIds: [Int!]
 }
 
 type Subscription {
@@ -408,6 +695,13 @@ type Subtask {
   taskId: Int!
   title: String!
   updatedAt: DateTime!
+}
+
+type Tag {
+  createdAt: DateTime!
+  id: Int!
+  name: String!
+  userId: Int!
 }
 
 type Task {
@@ -456,6 +750,7 @@ type TimeEntry {
   id: Int!
   projectId: Int
   startTime: DateTime!
+  tags: [EntryTag!]!
   updatedAt: DateTime!
   userId: Int!
 }
@@ -480,6 +775,15 @@ input UpdateClientInput {
   phone: String
   postalCode: String
   vatNumber: String
+}
+
+input UpdateClientRateInput {
+  amount: Float
+  currency: String
+  description: String
+  id: Int!
+  name: String
+  type: RateType
 }
 
 input UpdateCommentInput {
@@ -523,7 +827,10 @@ input UpdateProjectInput {
   currency: String
   deadline: DateTime
   description: String
+  fixedFee: Float
+  hourlyRate: Float
   id: Int!
+  perWordRate: Float
   sourceLanguage: String
   startDate: DateTime
   status: ProjectStatus
@@ -548,6 +855,11 @@ input UpdateSubtaskInput {
   title: String
 }
 
+input UpdateTagInput {
+  id: Int!
+  name: String!
+}
+
 input UpdateTaskInput {
   assigneeId: Int
   description: String
@@ -567,9 +879,11 @@ input UpdateTimeEntryInput {
   id: Int!
   projectId: Int
   startTime: DateTime
+  tagIds: [Int!]
 }
 
 input UpdateUserInput {
+  adminPermissions: [String!]
   email: String
   id: Int!
   name: String
@@ -577,6 +891,7 @@ input UpdateUserInput {
 }
 
 type User {
+  adminPermissions: [String!]!
   createdAt: DateTime!
   email: String!
   id: Int!

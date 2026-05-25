@@ -19,4 +19,7 @@ export class CreateTimeEntryInput {
 
   @Field({ nullable: true })
   clockifyEntryId?: string;
+
+  @Field(() => [Int], { nullable: true })
+  tagIds?: number[];
 }

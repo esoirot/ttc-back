@@ -29,6 +29,9 @@ export class User {
   @Field({ nullable: true })
   logoUrl?: string;
 
+  @Field(() => [String])
+  adminPermissions!: string[];
+
   @Field()
   createdAt!: Date;
 

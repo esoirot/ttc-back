@@ -27,6 +27,15 @@ export class CreateProjectInput {
   @Field(() => Float, { nullable: true })
   unitPrice?: number;
 
+  @Field(() => Float, { nullable: true })
+  fixedFee?: number;
+
+  @Field(() => Float, { nullable: true })
+  hourlyRate?: number;
+
+  @Field(() => Float, { nullable: true })
+  perWordRate?: number;
+
   @Field({ nullable: true })
   currency?: string;
 

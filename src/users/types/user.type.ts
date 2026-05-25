@@ -15,5 +15,6 @@ export type UserModel = {
   hubspotTokenExpiresAt?: Date | null;
   hubspotPortalId?: string | null;
   logoUrl?: string | null;
+  adminPermissions?: string[];
   projects?: ProjectModel[];
 };

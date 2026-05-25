@@ -9,6 +9,9 @@ export type ProjectModel = {
   targetLanguage: string | null;
   wordCount: number | null;
   unitPrice: number | null;
+  fixedFee: number | null;
+  hourlyRate: number | null;
+  perWordRate: number | null;
   currency: string;
   deadline: Date | null;
   startDate: Date | null;

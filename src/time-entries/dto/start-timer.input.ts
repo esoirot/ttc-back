@@ -10,4 +10,7 @@ export class StartTimerInput {
 
   @Field({ nullable: true })
   billable?: boolean;
+
+  @Field(() => [Int], { nullable: true })
+  tagIds?: number[];
 }
