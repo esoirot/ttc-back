@@ -1,5 +1,47 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
+import {
+  ObjectType,
+  Field,
+  Int,
+  Float,
+  registerEnumType,
+} from '@nestjs/graphql';
 import { CompanyContact } from './company-contact.entity';
+
+export enum ClientType {
+  COMPANY = 'COMPANY',
+  INDIVIDUAL = 'INDIVIDUAL',
+}
+
+registerEnumType(ClientType, { name: 'ClientType' });
+
+export enum ClientIndustry {
+  HEALTHCARE = 'HEALTHCARE',
+  EDUCATION = 'EDUCATION',
+  LEGAL = 'LEGAL',
+  FINANCE = 'FINANCE',
+  TECHNOLOGY = 'TECHNOLOGY',
+  VIDEO_GAMES = 'VIDEO_GAMES',
+  MARKETING = 'MARKETING',
+  MEDIA_ENTERTAINMENT = 'MEDIA_ENTERTAINMENT',
+  E_COMMERCE = 'E_COMMERCE',
+  MANUFACTURING = 'MANUFACTURING',
+  AUTOMOTIVE = 'AUTOMOTIVE',
+  GOVERNMENT = 'GOVERNMENT',
+  NGO = 'NGO',
+  REAL_ESTATE = 'REAL_ESTATE',
+  OTHER = 'OTHER',
+}
+
+registerEnumType(ClientIndustry, { name: 'ClientIndustry' });
+
+@ObjectType()
+export class ClientTagItem {
+  @Field(() => Int)
+  id!: number;
+
+  @Field()
+  name!: string;
+}
 
 @ObjectType()
 export class Client {
@@ -44,6 +86,33 @@ export class Client {
 
   @Field({ nullable: true })
   hubspotId?: string;
+
+  @Field(() => ClientType)
+  clientType!: ClientType;
+
+  @Field(() => String, { nullable: true })
+  firstName?: string;
+
+  @Field(() => String, { nullable: true })
+  lastName?: string;
+
+  @Field(() => Int, { nullable: true })
+  paymentDelayDays?: number;
+
+  @Field(() => Float, { nullable: true })
+  taxRate?: number;
+
+  @Field()
+  billingEndOfMonth!: boolean;
+
+  @Field(() => String, { nullable: true })
+  website?: string;
+
+  @Field(() => ClientIndustry, { nullable: true })
+  industry?: ClientIndustry;
+
+  @Field(() => [ClientTagItem])
+  tags!: ClientTagItem[];
 
   @Field(() => [CompanyContact])
   contacts!: CompanyContact[];

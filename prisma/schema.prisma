@@ -110,28 +110,60 @@ model OAuthAccount {
   @@unique([provider, providerId])
 }
 
+enum ClientType {
+  COMPANY
+  INDIVIDUAL
+}
+
+enum ClientIndustry {
+  HEALTHCARE
+  EDUCATION
+  LEGAL
+  FINANCE
+  TECHNOLOGY
+  VIDEO_GAMES
+  MARKETING
+  MEDIA_ENTERTAINMENT
+  E_COMMERCE
+  MANUFACTURING
+  AUTOMOTIVE
+  GOVERNMENT
+  NGO
+  REAL_ESTATE
+  OTHER
+}
+
 model Client {
-  id        Int              @id @default(autoincrement())
-  userId    Int
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  legalName String?
-  email     String?
-  phone     String?
-  company   String?
-  address   String?
-  city      String?
-  country   String?
-  postalCode String?
-  vatNumber String?
-  notes     String?
-  hubspotId String?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  projects     Project[]
-  invoices     Invoice[]
-  contacts     CompanyContact[]
-  clientRates  ClientRate[]
+  id                Int              @id @default(autoincrement())
+  userId            Int
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  legalName         String?
+  email             String?
+  phone             String?
+  company           String?
+  address           String?
+  city              String?
+  country           String?
+  postalCode        String?
+  vatNumber         String?
+  notes             String?
+  hubspotId         String?
+  clientType        ClientType       @default(COMPANY)
+  firstName         String?
+  lastName          String?
+  paymentDelayDays  Int?
+  taxRate           Decimal?         @db.Decimal(5, 2)
+  billingEndOfMonth Boolean          @default(false)
+  website           String?
+  industry          ClientIndustry?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  projects          Project[]
+  invoices          Invoice[]
+  contacts          CompanyContact[]
+  clientRates       ClientRate[]
+  tags              ClientTag[]
 }
 
 model CompanyContact {
@@ -235,6 +267,7 @@ model Tag {
   createdAt DateTime       @default(now())
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   entries   TimeEntryTag[]
+  clients   ClientTag[]
 
   @@unique([userId, name])
 }
@@ -246,6 +279,15 @@ model TimeEntryTag {
   tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([timeEntryId, tagId])
+}
+
+model ClientTag {
+  clientId Int
+  tagId    Int
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, tagId])
 }
 
 model Invoice {

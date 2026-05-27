@@ -220,28 +220,55 @@ input AdminUpdateRateInput {
 
 type Client {
   address: String
+  billingEndOfMonth: Boolean!
   city: String
+  clientType: ClientType!
   company: String
   contacts: [CompanyContact!]!
   country: String
   createdAt: DateTime!
   email: String
+  firstName: String
   hubspotId: String
   id: Int!
+  industry: ClientIndustry
+  lastName: String
   legalName: String
   name: String!
   notes: String
+  paymentDelayDays: Int
   phone: String
   postalCode: String
+  tags: [ClientTagItem!]!
+  taxRate: Float
   updatedAt: DateTime!
   userId: Int!
   vatNumber: String
+  website: String
 }
 
 type ClientConnection {
   items: [Client!]!
   nextCursor: Int
   total: Int!
+}
+
+enum ClientIndustry {
+  AUTOMOTIVE
+  EDUCATION
+  E_COMMERCE
+  FINANCE
+  GOVERNMENT
+  HEALTHCARE
+  LEGAL
+  MANUFACTURING
+  MARKETING
+  MEDIA_ENTERTAINMENT
+  NGO
+  OTHER
+  REAL_ESTATE
+  TECHNOLOGY
+  VIDEO_GAMES
 }
 
 type ClientRate {
@@ -257,6 +284,16 @@ type ClientRate {
   userId: Int!
 }
 
+type ClientTagItem {
+  id: Int!
+  name: String!
+}
+
+enum ClientType {
+  COMPANY
+  INDIVIDUAL
+}
+
 type CompanyContact {
   clientId: Int!
   createdAt: DateTime!
@@ -270,17 +307,26 @@ type CompanyContact {
 
 input CreateClientInput {
   address: String
+  billingEndOfMonth: Boolean
   city: String
+  clientType: ClientType
   company: String
   country: String
   email: String
+  firstName: String
   hubspotId: String
+  industry: ClientIndustry
+  lastName: String
   legalName: String
   name: String!
   notes: String
+  paymentDelayDays: Int
   phone: String
   postalCode: String
+  tagIds: [Int!]
+  taxRate: Float
   vatNumber: String
+  website: String
 }
 
 input CreateClientRateInput {
@@ -608,7 +654,11 @@ type Query {
   backupCodeCount: Int!
   client(id: Int!): Client!
   clientRates(clientId: Int!): [ClientRate!]!
-  clients(pagination: PaginationInput, search: String): ClientConnection!
+  clients(
+    clientType: ClientType
+    pagination: PaginationInput
+    search: String
+  ): ClientConnection!
   dashboard: DashboardData!
   invoice(id: Int!): Invoice!
   invoices(
@@ -763,18 +813,27 @@ type TimeEntryConnection {
 
 input UpdateClientInput {
   address: String
+  billingEndOfMonth: Boolean
   city: String
+  clientType: ClientType
   company: String
   country: String
   email: String
+  firstName: String
   hubspotId: String
   id: Int!
+  industry: ClientIndustry
+  lastName: String
   legalName: String
   name: String
   notes: String
+  paymentDelayDays: Int
   phone: String
   postalCode: String
+  tagIds: [Int!]
+  taxRate: Float
   vatNumber: String
+  website: String
 }
 
 input UpdateClientRateInput {

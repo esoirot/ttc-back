@@ -24,6 +24,15 @@ export type ClientModel = {
   vatNumber: string | null;
   notes: string | null;
   hubspotId: string | null;
+  clientType: 'COMPANY' | 'INDIVIDUAL';
+  firstName: string | null;
+  lastName: string | null;
+  paymentDelayDays: number | null;
+  taxRate: number | null;
+  billingEndOfMonth: boolean;
+  website: string | null;
+  industry: string | null;
+  tags: { id: number; name: string }[];
   createdAt: Date;
   updatedAt: Date;
   contacts: CompanyContactModel[];

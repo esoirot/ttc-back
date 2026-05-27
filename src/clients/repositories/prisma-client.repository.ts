@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { Prisma } from '../../generated/prisma/client';
+import {
+  Prisma,
+  ClientType as PrismaClientType,
+} from '../../generated/prisma/client';
 import { ClientRepository, ClientConnectionModel } from './client.repository';
 import { ClientModel, CompanyContactModel } from '../types/client.type';
 import { CreateClientInput } from '../dto/create-client.input';
@@ -8,7 +11,23 @@ import { UpdateClientInput } from '../dto/update-client.input';
 import { CreateCompanyContactInput } from '../dto/create-company-contact.input';
 import { UpdateCompanyContactInput } from '../dto/update-company-contact.input';
 
-const INCLUDE_CONTACTS = { contacts: true } as const;
+const INCLUDE_CONTACTS = {
+  contacts: true,
+  tags: { include: { tag: { select: { id: true, name: true } } } },
+} as const;
+
+type PrismaClientRow = Prisma.ClientGetPayload<{
+  include: typeof INCLUDE_CONTACTS;
+}>;
+
+function toModel(row: PrismaClientRow): ClientModel {
+  const { tags, ...rest } = row;
+  return {
+    ...rest,
+    taxRate: rest.taxRate?.toNumber() ?? null,
+    tags: tags.map((t) => t.tag),
+  };
+}
 
 @Injectable()
 export class PrismaClientRepository implements ClientRepository {
@@ -20,24 +39,26 @@ export class PrismaClientRepository implements ClientRepository {
       include: INCLUDE_CONTACTS,
     });
     if (!client) throw new NotFoundException(`Client ${id} not found`);
-    return client;
+    return toModel(client);
   }
 
   async findByHubspotId(
     userId: number,
     hubspotId: string,
   ): Promise<ClientModel | null> {
-    return this.prisma.client.findFirst({
+    const row = await this.prisma.client.findFirst({
       where: { userId, hubspotId },
       include: INCLUDE_CONTACTS,
     });
+    return row ? toModel(row) : null;
   }
 
   async findByHubspotIdGlobal(hubspotId: string): Promise<ClientModel | null> {
-    return this.prisma.client.findFirst({
+    const row = await this.prisma.client.findFirst({
       where: { hubspotId },
       include: INCLUDE_CONTACTS,
     });
+    return row ? toModel(row) : null;
   }
 
   async findAll(
@@ -45,6 +66,7 @@ export class PrismaClientRepository implements ClientRepository {
     isAdmin: boolean,
     pagination?: { limit?: number; cursor?: number },
     search?: string,
+    clientType?: string,
   ): Promise<ClientConnectionModel> {
     const limit = pagination?.limit ?? 20;
     const cursor = pagination?.cursor;
@@ -53,6 +75,7 @@ export class PrismaClientRepository implements ClientRepository {
       ...(search
         ? { name: { contains: search, mode: 'insensitive' as const } }
         : {}),
+      ...(clientType ? { clientType: clientType as PrismaClientType } : {}),
     };
     const where = {
       ...baseWhere,
@@ -66,16 +89,22 @@ export class PrismaClientRepository implements ClientRepository {
     });
     const total = await this.prisma.client.count({ where: baseWhere });
     const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
+    const items = (hasMore ? rows.slice(0, limit) : rows).map(toModel);
     const nextCursor = hasMore ? items[items.length - 1].id : null;
     return { items, nextCursor, total };
   }
 
   async create(userId: number, data: CreateClientInput): Promise<ClientModel> {
-    return this.prisma.client.create({
-      data: { ...data, userId },
+    const { tagIds, ...fields } = data;
+    const row = await this.prisma.client.create({
+      data: {
+        ...fields,
+        userId,
+        tags: { create: (tagIds ?? []).map((id) => ({ tagId: id })) },
+      },
       include: INCLUDE_CONTACTS,
     });
+    return toModel(row);
   }
 
   async update(
@@ -83,16 +112,27 @@ export class PrismaClientRepository implements ClientRepository {
     userId: number,
     data: UpdateClientInput,
   ): Promise<ClientModel> {
-    const { id: _id, ...fields } = data;
+    const { id: _id, tagIds, ...fields } = data;
     const existing = await this.prisma.client.findFirst({
       where: { id, userId },
     });
     if (!existing) throw new NotFoundException(`Client ${id} not found`);
-    return this.prisma.client.update({
+    const row = await this.prisma.client.update({
       where: { id },
-      data: fields,
+      data: {
+        ...fields,
+        ...(tagIds !== undefined
+          ? {
+              tags: {
+                deleteMany: {},
+                create: tagIds.map((tid) => ({ tagId: tid })),
+              },
+            }
+          : {}),
+      },
       include: INCLUDE_CONTACTS,
     });
+    return toModel(row);
   }
 
   async delete(id: number, userId: number): Promise<ClientModel> {
@@ -105,10 +145,11 @@ export class PrismaClientRepository implements ClientRepository {
       where: { clientId: id },
       data: { clientId: null },
     });
-    return this.prisma.client.delete({
+    const row = await this.prisma.client.delete({
       where: { id },
       include: INCLUDE_CONTACTS,
     });
+    return toModel(row);
   }
 
   async createContact(

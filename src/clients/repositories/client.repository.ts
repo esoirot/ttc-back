@@ -26,6 +26,7 @@ export abstract class ClientRepository {
     isAdmin: boolean,
     pagination?: PaginationArgs,
     search?: string,
+    clientType?: string,
   ): Promise<ClientConnectionModel>;
   abstract create(
     userId: number,

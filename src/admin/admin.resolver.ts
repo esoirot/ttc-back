@@ -9,7 +9,7 @@ import {
   AdminProjectConnection,
   AdminInvoice,
   AdminInvoiceConnection,
-  AdminTimeEntry,
+  // AdminTimeEntry,
   AdminTimeEntryConnection,
   AdminRate,
   AdminRateConnection,

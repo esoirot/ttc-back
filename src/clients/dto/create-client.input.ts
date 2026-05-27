@@ -1,4 +1,5 @@
-import { InputType, Field } from '@nestjs/graphql';
+import { InputType, Field, Int, Float } from '@nestjs/graphql';
+import { ClientType, ClientIndustry } from '../entities/client.entity';
 
 @InputType()
 export class CreateClientInput {
@@ -37,4 +38,31 @@ export class CreateClientInput {
 
   @Field({ nullable: true })
   hubspotId?: string;
+
+  @Field(() => ClientType, { nullable: true })
+  clientType?: ClientType;
+
+  @Field(() => String, { nullable: true })
+  firstName?: string;
+
+  @Field(() => String, { nullable: true })
+  lastName?: string;
+
+  @Field(() => Int, { nullable: true })
+  paymentDelayDays?: number;
+
+  @Field(() => Float, { nullable: true })
+  taxRate?: number;
+
+  @Field(() => Boolean, { nullable: true })
+  billingEndOfMonth?: boolean;
+
+  @Field(() => String, { nullable: true })
+  website?: string;
+
+  @Field(() => ClientIndustry, { nullable: true })
+  industry?: ClientIndustry;
+
+  @Field(() => [Int], { nullable: true })
+  tagIds?: number[];
 }
