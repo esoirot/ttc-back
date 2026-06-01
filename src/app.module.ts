@@ -23,7 +23,6 @@ import { ClockifyModule } from './clockify/clockify.module';
 import { HubspotModule } from './hubspot/hubspot.module';
 import { AuditModule } from './audit/audit.module';
 import { DashboardModule } from './dashboard/dashboard.module';
-import { PubSubModule } from './common/pubsub.module';
 import { CleanupModule } from './common/cleanup/cleanup.module';
 import { RatesModule } from './rates/rates.module';
 import { ClientRatesModule } from './client-rates/client-rates.module';
@@ -102,7 +101,6 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
     HubspotModule,
     AuditModule,
     DashboardModule,
-    PubSubModule,
     CleanupModule,
     RatesModule,
     ClientRatesModule,

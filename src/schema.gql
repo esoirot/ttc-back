@@ -701,10 +701,6 @@ input StartTimerInput {
   tagIds: [Int!]
 }
 
-type Subscription {
-  timerUpdated(userId: Int!): TimeEntry
-}
-
 type Subtask {
   createdAt: DateTime!
   done: Boolean!

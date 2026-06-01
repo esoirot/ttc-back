@@ -1,16 +1,7 @@
-import {
-  Resolver,
-  Query,
-  Mutation,
-  Subscription,
-  Args,
-  Int,
-  Context,
-} from '@nestjs/graphql';
-import { UseGuards, Inject, ForbiddenException } from '@nestjs/common';
-import type { PubSubEngine } from 'graphql-subscriptions';
-import type { WsContext } from '../common/types/ws-context.type';
+import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Logger, UseGuards } from '@nestjs/common';
 import { TimeEntriesService } from './time-entries.service';
+import { TimerEventsService } from '../timer-events/timer-events.service';
 import { TimeEntry } from './entities/time-entry.entity';
 import { TimeEntryConnection } from './types/time-entry-connection.type';
 import { CreateTimeEntryInput } from './dto/create-time-entry.input';
@@ -19,17 +10,16 @@ import { UpdateTimeEntryInput } from './dto/update-time-entry.input';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
-import { PUB_SUB } from '../common/pubsub.module';
 
 type RequestUser = { id: number };
 
-const TIMER_CHANNEL = (userId: number) => `timer:${userId}`;
-
 @Resolver(() => TimeEntry)
 export class TimeEntriesResolver {
+  private readonly logger = new Logger(TimeEntriesResolver.name);
+
   constructor(
     private readonly timeEntriesService: TimeEntriesService,
-    @Inject(PUB_SUB) private readonly pubSub: PubSubEngine,
+    private readonly timerEventsService: TimerEventsService,
   ) {}
 
   @UseGuards(GqlAuthGuard)
@@ -72,7 +62,11 @@ export class TimeEntriesResolver {
     @CurrentUser() user: RequestUser,
   ) {
     const entry = await this.timeEntriesService.startTimer(user.id, input);
-    await this.pubSub.publish(TIMER_CHANNEL(user.id), { timerUpdated: entry });
+    void this.timerEventsService
+      .publish(user.id, entry)
+      .catch((err: unknown) =>
+        this.logger.warn(`SSE publish failed user=${user.id.toString()}`, err),
+      );
     return entry;
   }
 
@@ -80,7 +74,11 @@ export class TimeEntriesResolver {
   @Mutation(() => TimeEntry)
   async stopTimer(@CurrentUser() user: RequestUser) {
     const entry = await this.timeEntriesService.stopTimer(user.id);
-    await this.pubSub.publish(TIMER_CHANNEL(user.id), { timerUpdated: null });
+    void this.timerEventsService
+      .publish(user.id, null)
+      .catch((err: unknown) =>
+        this.logger.warn(`SSE publish failed user=${user.id.toString()}`, err),
+      );
     return entry;
   }
 
@@ -100,33 +98,5 @@ export class TimeEntriesResolver {
     @CurrentUser() user: RequestUser,
   ) {
     return this.timeEntriesService.delete(id, user.id);
-  }
-
-  @Subscription(() => TimeEntry, {
-    nullable: true,
-    resolve(payload: { timerUpdated: Record<string, unknown> | null }) {
-      const e = payload.timerUpdated;
-      if (!e) return null;
-      // Redis PubSub JSON round-trips Date→string; GraphQLISODateTime.serialize
-      // only accepts Date instances, so reconstruct them before returning.
-      return {
-        ...e,
-        startTime: new Date(e['startTime'] as string),
-        endTime: e['endTime'] != null ? new Date(e['endTime'] as string) : null,
-        createdAt: new Date(e['createdAt'] as string),
-        updatedAt: new Date(e['updatedAt'] as string),
-      };
-    },
-  })
-  timerUpdated(
-    @Args('userId', { type: () => Int }) userId: number,
-    @Context() ctx: WsContext,
-  ) {
-    if (ctx.userId === undefined || ctx.userId !== userId) {
-      throw new ForbiddenException(
-        'Not authorized to subscribe to this channel',
-      );
-    }
-    return this.pubSub.asyncIterableIterator(TIMER_CHANNEL(userId));
   }
 }
