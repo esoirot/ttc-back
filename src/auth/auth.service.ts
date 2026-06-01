@@ -15,6 +15,7 @@ import type { JwtSignOptions } from '@nestjs/jwt';
 import { AuthRepository } from './repositories/auth.repository';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from './email.service';
+import { AuthEventsService } from './auth-events.service';
 import { isAllowedLogoUrl } from '../common/logo-url.util';
 import { AuthUser } from './types/auth-user.type';
 import { JwtPayload } from './types/jwt-payload.type';
@@ -40,6 +41,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
     private readonly auditService: AuditService,
+    private readonly authEventsService: AuthEventsService,
   ) {}
 
   async getUser(id: number): Promise<AuthUser | null> {
@@ -109,6 +111,7 @@ export class AuthService {
     await this.repo.deleteUserRefreshTokens(userId);
     res.clearCookie('access_token', { path: '/' });
     res.clearCookie('refresh_token', { path: '/' });
+    void this.authEventsService.publish(userId, { type: 'session_revoked' });
     return true;
   }
 

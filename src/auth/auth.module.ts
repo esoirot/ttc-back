@@ -3,8 +3,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
+import { AuthEventsService } from './auth-events.service';
 import { AuthResolver } from './auth.resolver';
 import { AuthController } from './auth.controller';
+import { AuthEventsController } from './auth-events.controller';
 import { AuthRepository } from './repositories/auth.repository';
 import { PrismaAuthRepository } from './repositories/prisma-auth.repository';
 import { PrismaService } from '../prisma.service';
@@ -31,9 +33,10 @@ import { AuditModule } from '../audit/audit.module';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AuthEventsController],
   providers: [
     AuthService,
+    AuthEventsService,
     AuthResolver,
     PrismaService,
     PrismaAuthRepository,
@@ -45,6 +48,6 @@ import { AuditModule } from '../audit/audit.module';
     RolesGuard,
     EmailService,
   ],
-  exports: [AuthService, GqlAuthGuard, RolesGuard],
+  exports: [AuthService, AuthEventsService, GqlAuthGuard, RolesGuard],
 })
 export class AuthModule {}

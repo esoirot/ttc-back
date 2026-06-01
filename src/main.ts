@@ -6,27 +6,10 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import type { FastifyReply } from 'fastify';
-import { WebSocketServer } from 'ws';
-import { useServer } from 'graphql-ws/use/ws';
-import { GraphQLSchemaHost } from '@nestjs/graphql';
-import { JwtService } from '@nestjs/jwt';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import fastifyCookie from '@fastify/cookie';
 import type { FastifyCookieOptions } from '@fastify/cookie';
-import type { JwtPayload } from './auth/types/jwt-payload.type';
-
-function parseCookie(
-  cookieHeader: string | undefined,
-  name: string,
-): string | undefined {
-  if (!cookieHeader) return undefined;
-  const pair = cookieHeader
-    .split(';')
-    .map((s) => s.trim())
-    .find((s) => s.startsWith(`${name}=`));
-  return pair ? decodeURIComponent(pair.slice(name.length + 1)) : undefined;
-}
 
 type CompatReply = FastifyReply & {
   setHeader?: (name: string, value: string) => void;
@@ -101,40 +84,7 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 
-  const { schema } = app.get(GraphQLSchemaHost);
-  const jwtService = app.get(JwtService);
-  const httpServer = app
-    .getHttpAdapter()
-    .getHttpServer() as import('http').Server;
-  const wsServer = new WebSocketServer({
-    server: httpServer,
-    path: '/graphql',
-  });
-  useServer(
-    {
-      schema,
-      context: (ctx) => {
-        const req = (ctx.extra as { request: import('http').IncomingMessage })
-          .request;
-        const cookie = req.headers.cookie;
-        const token = parseCookie(cookie, 'access_token');
-        if (!token) return {};
-        try {
-          const payload = jwtService.verify<JwtPayload>(token);
-          return { userId: payload.sub };
-        } catch {
-          return {};
-        }
-      },
-    },
-    wsServer,
-  );
-
   const shutdown = async () => {
-    await Promise.race([
-      new Promise<void>((resolve) => wsServer.close(() => resolve())),
-      new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
-    ]);
     try {
       await app.close();
     } finally {
