@@ -142,6 +142,7 @@ export class HubspotService {
         'crm.objects.contacts.read',
         'crm.objects.contacts.write',
         'crm.objects.companies.read',
+        'crm.objects.companies.write',
         'crm.objects.deals.read',
         'crm.objects.deals.write',
       ].join(' '),

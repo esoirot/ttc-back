@@ -33,6 +33,33 @@ export class User {
   adminPermissions!: string[];
 
   @Field()
+  defaultCurrency!: string;
+
+  @Field(() => String, { nullable: true })
+  firstName?: string | null;
+
+  @Field(() => String, { nullable: true })
+  lastName?: string | null;
+
+  @Field(() => String, { nullable: true })
+  mobilePhone?: string | null;
+
+  @Field(() => String, { nullable: true })
+  jobTitle?: string | null;
+
+  @Field(() => String, { nullable: true })
+  interfaceLanguage?: string | null;
+
+  @Field(() => String, { nullable: true })
+  dateFormat?: string | null;
+
+  @Field(() => String, { nullable: true })
+  hourFormat?: string | null;
+
+  @Field(() => String, { nullable: true })
+  numberFormat?: string | null;
+
+  @Field()
   createdAt!: Date;
 
   @Field(() => [Project], { nullable: true })

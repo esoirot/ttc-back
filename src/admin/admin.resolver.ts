@@ -31,7 +31,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
 import { ProjectStatus } from '../projects/entities/project.entity';
 import { InvoiceStatus } from '../invoices/entities/invoice.entity';
-import { RateType } from '../rates/entities/rate.entity';
+import { RateType } from '../generated/prisma/client';
 
 type RequestUser = { id: number; role: string };
 

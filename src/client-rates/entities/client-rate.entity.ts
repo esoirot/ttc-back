@@ -1,5 +1,13 @@
-import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
-import { RateType } from '../../rates/entities/rate.entity';
+import {
+  ObjectType,
+  Field,
+  Int,
+  Float,
+  registerEnumType,
+} from '@nestjs/graphql';
+import { RateType } from '../../generated/prisma/client';
+
+registerEnumType(RateType, { name: 'RateType' });
 
 @ObjectType()
 export class ClientRate {

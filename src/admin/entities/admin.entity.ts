@@ -3,7 +3,7 @@ import { CompanyContact } from '../../clients/entities/company-contact.entity';
 import { InvoiceItem } from '../../invoices/entities/invoice-item.entity';
 import { ProjectStatus } from '../../projects/entities/project.entity';
 import { InvoiceStatus } from '../../invoices/entities/invoice.entity';
-import { RateType } from '../../rates/entities/rate.entity';
+import { RateType } from '../../generated/prisma/client';
 
 @ObjectType()
 export class AdminOwner {

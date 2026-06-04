@@ -130,7 +130,20 @@ export class AuthService {
 
   async updateMe(
     userId: number,
-    data: { name?: string; email?: string; logoUrl?: string },
+    data: {
+      name?: string;
+      email?: string;
+      logoUrl?: string;
+      defaultCurrency?: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      mobilePhone?: string | null;
+      jobTitle?: string | null;
+      interfaceLanguage?: string | null;
+      dateFormat?: string | null;
+      hourFormat?: string | null;
+      numberFormat?: string | null;
+    },
   ): Promise<AuthUser> {
     if (data.logoUrl && !isAllowedLogoUrl(data.logoUrl)) {
       throw new BadRequestException('Invalid or disallowed logo URL');
@@ -296,6 +309,37 @@ export class AuthService {
     return true;
   }
 
+  async changePassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<boolean> {
+    if (newPassword.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters');
+    }
+    const user = await this.repo.findUserById(userId);
+    if (!user?.password) {
+      throw new BadRequestException(
+        'Account uses OAuth — no password to change',
+      );
+    }
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      throw new BadRequestException('Incorrect current password');
+    }
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await this.repo.updatePassword(userId, hashed);
+    return true;
+  }
+
+  async deleteAccount(userId: number, res: FastifyReply): Promise<boolean> {
+    await this.repo.deleteUserRefreshTokens(userId);
+    res.clearCookie('access_token', { path: '/' });
+    res.clearCookie('refresh_token', { path: '/' });
+    await this.repo.deleteUser(userId);
+    return true;
+  }
+
   async resetPassword(token: string, newPassword: string): Promise<boolean> {
     if (newPassword.length < 8) {
       throw new BadRequestException('Password must be at least 8 characters');
@@ -354,6 +398,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         type: 'access',
+        jti: randomBytes(16).toString('hex'),
       } satisfies JwtPayload,
       {
         secret: refreshSecret,

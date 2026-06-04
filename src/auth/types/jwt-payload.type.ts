@@ -3,4 +3,5 @@ export interface JwtPayload {
   email: string;
   role: string;
   type: 'access' | 'temp';
+  jti?: string;
 }

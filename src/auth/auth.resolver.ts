@@ -163,6 +163,31 @@ export class AuthResolver {
     return this.authService.getBackupCodeCount(user.id);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  changePassword(
+    @CurrentUser() user: { id: number },
+    @Args('currentPassword') currentPassword: string,
+    @Args('newPassword') newPassword: string,
+  ): Promise<boolean> {
+    return this.authService.changePassword(
+      user.id,
+      currentPassword,
+      newPassword,
+    );
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  deleteAccount(
+    @CurrentUser() user: { id: number },
+    @Context() { res }: GqlContext,
+  ): Promise<boolean> {
+    return this.authService.deleteAccount(user.id, res);
+  }
+
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Mutation(() => Boolean)
   requestPasswordReset(@Args('email') email: string): Promise<boolean> {

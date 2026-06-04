@@ -141,7 +141,20 @@ export class PrismaAuthRepository implements AuthRepository {
 
   async updateUser(
     userId: number,
-    data: { name?: string; email?: string; logoUrl?: string },
+    data: {
+      name?: string;
+      email?: string;
+      logoUrl?: string;
+      defaultCurrency?: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      mobilePhone?: string | null;
+      jobTitle?: string | null;
+      interfaceLanguage?: string | null;
+      dateFormat?: string | null;
+      hourFormat?: string | null;
+      numberFormat?: string | null;
+    },
   ): Promise<AuthUser> {
     return this.prisma.user.update({
       where: { id: userId },
@@ -231,6 +244,10 @@ export class PrismaAuthRepository implements AuthRepository {
     return this.prisma.twoFactorBackupCode.count({
       where: { userId, usedAt: null },
     });
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    await this.prisma.user.delete({ where: { id: userId } });
   }
 
   async isTwoFactorSecretEncrypted(userId: number): Promise<boolean> {

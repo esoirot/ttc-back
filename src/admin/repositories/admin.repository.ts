@@ -19,7 +19,7 @@ import {
 } from '../dto/admin.input';
 import { ProjectStatus } from '../../projects/entities/project.entity';
 import { InvoiceStatus } from '../../invoices/entities/invoice.entity';
-import { RateType } from '../../rates/entities/rate.entity';
+import { RateType } from '../../generated/prisma/client';
 
 export abstract class AdminRepository {
   abstract getStats(): Promise<AdminStatsModel>;

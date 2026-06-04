@@ -307,12 +307,12 @@ export class PrismaAdminRepository implements AdminRepository {
   ): Promise<AdminConnectionModel<AdminRateModel>> {
     const where = type ? { type } : {};
     const [rows, total] = await Promise.all([
-      this.prisma.rate.findMany({
+      this.prisma.translationRate.findMany({
         where,
         orderBy: { id: 'asc' },
         include: { user: OWNER_SELECT },
       }),
-      this.prisma.rate.count({ where }),
+      this.prisma.translationRate.count({ where }),
     ]);
     return {
       items: rows.map((r) => ({
@@ -542,7 +542,7 @@ export class PrismaAdminRepository implements AdminRepository {
 
   async createRate(input: AdminCreateRateInput): Promise<AdminRateModel> {
     const { userId, ...data } = input;
-    const r = await this.prisma.rate.create({
+    const r = await this.prisma.translationRate.create({
       data: { userId, ...data },
       include: { user: OWNER_SELECT },
     });
@@ -566,7 +566,7 @@ export class PrismaAdminRepository implements AdminRepository {
   ): Promise<AdminRateModel> {
     try {
       const { id: _id, ...data } = input;
-      const r = await this.prisma.rate.update({
+      const r = await this.prisma.translationRate.update({
         where: { id },
         data,
         include: { user: OWNER_SELECT },
@@ -590,7 +590,7 @@ export class PrismaAdminRepository implements AdminRepository {
 
   async deleteRate(id: number): Promise<AdminDeleteResultModel> {
     try {
-      await this.prisma.rate.delete({ where: { id } });
+      await this.prisma.translationRate.delete({ where: { id } });
       return { id };
     } catch {
       throw new NotFoundException(`Rate ${id} not found`);

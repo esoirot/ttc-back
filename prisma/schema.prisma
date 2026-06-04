@@ -43,6 +43,7 @@ enum InvoiceStatus {
 
 enum RateType {
   HOURLY
+  DAY
   PER_WORD
   FIXED
 }
@@ -75,9 +76,20 @@ model User {
   timeEntries           TimeEntry[]
   invoices              Invoice[]
   auditLogs             AuditLog[]
-  rates                 Rate[]
+  translationRates      TranslationRate[]
   clientRates           ClientRate[]
+  rateSheets            RateSheet[]
   tags                  Tag[]
+  activities            Activity[]
+  defaultCurrency       String         @default("EUR")
+  firstName             String?
+  lastName              String?
+  mobilePhone           String?
+  jobTitle              String?
+  interfaceLanguage     String?        @default("en")
+  dateFormat            String?        @default("DD/MM/YYYY")
+  hourFormat            String?        @default("24h")
+  numberFormat          String?        @default("1,234.56")
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 }
@@ -163,6 +175,8 @@ model Client {
   invoices          Invoice[]
   contacts          CompanyContact[]
   clientRates       ClientRate[]
+  rateSheets        RateSheet[]
+  translationRates  TranslationRate[]
   tags              ClientTag[]
 }
 
@@ -342,17 +356,21 @@ model TwoFactorBackupCode {
   createdAt DateTime  @default(now())
 }
 
-model Rate {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        RateType
-  name        String
-  amount      Float
-  currency    String   @default("EUR")
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model TranslationRate {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId       Int?
+  client         Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  type           RateType
+  name           String
+  amount         Float
+  currency       String   @default("EUR")
+  description    String?
+  sourceLanguage String?  @db.VarChar(2)
+  targetLanguage String?  @db.VarChar(2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model ClientRate {
@@ -368,4 +386,80 @@ model ClientRate {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+enum ChargeType {
+  FIXED
+  VARIABLE
+}
+
+enum ActivityType {
+  TRANSLATOR
+  CORRECTOR
+  CUSTOM
+}
+
+model Activity {
+  id                Int            @id @default(autoincrement())
+  userId            Int
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  companyName       String?
+  legalForm         String?
+  professionalEmail String?
+  professionalPhone String?
+  website           String?
+  timezone          String?
+  objectiveQ1       Int?
+  objectiveQ2       Int?
+  objectiveQ3       Int?
+  objectiveQ4       Int?
+  activityType      ActivityType   @default(CUSTOM)
+  charges           Charge[]
+  languagePairs     LanguagePair[]
+  customFields      CustomField[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model Charge {
+  id         Int        @id @default(autoincrement())
+  activityId Int
+  activity   Activity   @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  name       String
+  amount     Int
+  type       ChargeType
+}
+
+model LanguagePair {
+  id           Int      @id @default(autoincrement())
+  activityId   Int
+  activity     Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  fromLanguage String
+  toLanguage   String
+}
+
+model CustomField {
+  id         Int      @id @default(autoincrement())
+  activityId Int
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  key        String
+  value      String
+}
+
+model RateSheet {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId       Int?
+  client         Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  name           String
+  description    String?
+  sourceLanguage String   @db.VarChar(2)
+  targetLanguage String   @db.VarChar(2)
+  currency       String   @default("EUR")
+  pricePerWord   Decimal  @db.Decimal(10, 6)
+  matchRates     Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

@@ -2,6 +2,32 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+interface Activity {
+  activityType: ActivityType!
+  charges: [Charge!]!
+  companyName: String
+  createdAt: DateTime!
+  id: Int!
+  legalForm: String
+  name: String!
+  objectiveQ1: Int
+  objectiveQ2: Int
+  objectiveQ3: Int
+  objectiveQ4: Int
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  updatedAt: DateTime!
+  userId: Int!
+  website: String
+}
+
+enum ActivityType {
+  CORRECTOR
+  CUSTOM
+  TRANSLATOR
+}
+
 input AddInvoiceItemInput {
   description: String
   invoiceId: Int!
@@ -218,6 +244,19 @@ input AdminUpdateRateInput {
   name: String
 }
 
+type Charge {
+  activityId: Int!
+  amount: Int!
+  id: Int!
+  name: String!
+  type: ChargeType!
+}
+
+enum ChargeType {
+  FIXED
+  VARIABLE
+}
+
 type Client {
   address: String
   billingEndOfMonth: Boolean!
@@ -305,6 +344,46 @@ type CompanyContact {
   updatedAt: DateTime!
 }
 
+type CorrectorActivity implements Activity {
+  activityType: ActivityType!
+  charges: [Charge!]!
+  companyName: String
+  createdAt: DateTime!
+  id: Int!
+  legalForm: String
+  name: String!
+  objectiveQ1: Int
+  objectiveQ2: Int
+  objectiveQ3: Int
+  objectiveQ4: Int
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  updatedAt: DateTime!
+  userId: Int!
+  website: String
+}
+
+input CreateActivityInput {
+  activityType: ActivityType
+  companyName: String
+  customFields: [CustomFieldInput!]
+  languagePairs: [LanguagePairInput!]
+  legalForm: String
+  name: String!
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  website: String
+}
+
+input CreateChargeInput {
+  activityId: Int!
+  amount: Int!
+  name: String!
+  type: ChargeType!
+}
+
 input CreateClientInput {
   address: String
   billingEndOfMonth: Boolean
@@ -375,12 +454,15 @@ input CreateProjectInput {
   wordCount: Int
 }
 
-input CreateRateInput {
-  amount: Float!
+input CreateRateSheetInput {
+  clientId: Int
   currency: String! = "EUR"
   description: String
+  matchRates: MatchRatesInput!
   name: String!
-  type: RateType!
+  pricePerWord: Float!
+  sourceLanguage: String!
+  targetLanguage: String!
 }
 
 input CreateSubtaskInput {
@@ -411,9 +493,53 @@ input CreateTimeEntryInput {
   tagIds: [Int!]
 }
 
+input CreateTranslationRateInput {
+  amount: Float!
+  clientId: Int
+  currency: String! = "EUR"
+  description: String
+  name: String!
+  sourceLanguage: String
+  targetLanguage: String
+  type: TranslationRateType!
+}
+
 input CreateUserInput {
   email: String!
   name: String
+}
+
+type CustomActivity implements Activity {
+  activityType: ActivityType!
+  charges: [Charge!]!
+  companyName: String
+  createdAt: DateTime!
+  customFields: [CustomField!]!
+  id: Int!
+  legalForm: String
+  name: String!
+  objectiveQ1: Int
+  objectiveQ2: Int
+  objectiveQ3: Int
+  objectiveQ4: Int
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  updatedAt: DateTime!
+  userId: Int!
+  website: String
+}
+
+type CustomField {
+  activityId: Int!
+  id: Int!
+  key: String!
+  value: String!
+}
+
+input CustomFieldInput {
+  key: String!
+  value: String!
 }
 
 type DashboardData {
@@ -464,6 +590,18 @@ input GenerateInvoiceInput {
   projectId: Int!
 }
 
+interface IRateBase {
+  amount: Float!
+  clientId: Int
+  createdAt: DateTime!
+  currency: String!
+  description: String
+  id: Int!
+  name: String!
+  updatedAt: DateTime!
+  userId: Int!
+}
+
 type Invoice {
   clientId: Int
   createdAt: DateTime!
@@ -505,6 +643,18 @@ enum InvoiceStatus {
   SENT
 }
 
+type LanguagePair {
+  activityId: Int!
+  fromLanguage: String!
+  id: Int!
+  toLanguage: String!
+}
+
+input LanguagePairInput {
+  fromLanguage: String!
+  toLanguage: String!
+}
+
 input LoginInput {
   email: String!
   password: String!
@@ -514,6 +664,36 @@ type LoginResponse {
   requiresTwoFactor: Boolean
   tempToken: String
   user: User
+}
+
+type MatchRates {
+  adaptativeMTWithLearning: Int!
+  cm: Int!
+  match50_74: Int!
+  match75_84: Int!
+  match85_94: Int!
+  match95_99: Int!
+  match100: Int!
+  newWordsTA: Int!
+  perfectMatch: Int!
+  referenceAdaptativeMT: Int!
+  repetitions: Int!
+  repetitionsBetweenFiles: Int!
+}
+
+input MatchRatesInput {
+  adaptativeMTWithLearning: Int!
+  cm: Int!
+  match50_74: Int!
+  match75_84: Int!
+  match85_94: Int!
+  match95_99: Int!
+  match100: Int!
+  newWordsTA: Int!
+  perfectMatch: Int!
+  referenceAdaptativeMT: Int!
+  repetitions: Int!
+  repetitionsBetweenFiles: Int!
 }
 
 type Mutation {
@@ -531,29 +711,37 @@ type Mutation {
   adminUpdateInvoice(input: AdminUpdateInvoiceInput!): AdminInvoice!
   adminUpdateProject(input: AdminUpdateProjectInput!): AdminProject!
   adminUpdateRate(input: AdminUpdateRateInput!): AdminRate!
+  changePassword(currentPassword: String!, newPassword: String!): Boolean!
+  createActivity(input: CreateActivityInput!): Activity!
+  createCharge(input: CreateChargeInput!): Charge!
   createClient(input: CreateClientInput!): Client!
   createClientRate(input: CreateClientRateInput!): ClientRate!
   createCompanyContact(input: CreateCompanyContactInput!): CompanyContact!
   createInvoice(input: CreateInvoiceInput!): Invoice!
   createProject(input: CreateProjectInput!): Project!
-  createRate(input: CreateRateInput!): Rate!
+  createRateSheet(input: CreateRateSheetInput!): RateSheet!
   createSubtask(input: CreateSubtaskInput!): Subtask!
   createTag(input: CreateTagInput!): Tag!
   createTask(input: CreateTaskInput!): Task!
   createTaskComment(input: CreateCommentInput!): TaskComment!
   createTimeEntry(input: CreateTimeEntryInput!): TimeEntry!
+  createTranslationRate(input: CreateTranslationRateInput!): TranslationRate!
   createUser(createUserInput: CreateUserInput!): User!
+  deleteAccount: Boolean!
+  deleteActivity(id: Int!): Boolean!
+  deleteCharge(id: Int!): Boolean!
   deleteClient(id: Int!): Boolean!
   deleteClientRate(id: Int!): Boolean!
   deleteCompanyContact(id: Int!): Boolean!
   deleteInvoice(id: Int!): Boolean!
   deleteProject(id: Int!): Boolean!
-  deleteRate(id: Int!): Boolean!
+  deleteRateSheet(id: Int!): Boolean!
   deleteSubtask(id: Int!): Boolean!
   deleteTag(id: Int!): Boolean!
   deleteTask(id: Int!): Boolean!
   deleteTaskComment(id: Int!): Boolean!
   deleteTimeEntry(id: Int!): Boolean!
+  deleteTranslationRate(id: Int!): Boolean!
   disableTwoFactor(code: String!): Boolean!
   enableTwoFactor(code: String!): EnableTwoFactorResponse!
   generateInvoice(input: GenerateInvoiceInput!): Invoice!
@@ -569,6 +757,8 @@ type Mutation {
   setupTwoFactor: SetupTwoFactorResponse!
   startTimer(input: StartTimerInput!): TimeEntry!
   stopTimer: TimeEntry!
+  updateActivity(input: UpdateActivityInput!): Activity!
+  updateCharge(input: UpdateChargeInput!): Charge!
   updateClient(input: UpdateClientInput!): Client!
   updateClientRate(input: UpdateClientRateInput!): ClientRate!
   updateCompanyContact(input: UpdateCompanyContactInput!): CompanyContact!
@@ -576,12 +766,13 @@ type Mutation {
   updateInvoiceItem(input: UpdateInvoiceItemInput!): InvoiceItem!
   updateMe(input: UpdateMeInput!): User!
   updateProject(input: UpdateProjectInput!): Project!
-  updateRate(input: UpdateRateInput!): Rate!
+  updateRateSheet(input: UpdateRateSheetInput!): RateSheet!
   updateSubtask(input: UpdateSubtaskInput!): Subtask!
   updateTag(input: UpdateTagInput!): Tag!
   updateTask(input: UpdateTaskInput!): Task!
   updateTaskComment(input: UpdateCommentInput!): TaskComment!
   updateTimeEntry(input: UpdateTimeEntryInput!): TimeEntry!
+  updateTranslationRate(input: UpdateTranslationRateInput!): TranslationRate!
   updateUser(updateUserInput: UpdateUserInput!): User!
   verifyTwoFactor(input: VerifyTwoFactorInput!): LoginResponse!
   verifyTwoFactorBackup(input: VerifyTwoFactorBackupInput!): LoginResponse!
@@ -631,47 +822,88 @@ enum ProjectStatus {
 
 type Query {
   activeTimer: TimeEntry
-  adminClients(pagination: PaginationInput, search: String): AdminClientConnection!
-  adminInvoices(pagination: PaginationInput, search: String, status: InvoiceStatus): AdminInvoiceConnection!
-  adminProjects(pagination: PaginationInput, search: String, status: ProjectStatus): AdminProjectConnection!
+  activity(id: Int!): Activity!
+  adminClients(
+    pagination: PaginationInput
+    search: String
+  ): AdminClientConnection!
+  adminInvoices(
+    pagination: PaginationInput
+    search: String
+    status: InvoiceStatus
+  ): AdminInvoiceConnection!
+  adminProjects(
+    pagination: PaginationInput
+    search: String
+    status: ProjectStatus
+  ): AdminProjectConnection!
   adminRates(type: RateType): AdminRateConnection!
   adminStats: AdminStats!
-  adminTimeEntries(pagination: PaginationInput, userId: Int): AdminTimeEntryConnection!
+  adminTimeEntries(
+    pagination: PaginationInput
+    userId: Int
+  ): AdminTimeEntryConnection!
   backupCodeCount: Int!
   client(id: Int!): Client!
   clientRates(clientId: Int!): [ClientRate!]!
-  clients(clientType: ClientType, pagination: PaginationInput, search: String): ClientConnection!
+  clients(
+    clientType: ClientType
+    pagination: PaginationInput
+    search: String
+  ): ClientConnection!
   dashboard: DashboardData!
   invoice(id: Int!): Invoice!
-  invoices(clientId: Int, pagination: PaginationInput, search: String, status: InvoiceStatus): InvoiceConnection!
+  invoices(
+    clientId: Int
+    pagination: PaginationInput
+    search: String
+    status: InvoiceStatus
+  ): InvoiceConnection!
   me: User!
   members: [User!]!
+  myActivities: [Activity!]!
   myTasks(pagination: PaginationInput): TaskConnection!
   project(id: Int!): Project
-  projects(pagination: PaginationInput, search: String, status: ProjectStatus): ProjectConnection!
-  rate(id: Int!): Rate!
-  rates(type: RateType): [Rate!]!
+  projects(
+    pagination: PaginationInput
+    search: String
+    status: ProjectStatus
+  ): ProjectConnection!
+  rateSheet(id: Int!): RateSheet!
+  rateSheets: [RateSheet!]!
   tags: [Tag!]!
   task(id: Int!): Task!
   tasks(pagination: PaginationInput, projectId: Int!): TaskConnection!
-  timeEntries(end: DateTime, pagination: PaginationInput, projectId: Int, projectIds: [Int!], start: DateTime): TimeEntryConnection!
+  timeEntries(
+    end: DateTime
+    pagination: PaginationInput
+    projectId: Int
+    projectIds: [Int!]
+    start: DateTime
+  ): TimeEntryConnection!
+  translationRate(id: Int!): TranslationRate!
+  translationRates(type: TranslationRateType): [TranslationRate!]!
   user(id: Int!): User!
   users: [User!]!
 }
 
-type Rate {
-  amount: Float!
+type RateSheet {
+  clientId: Int
   createdAt: DateTime!
   currency: String!
   description: String
   id: Int!
+  matchRates: MatchRates!
   name: String!
-  type: RateType!
+  pricePerWord: Float!
+  sourceLanguage: String!
+  targetLanguage: String!
   updatedAt: DateTime!
   userId: Int!
 }
 
 enum RateType {
+  DAY
   FIXED
   HOURLY
   PER_WORD
@@ -774,6 +1006,72 @@ type TimeEntryConnection {
   total: Int!
 }
 
+type TranslationRate implements IRateBase {
+  amount: Float!
+  clientId: Int
+  createdAt: DateTime!
+  currency: String!
+  description: String
+  id: Int!
+  name: String!
+  sourceLanguage: String
+  targetLanguage: String
+  type: TranslationRateType!
+  updatedAt: DateTime!
+  userId: Int!
+}
+
+enum TranslationRateType {
+  DAY
+  FIXED
+  HOURLY
+  PER_WORD
+}
+
+type TranslatorActivity implements Activity {
+  activityType: ActivityType!
+  charges: [Charge!]!
+  companyName: String
+  createdAt: DateTime!
+  id: Int!
+  languagePairs: [LanguagePair!]!
+  legalForm: String
+  name: String!
+  objectiveQ1: Int
+  objectiveQ2: Int
+  objectiveQ3: Int
+  objectiveQ4: Int
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  updatedAt: DateTime!
+  userId: Int!
+  website: String
+}
+
+input UpdateActivityInput {
+  companyName: String
+  id: Int!
+  languagePairs: [LanguagePairInput!]
+  legalForm: String
+  name: String
+  objectiveQ1: Int
+  objectiveQ2: Int
+  objectiveQ3: Int
+  objectiveQ4: Int
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  website: String
+}
+
+input UpdateChargeInput {
+  amount: Int
+  id: Int!
+  name: String
+  type: ChargeType
+}
+
 input UpdateClientInput {
   address: String
   billingEndOfMonth: Boolean
@@ -839,9 +1137,18 @@ input UpdateInvoiceItemInput {
 }
 
 input UpdateMeInput {
+  dateFormat: String
+  defaultCurrency: String
   email: String
+  firstName: String
+  hourFormat: String
+  interfaceLanguage: String
+  jobTitle: String
+  lastName: String
   logoUrl: String
+  mobilePhone: String
   name: String
+  numberFormat: String
 }
 
 input UpdateProjectInput {
@@ -862,13 +1169,16 @@ input UpdateProjectInput {
   wordCount: Int
 }
 
-input UpdateRateInput {
-  amount: Float
+input UpdateRateSheetInput {
+  clientId: Int
   currency: String
   description: String
   id: Int!
+  matchRates: MatchRatesInput
   name: String
-  type: RateType
+  pricePerWord: Float
+  sourceLanguage: String
+  targetLanguage: String
 }
 
 input UpdateSubtaskInput {
@@ -904,6 +1214,18 @@ input UpdateTimeEntryInput {
   tagIds: [Int!]
 }
 
+input UpdateTranslationRateInput {
+  amount: Float
+  clientId: Int
+  currency: String
+  description: String
+  id: Int!
+  name: String
+  sourceLanguage: String
+  targetLanguage: String
+  type: TranslationRateType
+}
+
 input UpdateUserInput {
   adminPermissions: [String!]
   email: String
@@ -915,10 +1237,19 @@ input UpdateUserInput {
 type User {
   adminPermissions: [String!]!
   createdAt: DateTime!
+  dateFormat: String
+  defaultCurrency: String!
   email: String!
+  firstName: String
+  hourFormat: String
   id: Int!
+  interfaceLanguage: String
+  jobTitle: String
+  lastName: String
   logoUrl: String
+  mobilePhone: String
   name: String
+  numberFormat: String
   projects: [Project!]
   role: Role!
   twoFactorEnabled: Boolean!

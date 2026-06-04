@@ -24,10 +24,17 @@ import { HubspotModule } from './hubspot/hubspot.module';
 import { AuditModule } from './audit/audit.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CleanupModule } from './common/cleanup/cleanup.module';
-import { RatesModule } from './rates/rates.module';
+import { TranslationRatesModule } from './translation-rates/translation-rates.module';
 import { ClientRatesModule } from './client-rates/client-rates.module';
+import { RateSheetsModule } from './rate-sheets/rate-sheets.module';
 import { TagsModule } from './tags/tags.module';
 import { AdminModule } from './admin/admin.module';
+import { ActivitiesModule } from './activities/activities.module';
+import {
+  CorrectorActivity,
+  CustomActivity,
+  TranslatorActivity,
+} from './activities/entities/activity.entity';
 import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
 
 @Module({
@@ -83,6 +90,9 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
+      buildSchemaOptions: {
+        orphanedTypes: [TranslatorActivity, CorrectorActivity, CustomActivity],
+      },
       // @as-integrations/fastify@3 calls context(request, reply) as two
       // positional args, not as a single { request, reply } object.
       context: (request: FastifyRequest, reply: FastifyReply) => ({
@@ -102,10 +112,12 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
     AuditModule,
     DashboardModule,
     CleanupModule,
-    RatesModule,
+    TranslationRatesModule,
     ClientRatesModule,
+    RateSheetsModule,
     TagsModule,
     AdminModule,
+    ActivitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
