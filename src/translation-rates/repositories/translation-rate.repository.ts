@@ -6,6 +6,7 @@ export abstract class TranslationRateRepository {
   abstract findAll(
     userId: number,
     type?: string,
+    activityId?: number,
   ): Promise<TranslationRateModel[]>;
   abstract findById(id: number, userId: number): Promise<TranslationRateModel>;
   abstract create(

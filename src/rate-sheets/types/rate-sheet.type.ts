@@ -16,6 +16,7 @@ export interface MatchRatesModel {
 export interface RateSheetModel {
   id: number;
   userId: number;
+  activityId: number | null;
   clientId: number | null;
   name: string;
   description: string | null;

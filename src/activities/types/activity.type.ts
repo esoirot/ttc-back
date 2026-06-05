@@ -1,3 +1,7 @@
+import { TranslationRateModel } from '../../translation-rates/types/translation-rate.type';
+
+export type { TranslationRateModel };
+
 export interface ChargeModel {
   id: number;
   activityId: number;
@@ -36,6 +40,7 @@ export interface ActivityModel {
   objectiveQ3: number | null;
   objectiveQ4: number | null;
   charges: ChargeModel[];
+  translationRates: TranslationRateModel[];
   languagePairs: LanguagePairModel[];
   customFields: CustomFieldModel[];
   createdAt: Date;

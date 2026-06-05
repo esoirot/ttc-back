@@ -360,6 +360,8 @@ model TranslationRate {
   id             Int      @id @default(autoincrement())
   userId         Int
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityId     Int?
+  activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
   clientId       Int?
   client         Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
   type           RateType
@@ -414,8 +416,10 @@ model Activity {
   objectiveQ2       Int?
   objectiveQ3       Int?
   objectiveQ4       Int?
-  activityType      ActivityType   @default(CUSTOM)
+  activityType      ActivityType      @default(CUSTOM)
   charges           Charge[]
+  translationRates  TranslationRate[]
+  rateSheets        RateSheet[]
   languagePairs     LanguagePair[]
   customFields      CustomField[]
   createdAt         DateTime       @default(now())
@@ -448,11 +452,13 @@ model CustomField {
 }
 
 model RateSheet {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   userId         Int
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityId     Int?
+  activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
   clientId       Int?
-  client         Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   name           String
   description    String?
   sourceLanguage String   @db.VarChar(2)

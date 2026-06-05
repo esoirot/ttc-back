@@ -9,6 +9,7 @@ import { UpdateChargeInput } from '../dto/update-charge.input';
 
 const ACTIVITY_INCLUDE = {
   charges: true,
+  translationRates: true,
   languagePairs: true,
   customFields: true,
 } as const;

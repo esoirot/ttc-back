@@ -152,6 +152,9 @@ export class AdminCreateRateInput {
   @Field(() => Int)
   userId!: number;
 
+  @Field(() => Int)
+  activityId!: number;
+
   @Field(() => RateType)
   type!: RateType;
 

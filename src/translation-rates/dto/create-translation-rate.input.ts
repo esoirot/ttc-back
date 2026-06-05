@@ -7,6 +7,9 @@ export class CreateTranslationRateInput {
   type!: TranslationRateType;
 
   @Field(() => Int, { nullable: true })
+  activityId?: number | null;
+
+  @Field(() => Int, { nullable: true })
   clientId?: number;
 
   @Field()

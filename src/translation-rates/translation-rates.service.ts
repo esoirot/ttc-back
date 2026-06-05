@@ -8,8 +8,12 @@ import { UpdateTranslationRateInput } from './dto/update-translation-rate.input'
 export class TranslationRatesService {
   constructor(private readonly repo: TranslationRateRepository) {}
 
-  findAll(userId: number, type?: string): Promise<TranslationRateModel[]> {
-    return this.repo.findAll(userId, type);
+  findAll(
+    userId: number,
+    type?: string,
+    activityId?: number,
+  ): Promise<TranslationRateModel[]> {
+    return this.repo.findAll(userId, type, activityId);
   }
 
   findOne(id: number, userId: number): Promise<TranslationRateModel> {

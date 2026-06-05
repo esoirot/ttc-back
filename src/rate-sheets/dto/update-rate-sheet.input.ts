@@ -7,6 +7,9 @@ export class UpdateRateSheetInput {
   id!: number;
 
   @Field(() => Int, { nullable: true })
+  activityId?: number | null;
+
+  @Field(() => Int, { nullable: true })
   clientId?: number | null;
 
   @Field({ nullable: true })

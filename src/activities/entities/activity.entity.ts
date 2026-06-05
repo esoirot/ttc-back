@@ -5,6 +5,7 @@ import {
   Int,
   registerEnumType,
 } from '@nestjs/graphql';
+import { TranslationRate } from '../../translation-rates/entities/translation-rate.entity';
 
 export enum ChargeType {
   FIXED = 'FIXED',
@@ -120,6 +121,9 @@ export abstract class Activity {
 
   @Field(() => [Charge])
   charges!: Charge[];
+
+  @Field(() => [TranslationRate])
+  translationRates!: TranslationRate[];
 
   @Field()
   createdAt!: Date;

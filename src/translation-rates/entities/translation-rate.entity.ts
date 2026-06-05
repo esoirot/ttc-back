@@ -1,4 +1,4 @@
-import { ObjectType, Field, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
 import { IRateBase } from '../../common/interfaces/rate-base.interface';
 
 export enum TranslationRateType {
@@ -12,6 +12,9 @@ registerEnumType(TranslationRateType, { name: 'TranslationRateType' });
 
 @ObjectType({ implements: IRateBase })
 export class TranslationRate extends IRateBase {
+  @Field(() => Int, { nullable: true })
+  activityId?: number | null;
+
   @Field(() => TranslationRateType)
   type!: TranslationRateType;
 
