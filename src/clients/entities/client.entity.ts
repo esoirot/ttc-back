@@ -35,7 +35,7 @@ export enum ClientIndustry {
 registerEnumType(ClientIndustry, { name: 'ClientIndustry' });
 
 @ObjectType()
-export class ClientTagItem {
+class ClientTagItem {
   @Field(() => Int)
   id!: number;
 

@@ -1,7 +1,5 @@
 import { TranslationRateModel } from '../../translation-rates/types/translation-rate.type';
 
-export type { TranslationRateModel };
-
 export interface ChargeModel {
   id: number;
   activityId: number;
@@ -10,14 +8,14 @@ export interface ChargeModel {
   type: string;
 }
 
-export interface LanguagePairModel {
+interface LanguagePairModel {
   id: number;
   activityId: number;
   fromLanguage: string;
   toLanguage: string;
 }
 
-export interface CustomFieldModel {
+interface CustomFieldModel {
   id: number;
   activityId: number;
   key: string;

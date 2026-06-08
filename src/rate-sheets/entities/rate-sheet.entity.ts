@@ -1,7 +1,7 @@
 import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
 
 @ObjectType()
-export class MatchRates {
+class MatchRates {
   @Field(() => Int)
   perfectMatch!: number;
 

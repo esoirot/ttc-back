@@ -39,7 +39,7 @@ export class Charge {
 }
 
 @ObjectType()
-export class LanguagePair {
+class LanguagePair {
   @Field(() => Int)
   id!: number;
 
@@ -54,7 +54,7 @@ export class LanguagePair {
 }
 
 @ObjectType()
-export class CustomField {
+class CustomField {
   @Field(() => Int)
   id!: number;
 

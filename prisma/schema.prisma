@@ -73,6 +73,7 @@ model User {
   clients               Client[]
   tasks                 Task[]
   taskComments          TaskComment[]
+  taskActivities        TaskActivity[]
   timeEntries           TimeEntry[]
   invoices              Invoice[]
   auditLogs             AuditLog[]
@@ -233,16 +234,20 @@ model Task {
   updatedAt   DateTime      @updatedAt
   subtasks    Subtask[]
   comments    TaskComment[]
+  labels      TaskLabel[]
+  activities  TaskActivity[]
 }
 
 model Subtask {
-  id        Int      @id @default(autoincrement())
-  taskId    Int
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  title     String
-  done      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int       @id @default(autoincrement())
+  taskId         Int
+  task           Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  checklistTitle String?
+  title          String
+  done           Boolean   @default(false)
+  dueDate        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model TaskComment {
@@ -254,6 +259,26 @@ model TaskComment {
   body      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model TaskLabel {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  name      String
+  color     String   @default("#6B7280")
+  createdAt DateTime @default(now())
+}
+
+model TaskActivity {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  payload   String?
+  createdAt DateTime @default(now())
 }
 
 model TimeEntry {

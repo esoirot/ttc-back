@@ -1,6 +1,8 @@
 import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
 import { Subtask } from './subtask.entity';
 import { TaskComment } from './task-comment.entity';
+import { TaskLabel } from './task-label.entity';
+import { TaskActivity } from './task-activity.entity';
 
 export enum TaskStatus {
   TODO = 'TODO',
@@ -47,4 +49,10 @@ export class Task {
 
   @Field(() => [TaskComment])
   comments!: TaskComment[];
+
+  @Field(() => [TaskLabel])
+  labels!: TaskLabel[];
+
+  @Field(() => [TaskActivity])
+  activities!: TaskActivity[];
 }

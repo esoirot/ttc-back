@@ -1,28 +1,19 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 
 @ObjectType()
-export class Subtask {
+export class TaskLabel {
   @Field(() => Int)
   id!: number;
 
   @Field(() => Int)
   taskId!: number;
 
-  @Field({ nullable: true })
-  checklistTitle?: string;
+  @Field()
+  name!: string;
 
   @Field()
-  title!: string;
-
-  @Field()
-  done!: boolean;
-
-  @Field({ nullable: true })
-  dueDate?: Date;
+  color!: string;
 
   @Field()
   createdAt!: Date;
-
-  @Field()
-  updatedAt!: Date;
 }

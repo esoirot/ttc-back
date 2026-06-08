@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis, { type RedisOptions } from 'ioredis';
 import { Observable, Subject } from 'rxjs';
 
-export type AuthEvent = { type: 'session_revoked' };
+type AuthEvent = { type: 'session_revoked' };
 
 const REDIS_OPTIONS: RedisOptions = {
   autoResubscribe: true,

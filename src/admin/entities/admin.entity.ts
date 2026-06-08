@@ -6,7 +6,7 @@ import { InvoiceStatus } from '../../invoices/entities/invoice.entity';
 import { RateType } from '../../generated/prisma/client';
 
 @ObjectType()
-export class AdminOwner {
+class AdminOwner {
   @Field(() => Int)
   id!: number;
 
@@ -225,7 +225,7 @@ export class AdminInvoiceConnection {
 }
 
 @ObjectType()
-export class AdminTimeEntry {
+class AdminTimeEntry {
   @Field(() => Int)
   id!: number;
 

@@ -3,27 +3,83 @@ import {
   SubtaskRepository,
   SubtaskModel,
 } from './repositories/subtask.repository';
+import { ActivitiesService } from './activities.service';
 import { CreateSubtaskInput } from './dto/create-subtask.input';
 import { UpdateSubtaskInput } from './dto/update-subtask.input';
 
 @Injectable()
 export class SubtasksService {
-  constructor(private readonly repo: SubtaskRepository) {}
+  constructor(
+    private readonly repo: SubtaskRepository,
+    private readonly activitiesService: ActivitiesService,
+  ) {}
 
   findByTask(taskId: number): Promise<SubtaskModel[]> {
     return this.repo.findByTask(taskId);
   }
 
-  create(input: CreateSubtaskInput): Promise<SubtaskModel> {
-    return this.repo.create(input);
+  async create(
+    input: CreateSubtaskInput,
+    userId: number,
+  ): Promise<SubtaskModel> {
+    const subtask = await this.repo.create(input);
+    await this.activitiesService.log(input.taskId, userId, 'CHECKLIST_ADDED', {
+      title: input.title,
+    });
+    return subtask;
   }
 
-  update(id: number, input: UpdateSubtaskInput): Promise<SubtaskModel> {
-    return this.repo.update(id, input);
+  async update(
+    id: number,
+    input: UpdateSubtaskInput,
+    userId: number,
+  ): Promise<SubtaskModel> {
+    const before = await this.repo.findById(id);
+    const subtask = await this.repo.update(id, input);
+    if (input.done !== undefined && input.done !== before.done) {
+      await this.activitiesService.log(
+        subtask.taskId,
+        userId,
+        'CHECKLIST_ITEM_TOGGLED',
+        {
+          title: subtask.title,
+          checklistTitle: subtask.checklistTitle,
+          done: subtask.done,
+        },
+      );
+    } else {
+      await this.activitiesService.log(
+        subtask.taskId,
+        userId,
+        'CHECKLIST_UPDATED',
+        { title: subtask.title, checklistTitle: subtask.checklistTitle },
+      );
+    }
+    return subtask;
   }
 
-  async delete(id: number): Promise<boolean> {
-    await this.repo.delete(id);
+  async renameChecklist(
+    taskId: number,
+    oldTitle: string,
+    newTitle: string,
+    userId: number,
+  ): Promise<boolean> {
+    await this.repo.renameChecklist(taskId, oldTitle, newTitle);
+    await this.activitiesService.log(taskId, userId, 'CHECKLIST_RENAMED', {
+      from: oldTitle,
+      to: newTitle,
+    });
+    return true;
+  }
+
+  async delete(id: number, userId: number): Promise<boolean> {
+    const subtask = await this.repo.delete(id);
+    await this.activitiesService.log(
+      subtask.taskId,
+      userId,
+      'CHECKLIST_DELETED',
+      { title: subtask.title },
+    );
     return true;
   }
 }

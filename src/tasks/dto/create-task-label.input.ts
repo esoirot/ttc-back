@@ -1,16 +1,13 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
 
 @InputType()
-export class CreateSubtaskInput {
+export class CreateTaskLabelInput {
   @Field(() => Int)
   taskId!: number;
 
-  @Field({ nullable: true })
-  checklistTitle?: string;
-
   @Field()
-  title!: string;
+  name!: string;
 
   @Field({ nullable: true })
-  dueDate?: Date;
+  color?: string;
 }

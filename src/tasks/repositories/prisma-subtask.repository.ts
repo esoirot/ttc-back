@@ -15,9 +15,20 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
     });
   }
 
+  async findById(id: number): Promise<SubtaskModel> {
+    const s = await this.prisma.subtask.findUnique({ where: { id } });
+    if (!s) throw new NotFoundException(`Subtask ${id} not found`);
+    return s;
+  }
+
   create(data: CreateSubtaskInput): Promise<SubtaskModel> {
     return this.prisma.subtask.create({
-      data: { taskId: data.taskId, title: data.title },
+      data: {
+        taskId: data.taskId,
+        checklistTitle: data.checklistTitle ?? null,
+        title: data.title,
+        ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
+      },
     });
   }
 
@@ -27,8 +38,12 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
     return this.prisma.subtask.update({
       where: { id },
       data: {
+        ...(data.checklistTitle !== undefined
+          ? { checklistTitle: data.checklistTitle }
+          : {}),
         ...(data.title !== undefined ? { title: data.title } : {}),
         ...(data.done !== undefined ? { done: data.done } : {}),
+        ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
       },
     });
   }
@@ -37,5 +52,17 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
     const existing = await this.prisma.subtask.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`Subtask ${id} not found`);
     return this.prisma.subtask.delete({ where: { id } });
+  }
+
+  async renameChecklist(
+    taskId: number,
+    oldTitle: string,
+    newTitle: string,
+  ): Promise<number> {
+    const result = await this.prisma.subtask.updateMany({
+      where: { taskId, checklistTitle: oldTitle },
+      data: { checklistTitle: newTitle },
+    });
+    return result.count;
   }
 }

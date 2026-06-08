@@ -11,9 +11,13 @@ import { UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { SubtasksService } from './subtasks.service';
 import { CommentsService } from './comments.service';
+import { LabelsService } from './labels.service';
+import { ActivitiesService } from './activities.service';
 import { Task } from './entities/task.entity';
 import { Subtask } from './entities/subtask.entity';
 import { TaskComment } from './entities/task-comment.entity';
+import { TaskLabel } from './entities/task-label.entity';
+import { TaskActivity } from './entities/task-activity.entity';
 import { TaskConnection } from './types/task-connection.type';
 import { CreateTaskInput } from './dto/create-task.input';
 import { UpdateTaskInput } from './dto/update-task.input';
@@ -21,6 +25,7 @@ import { CreateSubtaskInput } from './dto/create-subtask.input';
 import { UpdateSubtaskInput } from './dto/update-subtask.input';
 import { CreateCommentInput } from './dto/create-comment.input';
 import { UpdateCommentInput } from './dto/update-comment.input';
+import { CreateTaskLabelInput } from './dto/create-task-label.input';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
@@ -33,6 +38,8 @@ export class TasksResolver {
     private readonly tasksService: TasksService,
     private readonly subtasksService: SubtasksService,
     private readonly commentsService: CommentsService,
+    private readonly labelsService: LabelsService,
+    private readonly activitiesService: ActivitiesService,
   ) {}
 
   @UseGuards(GqlAuthGuard)
@@ -61,14 +68,20 @@ export class TasksResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Task)
-  createTask(@Args('input') input: CreateTaskInput) {
-    return this.tasksService.create(input);
+  createTask(
+    @CurrentUser() user: RequestUser,
+    @Args('input') input: CreateTaskInput,
+  ) {
+    return this.tasksService.create(input, user.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Task)
-  updateTask(@Args('input') input: UpdateTaskInput) {
-    return this.tasksService.update(input.id, input);
+  updateTask(
+    @CurrentUser() user: RequestUser,
+    @Args('input') input: UpdateTaskInput,
+  ) {
+    return this.tasksService.update(input.id, input, user.id);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -87,22 +100,57 @@ export class TasksResolver {
     return this.commentsService.findByTask(task.id);
   }
 
-  @UseGuards(GqlAuthGuard)
-  @Mutation(() => Subtask)
-  createSubtask(@Args('input') input: CreateSubtaskInput) {
-    return this.subtasksService.create(input);
+  @ResolveField(() => [TaskLabel])
+  labels(@Parent() task: Task) {
+    return this.labelsService.findByTask(task.id);
+  }
+
+  @ResolveField(() => [TaskActivity])
+  activities(@Parent() task: Task) {
+    return this.activitiesService.findByTask(task.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Subtask)
-  updateSubtask(@Args('input') input: UpdateSubtaskInput) {
-    return this.subtasksService.update(input.id, input);
+  createSubtask(
+    @CurrentUser() user: RequestUser,
+    @Args('input') input: CreateSubtaskInput,
+  ) {
+    return this.subtasksService.create(input, user.id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Subtask)
+  updateSubtask(
+    @CurrentUser() user: RequestUser,
+    @Args('input') input: UpdateSubtaskInput,
+  ) {
+    return this.subtasksService.update(input.id, input, user.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  deleteSubtask(@Args('id', { type: () => Int }) id: number) {
-    return this.subtasksService.delete(id);
+  renameChecklist(
+    @CurrentUser() user: RequestUser,
+    @Args('taskId', { type: () => Int }) taskId: number,
+    @Args('oldTitle') oldTitle: string,
+    @Args('newTitle') newTitle: string,
+  ) {
+    return this.subtasksService.renameChecklist(
+      taskId,
+      oldTitle,
+      newTitle,
+      user.id,
+    );
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  deleteSubtask(
+    @CurrentUser() user: RequestUser,
+    @Args('id', { type: () => Int }) id: number,
+  ) {
+    return this.subtasksService.delete(id, user.id);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -130,5 +178,17 @@ export class TasksResolver {
     @Args('id', { type: () => Int }) id: number,
   ) {
     return this.commentsService.delete(id, user.id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => TaskLabel)
+  createTaskLabel(@Args('input') input: CreateTaskLabelInput) {
+    return this.labelsService.create(input);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  deleteTaskLabel(@Args('id', { type: () => Int }) id: number) {
+    return this.labelsService.delete(id);
   }
 }

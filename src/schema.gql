@@ -470,6 +470,8 @@ input CreateRateSheetInput {
 }
 
 input CreateSubtaskInput {
+  checklistTitle: String
+  dueDate: DateTime
   taskId: Int!
   title: String!
 }
@@ -485,6 +487,12 @@ input CreateTaskInput {
   projectId: Int!
   status: TaskStatus
   title: String!
+}
+
+input CreateTaskLabelInput {
+  color: String
+  name: String!
+  taskId: Int!
 }
 
 input CreateTimeEntryInput {
@@ -730,6 +738,7 @@ type Mutation {
   createTag(input: CreateTagInput!): Tag!
   createTask(input: CreateTaskInput!): Task!
   createTaskComment(input: CreateCommentInput!): TaskComment!
+  createTaskLabel(input: CreateTaskLabelInput!): TaskLabel!
   createTimeEntry(input: CreateTimeEntryInput!): TimeEntry!
   createTranslationRate(input: CreateTranslationRateInput!): TranslationRate!
   createUser(createUserInput: CreateUserInput!): User!
@@ -746,6 +755,7 @@ type Mutation {
   deleteTag(id: Int!): Boolean!
   deleteTask(id: Int!): Boolean!
   deleteTaskComment(id: Int!): Boolean!
+  deleteTaskLabel(id: Int!): Boolean!
   deleteTimeEntry(id: Int!): Boolean!
   deleteTranslationRate(id: Int!): Boolean!
   disableTwoFactor(code: String!): Boolean!
@@ -758,6 +768,7 @@ type Mutation {
   register(input: RegisterInput!): User!
   removeInvoiceItem(id: Int!): Boolean!
   removeUser(id: Int!): DeleteUserResponse!
+  renameChecklist(newTitle: String!, oldTitle: String!, taskId: Int!): Boolean!
   requestPasswordReset(email: String!): Boolean!
   resetPassword(newPassword: String!, token: String!): Boolean!
   setupTwoFactor: SetupTwoFactorResponse!
@@ -829,33 +840,69 @@ enum ProjectStatus {
 type Query {
   activeTimer: TimeEntry
   activity(id: Int!): Activity!
-  adminClients(pagination: PaginationInput, search: String): AdminClientConnection!
-  adminInvoices(pagination: PaginationInput, search: String, status: InvoiceStatus): AdminInvoiceConnection!
-  adminProjects(pagination: PaginationInput, search: String, status: ProjectStatus): AdminProjectConnection!
+  adminClients(
+    pagination: PaginationInput
+    search: String
+  ): AdminClientConnection!
+  adminInvoices(
+    pagination: PaginationInput
+    search: String
+    status: InvoiceStatus
+  ): AdminInvoiceConnection!
+  adminProjects(
+    pagination: PaginationInput
+    search: String
+    status: ProjectStatus
+  ): AdminProjectConnection!
   adminRates(type: RateType): AdminRateConnection!
   adminStats: AdminStats!
-  adminTimeEntries(pagination: PaginationInput, userId: Int): AdminTimeEntryConnection!
+  adminTimeEntries(
+    pagination: PaginationInput
+    userId: Int
+  ): AdminTimeEntryConnection!
   backupCodeCount: Int!
   client(id: Int!): Client!
   clientRates(clientId: Int!): [ClientRate!]!
-  clients(clientType: ClientType, pagination: PaginationInput, search: String): ClientConnection!
+  clients(
+    clientType: ClientType
+    pagination: PaginationInput
+    search: String
+  ): ClientConnection!
   dashboard: DashboardData!
   invoice(id: Int!): Invoice!
-  invoices(clientId: Int, pagination: PaginationInput, search: String, status: InvoiceStatus): InvoiceConnection!
+  invoices(
+    clientId: Int
+    pagination: PaginationInput
+    search: String
+    status: InvoiceStatus
+  ): InvoiceConnection!
   me: User!
   members: [User!]!
   myActivities: [Activity!]!
   myTasks(pagination: PaginationInput): TaskConnection!
   project(id: Int!): Project
-  projects(pagination: PaginationInput, search: String, status: ProjectStatus): ProjectConnection!
+  projects(
+    pagination: PaginationInput
+    search: String
+    status: ProjectStatus
+  ): ProjectConnection!
   rateSheet(id: Int!): RateSheet!
   rateSheets: [RateSheet!]!
   tags: [Tag!]!
   task(id: Int!): Task!
   tasks(pagination: PaginationInput, projectId: Int!): TaskConnection!
-  timeEntries(end: DateTime, pagination: PaginationInput, projectId: Int, projectIds: [Int!], start: DateTime): TimeEntryConnection!
+  timeEntries(
+    end: DateTime
+    pagination: PaginationInput
+    projectId: Int
+    projectIds: [Int!]
+    start: DateTime
+  ): TimeEntryConnection!
   translationRate(id: Int!): TranslationRate!
-  translationRates(activityId: Int, type: TranslationRateType): [TranslationRate!]!
+  translationRates(
+    activityId: Int
+    type: TranslationRateType
+  ): [TranslationRate!]!
   user(id: Int!): User!
   users: [User!]!
 }
@@ -908,8 +955,10 @@ input StartTimerInput {
 }
 
 type Subtask {
+  checklistTitle: String
   createdAt: DateTime!
   done: Boolean!
+  dueDate: DateTime
   id: Int!
   taskId: Int!
   title: String!
@@ -924,18 +973,35 @@ type Tag {
 }
 
 type Task {
+  activities: [TaskActivity!]!
   assigneeId: Int
   comments: [TaskComment!]!
   createdAt: DateTime!
   description: String
   dueDate: DateTime
   id: Int!
+  labels: [TaskLabel!]!
   projectId: Int!
   sortOrder: Int!
   status: TaskStatus!
   subtasks: [Subtask!]!
   title: String!
   updatedAt: DateTime!
+}
+
+type TaskActivity {
+  createdAt: DateTime!
+  id: Int!
+  payload: String
+  taskId: Int!
+  type: String!
+  user: TaskActivityUser
+  userId: Int!
+}
+
+type TaskActivityUser {
+  id: Int!
+  name: String
 }
 
 type TaskComment {
@@ -951,6 +1017,14 @@ type TaskConnection {
   items: [Task!]!
   nextCursor: Int
   total: Int!
+}
+
+type TaskLabel {
+  color: String!
+  createdAt: DateTime!
+  id: Int!
+  name: String!
+  taskId: Int!
 }
 
 enum TaskStatus {
@@ -1159,7 +1233,9 @@ input UpdateRateSheetInput {
 }
 
 input UpdateSubtaskInput {
+  checklistTitle: String
   done: Boolean
+  dueDate: DateTime
   id: Int!
   title: String
 }
