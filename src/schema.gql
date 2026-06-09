@@ -728,6 +728,7 @@ type Mutation {
   changePassword(currentPassword: String!, newPassword: String!): Boolean!
   createActivity(input: CreateActivityInput!): Activity!
   createCharge(input: CreateChargeInput!): Charge!
+  createChecklist(taskId: Int!, title: String!): Boolean!
   createClient(input: CreateClientInput!): Client!
   createClientRate(input: CreateClientRateInput!): ClientRate!
   createCompanyContact(input: CreateCompanyContactInput!): CompanyContact!
@@ -745,6 +746,7 @@ type Mutation {
   deleteAccount: Boolean!
   deleteActivity(id: Int!): Boolean!
   deleteCharge(id: Int!): Boolean!
+  deleteChecklist(taskId: Int!, title: String!): Boolean!
   deleteClient(id: Int!): Boolean!
   deleteClientRate(id: Int!): Boolean!
   deleteCompanyContact(id: Int!): Boolean!
@@ -975,6 +977,7 @@ type Tag {
 type Task {
   activities: [TaskActivity!]!
   assigneeId: Int
+  checklistTitles: [String!]!
   comments: [TaskComment!]!
   createdAt: DateTime!
   description: String

@@ -65,4 +65,11 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
     });
     return result.count;
   }
+
+  async deleteByChecklist(taskId: number, title: string): Promise<number> {
+    const result = await this.prisma.subtask.deleteMany({
+      where: { taskId, checklistTitle: title },
+    });
+    return result.count;
+  }
 }

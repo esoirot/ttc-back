@@ -23,4 +23,5 @@ export abstract class SubtaskRepository {
     oldTitle: string,
     newTitle: string,
   ): Promise<number>;
+  abstract deleteByChecklist(taskId: number, title: string): Promise<number>;
 }

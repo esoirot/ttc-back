@@ -10,6 +10,10 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import fastifyCookie from '@fastify/cookie';
 import type { FastifyCookieOptions } from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import { mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
 type CompatReply = FastifyReply & {
   setHeader?: (name: string, value: string) => void;
@@ -32,6 +36,24 @@ async function bootstrap() {
       secret:
         process.env.COOKIE_SECRET ?? 'fallback-secret-change-in-production',
     } as FastifyCookieOptions,
+  );
+
+  await fastifyInstance.register(
+    fastifyMultipart as unknown as Parameters<
+      typeof fastifyInstance.register
+    >[0],
+    { limits: { fileSize: 10 * 1024 * 1024 } },
+  );
+
+  await mkdir(join(process.cwd(), 'uploads', 'tasks'), { recursive: true });
+
+  await fastifyInstance.register(
+    fastifyStatic as unknown as Parameters<typeof fastifyInstance.register>[0],
+    {
+      root: join(process.cwd(), 'uploads'),
+      prefix: '/uploads/',
+      decorateReply: false,
+    },
   );
 
   // init() registers NestJS's default JSON parser; must run before we replace it.

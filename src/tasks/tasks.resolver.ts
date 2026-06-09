@@ -13,11 +13,13 @@ import { SubtasksService } from './subtasks.service';
 import { CommentsService } from './comments.service';
 import { LabelsService } from './labels.service';
 import { ActivitiesService } from './activities.service';
+import { AttachmentsService } from './attachments.service';
 import { Task } from './entities/task.entity';
 import { Subtask } from './entities/subtask.entity';
 import { TaskComment } from './entities/task-comment.entity';
 import { TaskLabel } from './entities/task-label.entity';
 import { TaskActivity } from './entities/task-activity.entity';
+import { TaskAttachment } from './entities/task-attachment.entity';
 import { TaskConnection } from './types/task-connection.type';
 import { CreateTaskInput } from './dto/create-task.input';
 import { UpdateTaskInput } from './dto/update-task.input';
@@ -40,6 +42,7 @@ export class TasksResolver {
     private readonly commentsService: CommentsService,
     private readonly labelsService: LabelsService,
     private readonly activitiesService: ActivitiesService,
+    private readonly attachmentsService: AttachmentsService,
   ) {}
 
   @UseGuards(GqlAuthGuard)
@@ -110,6 +113,11 @@ export class TasksResolver {
     return this.activitiesService.findByTask(task.id);
   }
 
+  @ResolveField(() => [TaskAttachment])
+  attachments(@Parent() task: Task) {
+    return this.attachmentsService.findByTask(task.id);
+  }
+
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Subtask)
   createSubtask(
@@ -126,6 +134,26 @@ export class TasksResolver {
     @Args('input') input: UpdateSubtaskInput,
   ) {
     return this.subtasksService.update(input.id, input, user.id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  createChecklist(
+    @CurrentUser() user: RequestUser,
+    @Args('taskId', { type: () => Int }) taskId: number,
+    @Args('title') title: string,
+  ) {
+    return this.subtasksService.createChecklist(taskId, title, user.id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  deleteChecklist(
+    @CurrentUser() user: RequestUser,
+    @Args('taskId', { type: () => Int }) taskId: number,
+    @Args('title') title: string,
+  ) {
+    return this.subtasksService.deleteChecklist(taskId, title, user.id);
   }
 
   @UseGuards(GqlAuthGuard)

@@ -93,4 +93,41 @@ export class PrismaTaskRepository implements TaskRepository {
     if (!task) throw new NotFoundException(`Task ${id} not found`);
     return this.prisma.task.delete({ where: { id } });
   }
+
+  async addChecklistTitle(taskId: number, title: string): Promise<void> {
+    const task = await this.prisma.task.findUnique({ where: { id: taskId } });
+    if (!task) throw new NotFoundException(`Task ${taskId} not found`);
+    if (task.checklistTitles.includes(title)) return;
+    await this.prisma.task.update({
+      where: { id: taskId },
+      data: { checklistTitles: { push: title } },
+    });
+  }
+
+  async renameChecklistTitle(
+    taskId: number,
+    oldTitle: string,
+    newTitle: string,
+  ): Promise<void> {
+    const task = await this.prisma.task.findUnique({ where: { id: taskId } });
+    if (!task) return;
+    const titles = task.checklistTitles.map((t) =>
+      t === oldTitle ? newTitle : t,
+    );
+    await this.prisma.task.update({
+      where: { id: taskId },
+      data: { checklistTitles: titles },
+    });
+  }
+
+  async removeChecklistTitle(taskId: number, title: string): Promise<void> {
+    const task = await this.prisma.task.findUnique({ where: { id: taskId } });
+    if (!task) return;
+    await this.prisma.task.update({
+      where: { id: taskId },
+      data: {
+        checklistTitles: task.checklistTitles.filter((t) => t !== title),
+      },
+    });
+  }
 }

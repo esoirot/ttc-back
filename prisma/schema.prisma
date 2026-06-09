@@ -229,13 +229,26 @@ model Task {
   description String?
   status      TaskStatus    @default(TODO)
   dueDate     DateTime?
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  subtasks    Subtask[]
+  sortOrder        Int           @default(0)
+  checklistTitles  String[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  subtasks         Subtask[]
   comments    TaskComment[]
   labels      TaskLabel[]
   activities  TaskActivity[]
+  attachments TaskAttachment[]
+}
+
+model TaskAttachment {
+  id          Int      @id @default(autoincrement())
+  taskId      Int
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type        String
+  fileName    String?
+  url         String
+  displayText String?
+  createdAt   DateTime @default(now())
 }
 
 model Subtask {

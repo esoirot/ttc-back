@@ -3,6 +3,7 @@ import { Subtask } from './subtask.entity';
 import { TaskComment } from './task-comment.entity';
 import { TaskLabel } from './task-label.entity';
 import { TaskActivity } from './task-activity.entity';
+import { TaskAttachment } from './task-attachment.entity';
 
 export enum TaskStatus {
   TODO = 'TODO',
@@ -38,6 +39,9 @@ export class Task {
   @Field(() => Int)
   sortOrder!: number;
 
+  @Field(() => [String])
+  checklistTitles!: string[];
+
   @Field()
   createdAt!: Date;
 
@@ -55,4 +59,7 @@ export class Task {
 
   @Field(() => [TaskActivity])
   activities!: TaskActivity[];
+
+  @Field(() => [TaskAttachment])
+  attachments!: TaskAttachment[];
 }

@@ -3,6 +3,7 @@ import {
   SubtaskRepository,
   SubtaskModel,
 } from './repositories/subtask.repository';
+import { TaskRepository } from './repositories/task.repository';
 import { ActivitiesService } from './activities.service';
 import { CreateSubtaskInput } from './dto/create-subtask.input';
 import { UpdateSubtaskInput } from './dto/update-subtask.input';
@@ -11,6 +12,7 @@ import { UpdateSubtaskInput } from './dto/update-subtask.input';
 export class SubtasksService {
   constructor(
     private readonly repo: SubtaskRepository,
+    private readonly taskRepo: TaskRepository,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -58,6 +60,31 @@ export class SubtasksService {
     return subtask;
   }
 
+  async createChecklist(
+    taskId: number,
+    title: string,
+    userId: number,
+  ): Promise<boolean> {
+    await this.taskRepo.addChecklistTitle(taskId, title);
+    await this.activitiesService.log(taskId, userId, 'CHECKLIST_CREATED', {
+      title,
+    });
+    return true;
+  }
+
+  async deleteChecklist(
+    taskId: number,
+    title: string,
+    userId: number,
+  ): Promise<boolean> {
+    await this.repo.deleteByChecklist(taskId, title);
+    await this.taskRepo.removeChecklistTitle(taskId, title);
+    await this.activitiesService.log(taskId, userId, 'CHECKLIST_REMOVED', {
+      title,
+    });
+    return true;
+  }
+
   async renameChecklist(
     taskId: number,
     oldTitle: string,
@@ -65,6 +92,7 @@ export class SubtasksService {
     userId: number,
   ): Promise<boolean> {
     await this.repo.renameChecklist(taskId, oldTitle, newTitle);
+    await this.taskRepo.renameChecklistTitle(taskId, oldTitle, newTitle);
     await this.activitiesService.log(taskId, userId, 'CHECKLIST_RENAMED', {
       from: oldTitle,
       to: newTitle,

@@ -23,4 +23,11 @@ export abstract class TaskRepository {
   abstract create(data: CreateTaskInput): Promise<TaskModel>;
   abstract update(id: number, data: UpdateTaskInput): Promise<TaskModel>;
   abstract delete(id: number): Promise<TaskModel>;
+  abstract addChecklistTitle(taskId: number, title: string): Promise<void>;
+  abstract renameChecklistTitle(
+    taskId: number,
+    oldTitle: string,
+    newTitle: string,
+  ): Promise<void>;
+  abstract removeChecklistTitle(taskId: number, title: string): Promise<void>;
 }
