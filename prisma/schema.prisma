@@ -228,7 +228,10 @@ model Task {
   title       String
   description String?
   status      TaskStatus    @default(TODO)
-  dueDate     DateTime?
+  dueDate        DateTime?
+  startDate      DateTime?
+  recurring      String?
+  reminderOffset String?
   sortOrder        Int           @default(0)
   checklistTitles  String[]
   createdAt        DateTime      @default(now())
@@ -241,14 +244,16 @@ model Task {
 }
 
 model TaskAttachment {
-  id          Int      @id @default(autoincrement())
-  taskId      Int
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  type        String
-  fileName    String?
-  url         String
-  displayText String?
-  createdAt   DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  taskId        Int
+  task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type          String
+  fileName      String?
+  url           String
+  displayText   String?
+  storageKey    String?
+  storageDriver String?
+  createdAt     DateTime @default(now())
 }
 
 model Subtask {

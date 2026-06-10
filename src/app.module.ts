@@ -74,6 +74,29 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
         SMTP_HOST: Joi.string().optional(),
         SMTP_USER: Joi.string().optional(),
         SMTP_PASS: Joi.string().optional(),
+        STORAGE_DRIVER: Joi.string()
+          .valid('local', 's3', 'azure')
+          .default('local'),
+        AWS_REGION: Joi.when('STORAGE_DRIVER', {
+          is: 's3',
+          then: Joi.string().required(),
+          otherwise: Joi.string().optional(),
+        }),
+        AWS_ACCESS_KEY_ID: Joi.when('STORAGE_DRIVER', {
+          is: 's3',
+          then: Joi.string().required(),
+          otherwise: Joi.string().optional(),
+        }),
+        AWS_SECRET_ACCESS_KEY: Joi.when('STORAGE_DRIVER', {
+          is: 's3',
+          then: Joi.string().required(),
+          otherwise: Joi.string().optional(),
+        }),
+        S3_BUCKET: Joi.when('STORAGE_DRIVER', {
+          is: 's3',
+          then: Joi.string().required(),
+          otherwise: Joi.string().optional(),
+        }),
       }),
       validationOptions: { allowUnknown: true, abortEarly: false },
     }),

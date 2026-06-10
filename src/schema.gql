@@ -977,6 +977,7 @@ type Tag {
 type Task {
   activities: [TaskActivity!]!
   assigneeId: Int
+  attachments: [TaskAttachment!]!
   checklistTitles: [String!]!
   comments: [TaskComment!]!
   createdAt: DateTime!
@@ -1005,6 +1006,16 @@ type TaskActivity {
 type TaskActivityUser {
   id: Int!
   name: String
+}
+
+type TaskAttachment {
+  createdAt: DateTime!
+  displayText: String
+  fileName: String
+  id: Int!
+  taskId: Int!
+  type: String!
+  url: String!
 }
 
 type TaskComment {

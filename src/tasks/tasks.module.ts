@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { StorageModule } from '../storage/storage.module';
 import { TasksService } from './tasks.service';
 import { SubtasksService } from './subtasks.service';
 import { CommentsService } from './comments.service';
@@ -22,6 +23,7 @@ import { PrismaTaskAttachmentRepository } from './repositories/prisma-task-attac
 import { PrismaService } from '../prisma.service';
 
 @Module({
+  imports: [StorageModule.register()],
   controllers: [AttachmentsController],
   providers: [
     TasksResolver,

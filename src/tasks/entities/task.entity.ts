@@ -36,6 +36,15 @@ export class Task {
   @Field(() => Date, { nullable: true })
   dueDate?: Date | null;
 
+  @Field(() => Date, { nullable: true })
+  startDate?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  recurring?: string | null;
+
+  @Field(() => String, { nullable: true })
+  reminderOffset?: string | null;
+
   @Field(() => Int)
   sortOrder!: number;
 

@@ -45,16 +45,20 @@ async function bootstrap() {
     { limits: { fileSize: 10 * 1024 * 1024 } },
   );
 
-  await mkdir(join(process.cwd(), 'uploads', 'tasks'), { recursive: true });
+  if ((process.env['STORAGE_DRIVER'] ?? 'local') === 'local') {
+    await mkdir(join(process.cwd(), 'uploads', 'tasks'), { recursive: true });
 
-  await fastifyInstance.register(
-    fastifyStatic as unknown as Parameters<typeof fastifyInstance.register>[0],
-    {
-      root: join(process.cwd(), 'uploads'),
-      prefix: '/uploads/',
-      decorateReply: false,
-    },
-  );
+    await fastifyInstance.register(
+      fastifyStatic as unknown as Parameters<
+        typeof fastifyInstance.register
+      >[0],
+      {
+        root: join(process.cwd(), 'uploads'),
+        prefix: '/uploads/',
+        decorateReply: false,
+      },
+    );
+  }
 
   // init() registers NestJS's default JSON parser; must run before we replace it.
   await app.init();

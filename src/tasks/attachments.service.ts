@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { unlink } from 'node:fs/promises';
-import { join } from 'node:path';
+import { StorageRegistry } from '../storage';
 import {
   TaskAttachmentRepository,
   TaskAttachmentModel,
@@ -12,6 +11,7 @@ export class AttachmentsService {
   constructor(
     private readonly repo: TaskAttachmentRepository,
     private readonly activitiesService: ActivitiesService,
+    private readonly storageRegistry: StorageRegistry,
   ) {}
 
   findByTask(taskId: number): Promise<TaskAttachmentModel[]> {
@@ -21,14 +21,20 @@ export class AttachmentsService {
   async createFileAttachment(
     taskId: number,
     fileName: string,
-    url: string,
+    buffer: Buffer,
     userId: number,
+    driver?: string,
   ): Promise<TaskAttachmentModel> {
+    const provider = this.storageRegistry.get(driver);
+    const { storageKey, url } = await provider.upload(fileName, buffer);
+
     const attachment = await this.repo.create({
       taskId,
       type: 'FILE',
       fileName,
       url,
+      storageKey,
+      storageDriver: provider.driverName,
     });
     await this.activitiesService.log(taskId, userId, 'ATTACHMENT_ADDED', {
       name: fileName,
@@ -56,11 +62,47 @@ export class AttachmentsService {
     return attachment;
   }
 
-  async delete(id: number): Promise<void> {
+  async update(
+    id: number,
+    url: string,
+    displayText: string | undefined,
+    userId: number,
+  ): Promise<TaskAttachmentModel | null> {
+    const existing = await this.repo.findById(id);
+    if (!existing) return null;
+    const updated = await this.repo.update(id, {
+      url,
+      displayText: displayText ?? null,
+    });
+    await this.activitiesService.log(
+      existing.taskId,
+      userId,
+      'ATTACHMENT_UPDATED',
+      {
+        name: displayText || url,
+        url,
+      },
+    );
+    return updated;
+  }
+
+  async delete(id: number, userId: number): Promise<void> {
     const attachment = await this.repo.delete(id);
-    if (attachment?.type === 'FILE' && attachment.url.startsWith('/uploads/')) {
-      const filePath = join(process.cwd(), attachment.url);
-      await unlink(filePath).catch(() => undefined);
+    if (attachment) {
+      await this.activitiesService.log(
+        attachment.taskId,
+        userId,
+        'ATTACHMENT_DELETED',
+        {
+          name: attachment.fileName ?? attachment.displayText ?? attachment.url,
+          url: attachment.url,
+        },
+      );
+    }
+    if (attachment?.type === 'FILE') {
+      const driverName = attachment.storageDriver ?? 'local';
+      const key = attachment.storageKey ?? attachment.url;
+      await this.storageRegistry.get(driverName).delete(key);
     }
   }
 }

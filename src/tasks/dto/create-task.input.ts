@@ -20,4 +20,13 @@ export class CreateTaskInput {
 
   @Field({ nullable: true })
   dueDate?: Date;
+
+  @Field({ nullable: true })
+  startDate?: Date;
+
+  @Field({ nullable: true })
+  recurring?: string;
+
+  @Field({ nullable: true })
+  reminderOffset?: string;
 }

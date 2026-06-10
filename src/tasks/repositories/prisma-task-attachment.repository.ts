@@ -11,6 +11,8 @@ type CreateInput = {
   fileName?: string;
   url: string;
   displayText?: string;
+  storageKey?: string;
+  storageDriver?: string;
 };
 
 @Injectable()
@@ -36,6 +38,27 @@ export class PrismaTaskAttachmentRepository implements TaskAttachmentRepository 
         fileName: data.fileName ?? null,
         url: data.url,
         displayText: data.displayText ?? null,
+        storageKey: data.storageKey ?? null,
+        storageDriver: data.storageDriver ?? null,
+      },
+    });
+  }
+
+  async update(
+    id: number,
+    data: { url?: string; displayText?: string | null },
+  ): Promise<TaskAttachmentModel | null> {
+    const existing = await this.prisma.taskAttachment.findUnique({
+      where: { id },
+    });
+    if (!existing) return null;
+    return this.prisma.taskAttachment.update({
+      where: { id },
+      data: {
+        ...(data.url !== undefined && { url: data.url }),
+        ...(data.displayText !== undefined && {
+          displayText: data.displayText,
+        }),
       },
     });
   }
