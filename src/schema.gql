@@ -868,71 +868,33 @@ enum ProjectStatus {
 type Query {
   activeTimer: TimeEntry
   activity(id: Int!): Activity!
-  adminClients(
-    pagination: PaginationInput
-    search: String
-  ): AdminClientConnection!
-  adminInvoices(
-    pagination: PaginationInput
-    search: String
-    status: InvoiceStatus
-  ): AdminInvoiceConnection!
-  adminProjects(
-    pagination: PaginationInput
-    search: String
-    status: ProjectStatus
-  ): AdminProjectConnection!
+  adminClients(pagination: PaginationInput, search: String): AdminClientConnection!
+  adminInvoices(pagination: PaginationInput, search: String, status: InvoiceStatus): AdminInvoiceConnection!
+  adminProjects(pagination: PaginationInput, search: String, status: ProjectStatus): AdminProjectConnection!
   adminRates(type: RateType): AdminRateConnection!
   adminStats: AdminStats!
-  adminTimeEntries(
-    pagination: PaginationInput
-    userId: Int
-  ): AdminTimeEntryConnection!
+  adminTimeEntries(pagination: PaginationInput, userId: Int): AdminTimeEntryConnection!
   backupCodeCount: Int!
   client(id: Int!): Client!
   clientRates(clientId: Int!): [ClientRate!]!
-  clients(
-    clientType: ClientType
-    excludeStatus: ClientStatus
-    pagination: PaginationInput
-    search: String
-    status: ClientStatus
-  ): ClientConnection!
+  clients(clientType: ClientType, excludeStatus: ClientStatus, pagination: PaginationInput, search: String, status: ClientStatus): ClientConnection!
   dashboard: DashboardData!
   invoice(id: Int!): Invoice!
-  invoices(
-    clientId: Int
-    pagination: PaginationInput
-    search: String
-    status: InvoiceStatus
-  ): InvoiceConnection!
+  invoices(clientId: Int, pagination: PaginationInput, search: String, status: InvoiceStatus): InvoiceConnection!
   me: User!
   members: [User!]!
   myActivities: [Activity!]!
   myTasks(pagination: PaginationInput): TaskConnection!
   project(id: Int!): Project
-  projects(
-    pagination: PaginationInput
-    search: String
-    status: ProjectStatus
-  ): ProjectConnection!
+  projects(pagination: PaginationInput, search: String, status: ProjectStatus): ProjectConnection!
   rateSheet(id: Int!): RateSheet!
   rateSheets: [RateSheet!]!
   tags: [Tag!]!
   task(id: Int!): Task!
   tasks(pagination: PaginationInput, projectId: Int!): TaskConnection!
-  timeEntries(
-    end: DateTime
-    pagination: PaginationInput
-    projectId: Int
-    projectIds: [Int!]
-    start: DateTime
-  ): TimeEntryConnection!
+  timeEntries(end: DateTime, pagination: PaginationInput, projectId: Int, projectIds: [Int!], start: DateTime): TimeEntryConnection!
   translationRate(id: Int!): TranslationRate!
-  translationRates(
-    activityId: Int
-    type: TranslationRateType
-  ): [TranslationRate!]!
+  translationRates(activityId: Int, type: TranslationRateType): [TranslationRate!]!
   user(id: Int!): User!
   users: [User!]!
 }
