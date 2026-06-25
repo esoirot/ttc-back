@@ -1,4 +1,5 @@
 import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
+import { ClientStatus } from '../../clients/entities/client.entity';
 
 @ObjectType()
 class DashboardDeadline {
@@ -17,6 +18,14 @@ class DashboardTimeEntry {
 }
 
 @ObjectType()
+class DashboardProspect {
+  @Field(() => Int) id!: number;
+  @Field() name!: string;
+  @Field(() => ClientStatus) status!: ClientStatus;
+  @Field(() => String, { nullable: true }) contactedAt!: string | null;
+}
+
+@ObjectType()
 export class DashboardData {
   @Field(() => Int) activeProjectCount!: number;
   @Field(() => Int) unpaidInvoiceCount!: number;
@@ -24,4 +33,5 @@ export class DashboardData {
   @Field(() => Float) monthToDateRevenue!: number;
   @Field(() => [DashboardDeadline]) upcomingDeadlines!: DashboardDeadline[];
   @Field(() => [DashboardTimeEntry]) recentTimeEntries!: DashboardTimeEntry[];
+  @Field(() => [DashboardProspect]) prospectsToContact!: DashboardProspect[];
 }

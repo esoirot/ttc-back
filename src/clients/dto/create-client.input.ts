@@ -1,5 +1,9 @@
 import { InputType, Field, Int, Float } from '@nestjs/graphql';
-import { ClientType, ClientIndustry } from '../entities/client.entity';
+import {
+  ClientType,
+  ClientIndustry,
+  ClientStatus,
+} from '../entities/client.entity';
 
 @InputType()
 export class CreateClientInput {
@@ -62,6 +66,12 @@ export class CreateClientInput {
 
   @Field(() => ClientIndustry, { nullable: true })
   industry?: ClientIndustry;
+
+  @Field(() => ClientStatus, { nullable: true })
+  status?: ClientStatus;
+
+  @Field(() => Date, { nullable: true })
+  contactedAt?: Date;
 
   @Field(() => [Int], { nullable: true })
   tagIds?: number[];

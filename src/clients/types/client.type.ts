@@ -32,6 +32,16 @@ export type ClientModel = {
   billingEndOfMonth: boolean;
   website: string | null;
   industry: string | null;
+  status:
+    | 'TO_CONTACT'
+    | 'CONTACTED'
+    | 'FOLLOW_UP_1'
+    | 'FOLLOW_UP_2'
+    | 'FOLLOW_UP_3'
+    | 'RECONTACT_LATER'
+    | 'TALKING'
+    | 'CLIENT';
+  contactedAt: Date | null;
   tags: { id: number; name: string }[];
   createdAt: Date;
   updatedAt: Date;

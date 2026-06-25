@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma.service';
 import {
   Prisma,
   ClientType as PrismaClientType,
+  ClientStatus as PrismaClientStatus,
 } from '../../generated/prisma/client';
 import { ClientRepository, ClientConnectionModel } from './client.repository';
 import { ClientModel, CompanyContactModel } from '../types/client.type';
@@ -67,6 +68,8 @@ export class PrismaClientRepository implements ClientRepository {
     pagination?: { limit?: number; cursor?: number },
     search?: string,
     clientType?: string,
+    excludeStatus?: string,
+    status?: string,
   ): Promise<ClientConnectionModel> {
     const limit = pagination?.limit ?? 20;
     const cursor = pagination?.cursor;
@@ -76,6 +79,10 @@ export class PrismaClientRepository implements ClientRepository {
         ? { name: { contains: search, mode: 'insensitive' as const } }
         : {}),
       ...(clientType ? { clientType: clientType as PrismaClientType } : {}),
+      ...(excludeStatus
+        ? { status: { not: excludeStatus as PrismaClientStatus } }
+        : {}),
+      ...(status ? { status: status as PrismaClientStatus } : {}),
     };
     const where = {
       ...baseWhere,

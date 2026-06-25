@@ -265,6 +265,7 @@ type Client {
   city: String
   clientType: ClientType!
   company: String
+  contactedAt: DateTime
   contacts: [CompanyContact!]!
   country: String
   createdAt: DateTime!
@@ -280,6 +281,7 @@ type Client {
   paymentDelayDays: Int
   phone: String
   postalCode: String
+  status: ClientStatus!
   tags: [ClientTagItem!]!
   taxRate: Float
   updatedAt: DateTime!
@@ -323,6 +325,17 @@ type ClientRate {
   type: RateType!
   updatedAt: DateTime!
   userId: Int!
+}
+
+enum ClientStatus {
+  CLIENT
+  CONTACTED
+  FOLLOW_UP_1
+  FOLLOW_UP_2
+  FOLLOW_UP_3
+  RECONTACT_LATER
+  TALKING
+  TO_CONTACT
 }
 
 type ClientTagItem {
@@ -393,6 +406,7 @@ input CreateClientInput {
   city: String
   clientType: ClientType
   company: String
+  contactedAt: DateTime
   country: String
   email: String
   firstName: String
@@ -405,6 +419,7 @@ input CreateClientInput {
   paymentDelayDays: Int
   phone: String
   postalCode: String
+  status: ClientStatus
   tagIds: [Int!]
   taxRate: Float
   vatNumber: String
@@ -485,6 +500,9 @@ input CreateTaskInput {
   description: String
   dueDate: DateTime
   projectId: Int!
+  recurring: String
+  reminderOffset: String
+  startDate: DateTime
   status: TaskStatus
   title: String!
 }
@@ -560,6 +578,7 @@ type DashboardData {
   activeProjectCount: Int!
   monthToDateRevenue: Float!
   monthToDateSeconds: Int!
+  prospectsToContact: [DashboardProspect!]!
   recentTimeEntries: [DashboardTimeEntry!]!
   unpaidInvoiceCount: Int!
   upcomingDeadlines: [DashboardDeadline!]!
@@ -570,6 +589,13 @@ type DashboardDeadline {
   id: Int!
   status: String!
   title: String!
+}
+
+type DashboardProspect {
+  contactedAt: String
+  id: Int!
+  name: String!
+  status: ClientStatus!
 }
 
 type DashboardTimeEntry {
@@ -867,8 +893,10 @@ type Query {
   clientRates(clientId: Int!): [ClientRate!]!
   clients(
     clientType: ClientType
+    excludeStatus: ClientStatus
     pagination: PaginationInput
     search: String
+    status: ClientStatus
   ): ClientConnection!
   dashboard: DashboardData!
   invoice(id: Int!): Invoice!
@@ -986,7 +1014,10 @@ type Task {
   id: Int!
   labels: [TaskLabel!]!
   projectId: Int!
+  recurring: String
+  reminderOffset: String
   sortOrder: Int!
+  startDate: DateTime
   status: TaskStatus!
   subtasks: [Subtask!]!
   title: String!
@@ -1142,6 +1173,7 @@ input UpdateClientInput {
   city: String
   clientType: ClientType
   company: String
+  contactedAt: DateTime
   country: String
   email: String
   firstName: String
@@ -1155,6 +1187,7 @@ input UpdateClientInput {
   paymentDelayDays: Int
   phone: String
   postalCode: String
+  status: ClientStatus
   tagIds: [Int!]
   taxRate: Float
   vatNumber: String
@@ -1265,7 +1298,10 @@ input UpdateTaskInput {
   dueDate: DateTime
   id: Int!
   projectId: Int
+  recurring: String
+  reminderOffset: String
   sortOrder: Int
+  startDate: DateTime
   status: TaskStatus
   title: String
 }

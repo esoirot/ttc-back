@@ -34,6 +34,19 @@ export enum ClientIndustry {
 
 registerEnumType(ClientIndustry, { name: 'ClientIndustry' });
 
+export enum ClientStatus {
+  TO_CONTACT = 'TO_CONTACT',
+  CONTACTED = 'CONTACTED',
+  FOLLOW_UP_1 = 'FOLLOW_UP_1',
+  FOLLOW_UP_2 = 'FOLLOW_UP_2',
+  FOLLOW_UP_3 = 'FOLLOW_UP_3',
+  RECONTACT_LATER = 'RECONTACT_LATER',
+  TALKING = 'TALKING',
+  CLIENT = 'CLIENT',
+}
+
+registerEnumType(ClientStatus, { name: 'ClientStatus' });
+
 @ObjectType()
 class ClientTagItem {
   @Field(() => Int)
@@ -110,6 +123,12 @@ export class Client {
 
   @Field(() => ClientIndustry, { nullable: true })
   industry?: ClientIndustry;
+
+  @Field(() => ClientStatus)
+  status!: ClientStatus;
+
+  @Field(() => Date, { nullable: true })
+  contactedAt?: Date;
 
   @Field(() => [ClientTagItem])
   tags!: ClientTagItem[];

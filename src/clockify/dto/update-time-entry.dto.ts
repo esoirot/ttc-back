@@ -1,8 +1,8 @@
 export class UpdateTimeEntryDto {
-  start: string;
+  start!: string;
   end?: string;
   description?: string;
   projectId?: string | null;
-  billable: boolean;
-  tagIds: string[];
+  billable!: boolean;
+  tagIds!: string[];
 }

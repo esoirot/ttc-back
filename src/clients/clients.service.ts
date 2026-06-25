@@ -9,7 +9,7 @@ import { CreateClientInput } from './dto/create-client.input';
 import { UpdateClientInput } from './dto/update-client.input';
 import { CreateCompanyContactInput } from './dto/create-company-contact.input';
 import { UpdateCompanyContactInput } from './dto/update-company-contact.input';
-import { ClientType } from './entities/client.entity';
+import { ClientType, ClientStatus } from './entities/client.entity';
 
 @Injectable()
 export class ClientsService {
@@ -24,8 +24,18 @@ export class ClientsService {
     pagination?: { limit?: number; cursor?: number },
     search?: string,
     clientType?: ClientType,
+    excludeStatus?: ClientStatus,
+    status?: ClientStatus,
   ): Promise<ClientConnectionModel> {
-    return this.repo.findAll(userId, isAdmin, pagination, search, clientType);
+    return this.repo.findAll(
+      userId,
+      isAdmin,
+      pagination,
+      search,
+      clientType,
+      excludeStatus,
+      status,
+    );
   }
 
   findOne(id: number, userId: number): Promise<ClientModel> {

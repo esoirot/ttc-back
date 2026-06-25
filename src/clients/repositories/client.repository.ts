@@ -27,6 +27,8 @@ export abstract class ClientRepository {
     pagination?: PaginationArgs,
     search?: string,
     clientType?: string,
+    excludeStatus?: string,
+    status?: string,
   ): Promise<ClientConnectionModel>;
   abstract create(
     userId: number,

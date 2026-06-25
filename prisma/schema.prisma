@@ -146,6 +146,17 @@ enum ClientIndustry {
   OTHER
 }
 
+enum ClientStatus {
+  TO_CONTACT
+  CONTACTED
+  FOLLOW_UP_1
+  FOLLOW_UP_2
+  FOLLOW_UP_3
+  RECONTACT_LATER
+  TALKING
+  CLIENT
+}
+
 model Client {
   id                Int              @id @default(autoincrement())
   userId            Int
@@ -170,6 +181,8 @@ model Client {
   billingEndOfMonth Boolean          @default(false)
   website           String?
   industry          ClientIndustry?
+  status            ClientStatus     @default(CLIENT)
+  contactedAt       DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   projects          Project[]

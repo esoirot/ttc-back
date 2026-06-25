@@ -1,5 +1,5 @@
 import { Resolver, Query, Mutation, Args, Context, Int } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UnauthorizedException, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service';
@@ -67,7 +67,6 @@ export class AuthResolver {
       input.password,
     );
     if (!user) {
-      const { UnauthorizedException } = await import('@nestjs/common');
       throw new UnauthorizedException('Invalid credentials');
     }
     return this.authService.login(user, res);

@@ -1,11 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { DashboardRepository } from './dashboard.repository';
+import { ClientStatus as PrismaClientStatus } from '../../generated/prisma/client';
+import { ClientStatus } from '../../clients/entities/client.entity';
+import { isProspectDueForContact } from '../../clients/prospect-due.util';
 import type {
   DashboardModel,
   DashboardDeadlineModel,
   DashboardEntryModel,
+  DashboardProspectModel,
 } from '../types/dashboard.type';
+
+const PROSPECT_CANDIDATE_STATUSES: PrismaClientStatus[] = [
+  PrismaClientStatus.TO_CONTACT,
+  PrismaClientStatus.CONTACTED,
+  PrismaClientStatus.FOLLOW_UP_1,
+  PrismaClientStatus.FOLLOW_UP_2,
+  PrismaClientStatus.RECONTACT_LATER,
+];
 
 @Injectable()
 export class PrismaDashboardRepository implements DashboardRepository {
@@ -23,6 +35,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       monthInvoiceItems,
       deadlineProjects,
       recentEntries,
+      prospectCandidates,
     ] = await Promise.all([
       this.prisma.project.count({ where: { userId, status: 'ACTIVE' } }),
       this.prisma.invoice.count({
@@ -60,6 +73,10 @@ export class PrismaDashboardRepository implements DashboardRepository {
           durationSeconds: true,
         },
       }),
+      this.prisma.client.findMany({
+        where: { userId, status: { in: PROSPECT_CANDIDATE_STATUSES } },
+        select: { id: true, name: true, status: true, contactedAt: true },
+      }),
     ]);
 
     const monthToDateSeconds = monthTimeEntries.reduce(
@@ -88,6 +105,25 @@ export class PrismaDashboardRepository implements DashboardRepository {
       durationSeconds: e.durationSeconds,
     }));
 
+    const prospectsToContact: DashboardProspectModel[] = prospectCandidates
+      .filter((c) =>
+        isProspectDueForContact(
+          c.status as unknown as ClientStatus,
+          c.contactedAt,
+          now,
+        ),
+      )
+      .sort(
+        (a, b) =>
+          (a.contactedAt?.getTime() ?? 0) - (b.contactedAt?.getTime() ?? 0),
+      )
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        status: c.status,
+        contactedAt: c.contactedAt?.toISOString() ?? null,
+      }));
+
     return {
       activeProjectCount,
       unpaidInvoiceCount,
@@ -95,6 +131,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       monthToDateRevenue,
       upcomingDeadlines,
       recentTimeEntries,
+      prospectsToContact,
     };
   }
 }
