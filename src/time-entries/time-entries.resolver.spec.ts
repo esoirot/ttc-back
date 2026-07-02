@@ -13,6 +13,7 @@ describe('TimeEntriesResolver', () => {
     startTimer: jest.Mock;
     stopTimer: jest.Mock;
     update: jest.Mock;
+    resumeEntry: jest.Mock;
     delete: jest.Mock;
   };
   let timerEvents: { publish: jest.Mock };
@@ -27,6 +28,7 @@ describe('TimeEntriesResolver', () => {
       startTimer: jest.fn(),
       stopTimer: jest.fn(),
       update: jest.fn(),
+      resumeEntry: jest.fn(),
       delete: jest.fn(),
     };
     timerEvents = { publish: jest.fn().mockResolvedValue(undefined) };
@@ -51,12 +53,16 @@ describe('TimeEntriesResolver', () => {
 
     const start = new Date('2024-01-01');
     const end = new Date('2024-01-31');
-    await resolver.findAll(user, 2, [2, 3], start, end, { limit: 10 });
+    await resolver.findAll(user, 2, [2, 3], undefined, undefined, start, end, {
+      limit: 10,
+    });
     expect(service.findAll).toHaveBeenCalledWith(
       1,
       {
         projectId: 2,
         projectIds: [2, 3],
+        taskId: undefined,
+        subtaskId: undefined,
         start,
         end,
       },
@@ -122,6 +128,37 @@ describe('TimeEntriesResolver', () => {
 
       expect(service.stopTimer).toHaveBeenCalledWith(1);
       expect(timerEvents.publish).toHaveBeenCalledWith(1, null);
+      expect(result).toEqual(entry);
+    });
+
+    it('returns entry even if SSE publish fails', async () => {
+      const entry = mockTimeEntry({ endTime: new Date() });
+      service.stopTimer.mockResolvedValue(entry);
+      timerEvents.publish.mockRejectedValue(new Error('SSE down'));
+
+      const result = await resolver.stopTimer(user);
+      expect(result).toEqual(entry);
+    });
+  });
+
+  describe('resumeTimeEntry', () => {
+    it('resumes entry and publishes SSE event', async () => {
+      const entry = mockTimeEntry({ endTime: null });
+      service.resumeEntry.mockResolvedValue(entry);
+
+      const result = await resolver.resumeTimeEntry(1, user);
+
+      expect(service.resumeEntry).toHaveBeenCalledWith(1, 1);
+      expect(timerEvents.publish).toHaveBeenCalledWith(1, entry);
+      expect(result).toEqual(entry);
+    });
+
+    it('returns entry even if SSE publish fails', async () => {
+      const entry = mockTimeEntry({ endTime: null });
+      service.resumeEntry.mockResolvedValue(entry);
+      timerEvents.publish.mockRejectedValue(new Error('SSE down'));
+
+      const result = await resolver.resumeTimeEntry(1, user);
       expect(result).toEqual(entry);
     });
   });

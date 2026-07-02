@@ -31,6 +31,7 @@ import { CreateTaskLabelInput } from './dto/create-task-label.input';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
+import { PrismaService } from '../prisma.service';
 
 type RequestUser = { id: number };
 
@@ -43,6 +44,7 @@ export class TasksResolver {
     private readonly labelsService: LabelsService,
     private readonly activitiesService: ActivitiesService,
     private readonly attachmentsService: AttachmentsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @UseGuards(GqlAuthGuard)
@@ -116,6 +118,17 @@ export class TasksResolver {
   @ResolveField(() => [TaskAttachment])
   attachments(@Parent() task: Task) {
     return this.attachmentsService.findByTask(task.id);
+  }
+
+  @ResolveField(() => Int, { nullable: true })
+  async totalTimeSeconds(
+    @Parent() task: { id: number },
+  ): Promise<number | null> {
+    const result = await this.prisma.timeEntry.aggregate({
+      where: { taskId: task.id },
+      _sum: { durationSeconds: true },
+    });
+    return result._sum.durationSeconds;
   }
 
   @UseGuards(GqlAuthGuard)

@@ -29,13 +29,15 @@ export class TimeEntriesResolver {
     @Args('projectId', { type: () => Int, nullable: true }) projectId?: number,
     @Args('projectIds', { type: () => [Int], nullable: true })
     projectIds?: number[],
+    @Args('taskId', { type: () => Int, nullable: true }) taskId?: number,
+    @Args('subtaskId', { type: () => Int, nullable: true }) subtaskId?: number,
     @Args('start', { nullable: true }) start?: Date,
     @Args('end', { nullable: true }) end?: Date,
     @Args('pagination', { nullable: true }) pagination?: PaginationInput,
   ) {
     return this.timeEntriesService.findAll(
       user.id,
-      { projectId, projectIds, start, end },
+      { projectId, projectIds, taskId, subtaskId, start, end },
       pagination,
     );
   }
@@ -89,6 +91,21 @@ export class TimeEntriesResolver {
     @CurrentUser() user: RequestUser,
   ) {
     return this.timeEntriesService.update(input.id, user.id, input);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => TimeEntry)
+  async resumeTimeEntry(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    const entry = await this.timeEntriesService.resumeEntry(id, user.id);
+    void this.timerEventsService
+      .publish(user.id, entry)
+      .catch((err: unknown) =>
+        this.logger.warn(`SSE publish failed user=${user.id.toString()}`, err),
+      );
+    return entry;
   }
 
   @UseGuards(GqlAuthGuard)

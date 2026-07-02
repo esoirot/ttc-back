@@ -68,6 +68,9 @@ export class Project {
   @Field(() => Date, { nullable: true })
   startDate?: Date | null;
 
+  @Field(() => Int, { nullable: true })
+  totalTimeSeconds?: number | null;
+
   @Field(() => Date)
   createdAt!: Date;
 

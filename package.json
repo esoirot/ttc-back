@@ -124,7 +124,10 @@
           "tsconfig": {
             "module": "CommonJS",
             "moduleResolution": "node",
-            "resolvePackageJsonExports": false
+            "resolvePackageJsonExports": false,
+            "declaration": false,
+            "rootDir": "./src",
+            "ignoreDeprecations": "6.0"
           }
         }
       ]

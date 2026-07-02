@@ -202,4 +202,67 @@ describe('ClientsService', () => {
       expect(result).toBe(true);
     });
   });
+
+  describe('findByHubspotIdGlobal', () => {
+    it('delegates to repository', async () => {
+      const client = mockClient({ hubspotId: 'hs-789' });
+      repo.findByHubspotIdGlobal.mockResolvedValue(client);
+
+      const result = await service.findByHubspotIdGlobal('hs-789');
+
+      expect(repo.findByHubspotIdGlobal).toHaveBeenCalledWith('hs-789');
+      expect(result).toEqual(client);
+    });
+
+    it('returns null when no client matches', async () => {
+      repo.findByHubspotIdGlobal.mockResolvedValue(null);
+
+      const result = await service.findByHubspotIdGlobal('unknown');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('createContact', () => {
+    it('delegates to repository with input and userId', async () => {
+      const contact = { id: 1, clientId: 1, firstName: 'Jane' };
+      repo.createContact.mockResolvedValue(contact);
+
+      const result = await service.createContact(1, {
+        clientId: 1,
+        firstName: 'Jane',
+      });
+
+      expect(repo.createContact).toHaveBeenCalledWith(
+        { clientId: 1, firstName: 'Jane' },
+        1,
+      );
+      expect(result).toEqual(contact);
+    });
+  });
+
+  describe('updateContact', () => {
+    it('delegates to repository with id, userId, and input', async () => {
+      const contact = {
+        id: 2,
+        clientId: 1,
+        firstName: 'Jane',
+        lastName: 'Doe',
+      };
+      repo.updateContact.mockResolvedValue(contact);
+
+      const result = await service.updateContact(2, 1, {
+        id: 2,
+        firstName: 'Jane',
+        lastName: 'Doe',
+      });
+
+      expect(repo.updateContact).toHaveBeenCalledWith(2, 1, {
+        id: 2,
+        firstName: 'Jane',
+        lastName: 'Doe',
+      });
+      expect(result).toEqual(contact);
+    });
+  });
 });

@@ -8,6 +8,12 @@ export class UpdateTimeEntryInput {
   @Field(() => Int, { nullable: true })
   projectId?: number;
 
+  @Field(() => Int, { nullable: true })
+  taskId?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  subtaskId?: number | null;
+
   @Field({ nullable: true })
   description?: string;
 

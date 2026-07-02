@@ -46,6 +46,24 @@ const makeOkResponse = (data: unknown, status = 200) =>
     json: () => Promise.resolve(data),
   } as Response);
 
+const makeErrorResponse = (status: number, message?: string) =>
+  Promise.resolve({
+    ok: false,
+    status,
+    json: () => Promise.resolve(message ? { message } : {}),
+  } as Response);
+
+// mockFetch normally resolves directly, bypassing the callback passed to
+// fetchWithRetry — so request()'s own fetch() call (headers/body construction)
+// never actually runs. This variant makes the mock invoke that callback for
+// real, against a controllable global.fetch spy, for tests that need to
+// assert on the actual outgoing request.
+const invokeRealFetch = () => {
+  const fetchSpy = jest.spyOn(globalThis, 'fetch');
+  mockFetch.mockImplementation(async (cb) => cb(new AbortController().signal));
+  return fetchSpy;
+};
+
 describe('HubspotService', () => {
   let service: HubspotService;
   let usersService: {
@@ -103,7 +121,10 @@ describe('HubspotService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    // resetAllMocks (not clearAllMocks) — clearAllMocks leaves queued
+    // mockResolvedValueOnce()/mockImplementation() entries in place, so an
+    // unconsumed once-value from one test can leak into the next.
+    jest.resetAllMocks();
   });
 
   it('should be defined', () => {
@@ -124,6 +145,12 @@ describe('HubspotService', () => {
     });
   });
 
+  describe('callbackRedirectUrl', () => {
+    it('builds the redirect URL from FRONTEND_URL', () => {
+      expect(service.callbackRedirectUrl).toBe('http://localhost:5173/hubspot');
+    });
+  });
+
   describe('getStatus', () => {
     it('returns connected=true when user has accessToken', async () => {
       const result = await service.getStatus(1);
@@ -140,6 +167,20 @@ describe('HubspotService', () => {
   });
 
   describe('disconnect', () => {
+    let globalFetchSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // disconnect() fires a real fetch() (not fetchWithRetry) to revoke the
+      // refresh token — stub it so unit tests never hit the network.
+      globalFetchSpy = jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue({ ok: true } as Response);
+    });
+
+    afterEach(() => {
+      globalFetchSpy.mockRestore();
+    });
+
     it('nulls all hubspot fields', async () => {
       await service.disconnect(1);
       expect(usersService.updateHubspot).toHaveBeenCalledWith(1, {
@@ -148,6 +189,32 @@ describe('HubspotService', () => {
         hubspotTokenExpiresAt: null,
         hubspotPortalId: null,
       });
+    });
+
+    it('revokes the refresh token server-side when one exists', async () => {
+      await service.disconnect(1);
+
+      expect(globalFetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/oauth/v1/refresh-tokens/ref-token'),
+        { method: 'DELETE' },
+      );
+    });
+
+    it('skips revocation when the user has no refresh token', async () => {
+      usersService.findOne.mockResolvedValue(
+        makeUser({ hubspotRefreshToken: null }),
+      );
+
+      await service.disconnect(1);
+
+      expect(globalFetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('logs and does not throw when revocation fails', async () => {
+      globalFetchSpy.mockRejectedValue(new Error('network down'));
+
+      await expect(service.disconnect(1)).resolves.toBeUndefined();
+      await new Promise((r) => setImmediate(r)); // let the fire-and-forget .catch() run
     });
   });
 
@@ -172,6 +239,20 @@ describe('HubspotService', () => {
         email: 'c@d.com',
         connected: false,
       });
+    });
+
+    it('falls back to null for missing portalId / expiresAt', async () => {
+      usersService.findAll.mockResolvedValue([
+        makeUser({
+          id: 3,
+          hubspotPortalId: null,
+          hubspotTokenExpiresAt: null,
+        }),
+      ]);
+
+      const result = await service.listConnections();
+
+      expect(result[0]).toMatchObject({ portalId: null, expiresAt: null });
     });
   });
 
@@ -291,6 +372,33 @@ describe('HubspotService', () => {
 
       expect(clientsService.update).not.toHaveBeenCalled();
     });
+
+    it('ignores subscription types with no handler', async () => {
+      service.handleWebhookEvents([
+        makeWebhookEvent({ subscriptionType: 'deal.creation' }),
+      ]);
+
+      await new Promise((r) => setImmediate(r));
+
+      expect(clientsService.findByHubspotIdGlobal).not.toHaveBeenCalled();
+    });
+
+    it('logs and does not throw when the handler rejects', async () => {
+      clientsService.findByHubspotIdGlobal.mockRejectedValue(
+        new Error('db down'),
+      );
+
+      expect(() =>
+        service.handleWebhookEvents([
+          makeWebhookEvent({
+            propertyName: 'email',
+            propertyValue: 'x@y.com',
+          }),
+        ]),
+      ).not.toThrow();
+
+      await new Promise((r) => setImmediate(r));
+    });
   });
 
   describe('getValidToken (via listContacts)', () => {
@@ -326,6 +434,75 @@ describe('HubspotService', () => {
 
       await expect(service.listContacts(1)).rejects.toThrow(
         BadRequestException,
+      );
+    });
+  });
+
+  describe('request() outgoing call construction', () => {
+    it('sends Authorization and Content-Type when the request has a body', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ id: 'c-new' }), { status: 200 }),
+      );
+
+      await service.createContact(1, { email: 'x@y.com' });
+
+      const [, init] = fetchSpy.mock.calls[0];
+      expect(init).toMatchObject({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer acc-token',
+          'Content-Type': 'application/json',
+        }) as Record<string, string>,
+      });
+    });
+
+    it('sends no Content-Type or body for a bodyless request', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      );
+
+      await service.listContacts(1);
+
+      const [, init] = fetchSpy.mock.calls[0];
+      expect(init?.body).toBeUndefined();
+      expect(
+        (init?.headers as Record<string, string>)['Content-Type'],
+      ).toBeUndefined();
+    });
+
+    it('includes an after cursor when given', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      );
+
+      await service.listContacts(1, 'cursor-1');
+
+      const [url] = fetchSpy.mock.calls[0];
+      expect(String(url as string)).toContain('after=cursor-1');
+    });
+
+    it('falls back to a generic message when the error body has no message', async () => {
+      mockFetch.mockResolvedValue(makeErrorResponse(500));
+
+      await expect(service.listContacts(1)).rejects.toThrow(
+        'HubSpot API error',
+      );
+    });
+
+    it('falls back to a generic message when the error body is not valid JSON', async () => {
+      mockFetch.mockResolvedValue(
+        Promise.resolve({
+          ok: false,
+          status: 502,
+          json: () => Promise.reject(new Error('not json')),
+        } as unknown as Response),
+      );
+
+      await expect(service.listContacts(1)).rejects.toThrow(
+        'HubSpot API error',
       );
     });
   });
@@ -434,6 +611,64 @@ describe('HubspotService', () => {
         dto,
       );
     });
+
+    it('omits optional properties that are not provided', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ id: 'c-new', properties: {} }), {
+          status: 200,
+        }),
+      );
+
+      await service.createContact(1, { email: 'x@y.com' });
+
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(init?.body as string) as {
+        properties: Record<string, unknown>;
+      };
+      expect(body.properties).toEqual({ email: 'x@y.com' });
+    });
+  });
+
+  describe('searchContacts', () => {
+    it('defaults properties when the dto does not specify any', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      );
+
+      await service.searchContacts(1, { filterGroups: [] });
+
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(init?.body as string) as {
+        properties: string[];
+      };
+      expect(body.properties).toEqual([
+        'email',
+        'firstname',
+        'lastname',
+        'phone',
+        'company',
+      ]);
+    });
+
+    it('uses caller-provided properties when given', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      );
+
+      await service.searchContacts(1, {
+        filterGroups: [],
+        properties: ['email'],
+      });
+
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(init?.body as string) as {
+        properties: string[];
+      };
+      expect(body.properties).toEqual(['email']);
+    });
   });
 
   describe('updateContact', () => {
@@ -528,6 +763,19 @@ describe('HubspotService', () => {
         BadRequestException,
       );
     });
+
+    it('throws BadRequestException for an expired OAuth state', async () => {
+      const authUrl = service.buildAuthUrl(1);
+      const state = new URLSearchParams(authUrl.split('?')[1]).get('state')!;
+
+      jest.useFakeTimers({ doNotFake: ['nextTick'] });
+      jest.advanceTimersByTime(11 * 60 * 1000); // past the 10min OAuth state TTL
+
+      await expect(service.handleCallback('code', state)).rejects.toThrow(
+        'OAuth state expired',
+      );
+      jest.useRealTimers();
+    });
   });
 
   describe('refreshAccessToken (via getValidToken)', () => {
@@ -585,6 +833,18 @@ describe('HubspotService', () => {
       expect(mockFetch).toHaveBeenCalled();
     });
 
+    it('listCompanies — includes after cursor when given', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      );
+
+      await service.listCompanies(1, 'cursor-1');
+
+      const [url] = fetchSpy.mock.calls[0];
+      expect(String(url as string)).toContain('after=cursor-1');
+    });
+
     it('createCompany — posts and logs audit', async () => {
       const company = { id: 'co-new', properties: {} };
       mockFetch.mockResolvedValue(makeOkResponse(company));
@@ -598,6 +858,23 @@ describe('HubspotService', () => {
         'hubspot:companies/co-new',
         dto,
       );
+    });
+
+    it('createCompany — omits optional properties that are not provided', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ id: 'co-new', properties: {} }), {
+          status: 200,
+        }),
+      );
+
+      await service.createCompany(1, { name: 'ACME Ltd' });
+
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(init?.body as string) as {
+        properties: Record<string, unknown>;
+      };
+      expect(body.properties).toEqual({ name: 'ACME Ltd' });
     });
 
     it('updateCompany — patches and logs audit', async () => {
@@ -622,6 +899,14 @@ describe('HubspotService', () => {
 
       expect(mockFetch).toHaveBeenCalled();
     });
+
+    it('getCompany — delegates to request', async () => {
+      const company = { id: 'co-9', properties: {} };
+      mockFetch.mockResolvedValue(makeOkResponse(company));
+
+      const result = await service.getCompany(1, 'co-9');
+      expect(result).toEqual(company);
+    });
   });
 
   describe('deals CRUD', () => {
@@ -629,6 +914,18 @@ describe('HubspotService', () => {
       mockFetch.mockResolvedValue(makeOkResponse({ results: [] }));
       await service.listDeals(1);
       expect(mockFetch).toHaveBeenCalled();
+    });
+
+    it('listDeals — includes after cursor when given', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      );
+
+      await service.listDeals(1, 'cursor-2');
+
+      const [url] = fetchSpy.mock.calls[0];
+      expect(String(url as string)).toContain('after=cursor-2');
     });
 
     it('createDeal — posts and logs audit', async () => {
@@ -644,6 +941,23 @@ describe('HubspotService', () => {
         'hubspot:deals/d-new',
         dto,
       );
+    });
+
+    it('createDeal — omits optional properties that are not provided', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ id: 'd-new', properties: {} }), {
+          status: 200,
+        }),
+      );
+
+      await service.createDeal(1, { dealname: 'Big Deal' });
+
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(init?.body as string) as {
+        properties: Record<string, unknown>;
+      };
+      expect(body.properties).toEqual({ dealname: 'Big Deal' });
     });
 
     it('updateDeal — patches and logs audit', async () => {
@@ -706,6 +1020,45 @@ describe('HubspotService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it.each([
+      ['contacts', 'deals'],
+      ['companies', 'contacts'],
+      ['deals', 'contacts'],
+    ])(
+      'resolves a default associationTypeId for %s -> %s',
+      async (fromObjectType, toObjectType) => {
+        mockFetch.mockResolvedValue(makeOkResponse(null, 204));
+
+        await expect(
+          service.createAssociation(1, {
+            fromObjectType,
+            fromObjectId: '1',
+            toObjectType,
+            toObjectId: '2',
+          }),
+        ).resolves.toBeUndefined();
+      },
+    );
+
+    it('uses an explicit associationTypeId when given', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(new Response(null, { status: 204 }));
+
+      await service.createAssociation(1, {
+        fromObjectType: 'contacts',
+        fromObjectId: '1',
+        toObjectType: 'companies',
+        toObjectId: '2',
+        associationTypeId: 42,
+      });
+
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(init?.body as string) as {
+        inputs: { type: { associationTypeId: number } }[];
+      };
+      expect(body.inputs[0].type.associationTypeId).toBe(42);
+    });
   });
 
   describe('subscribeWebhook', () => {
@@ -737,6 +1090,34 @@ describe('HubspotService', () => {
         subscriptionType: 'contact.creation',
       });
       expect(result).toEqual({ id: 'sub-1' });
+    });
+
+    it('includes propertyName when given', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ id: 'sub-2' }), { status: 200 }),
+      );
+
+      await service.subscribeWebhook({
+        subscriptionType: 'contact.propertyChange',
+        propertyName: 'email',
+      });
+
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(init?.body as string) as {
+        propertyName?: string;
+      };
+      expect(body.propertyName).toBe('email');
+    });
+
+    it('throws HttpException when HubSpot rejects the subscription', async () => {
+      mockFetch.mockResolvedValue(
+        makeErrorResponse(400, 'Invalid subscription type'),
+      );
+
+      await expect(
+        service.subscribeWebhook({ subscriptionType: 'bad.type' }),
+      ).rejects.toThrow('Invalid subscription type');
     });
   });
 

@@ -2,6 +2,27 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { EntryTag } from './entry-tag.entity';
 
 @ObjectType()
+class TimeEntryTaskRef {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => String)
+  title!: string;
+}
+
+@ObjectType()
+class TimeEntrySubtaskRef {
+  @Field(() => Int)
+  id!: number;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String, { nullable: true })
+  checklistTitle?: string | null;
+}
+
+@ObjectType()
 export class TimeEntry {
   @Field(() => Int)
   id!: number;
@@ -11,6 +32,18 @@ export class TimeEntry {
 
   @Field(() => Int, { nullable: true })
   projectId?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  taskId?: number | null;
+
+  @Field(() => TimeEntryTaskRef, { nullable: true })
+  task?: TimeEntryTaskRef | null;
+
+  @Field(() => Int, { nullable: true })
+  subtaskId?: number | null;
+
+  @Field(() => TimeEntrySubtaskRef, { nullable: true })
+  subtask?: TimeEntrySubtaskRef | null;
 
   @Field(() => String, { nullable: true })
   description?: string | null;

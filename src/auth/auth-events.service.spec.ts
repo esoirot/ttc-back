@@ -2,7 +2,8 @@ jest.mock('ioredis', () => jest.fn());
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import { Logger } from '@nestjs/common';
+import Redis, { type RedisOptions } from 'ioredis';
 import { AuthEventsService } from './auth-events.service';
 
 const MockRedis = Redis as unknown as jest.Mock;
@@ -72,6 +73,48 @@ describe('AuthEventsService', () => {
         'reconnecting',
         expect.any(Function),
       );
+    });
+
+    it('logs and does not throw when the subscriber connection errors', () => {
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      service.onModuleInit();
+
+      expect(() =>
+        subscriberMock._trigger('error', new Error('connection reset')),
+      ).not.toThrow();
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Redis auth subscriber error',
+        expect.any(Error),
+      );
+      errorSpy.mockRestore();
+    });
+
+    it('logs when the subscriber is reconnecting', () => {
+      const warnSpy = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
+      service.onModuleInit();
+
+      subscriberMock._trigger('reconnecting');
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Redis auth subscriber reconnecting',
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('Redis retry strategy', () => {
+    it('backs off linearly and caps at 5000ms', () => {
+      const calls = MockRedis.mock.calls as [string, RedisOptions][];
+      const options = calls[0][1];
+      const retryStrategy = options.retryStrategy as (times: number) => number;
+
+      expect(retryStrategy(1)).toBe(200);
+      expect(retryStrategy(10)).toBe(2000);
+      expect(retryStrategy(100)).toBe(5000);
     });
   });
 
@@ -175,6 +218,48 @@ describe('AuthEventsService', () => {
         sub.unsubscribe();
         setImmediate(() => {
           expect(subscriberMock.unsubscribe).toHaveBeenCalledWith('auth:10');
+          done();
+        });
+      });
+    });
+
+    it('logs and does not throw when the initial channel subscribe fails', (done) => {
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      subscriberMock.subscribe.mockRejectedValue(new Error('subscribe down'));
+
+      const sub = service.subscribe(11).subscribe({ next: () => {} });
+
+      setImmediate(() => {
+        setImmediate(() => {
+          expect(errorSpy).toHaveBeenCalledWith(
+            'Redis auth subscribe failed user=11',
+            expect.any(Error),
+          );
+          sub.unsubscribe();
+          errorSpy.mockRestore();
+          done();
+        });
+      });
+    });
+
+    it('logs and does not throw when the teardown unsubscribe fails', (done) => {
+      const warnSpy = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
+      subscriberMock.unsubscribe.mockRejectedValue(new Error('unsub down'));
+
+      const sub = service.subscribe(12).subscribe({ next: () => {} });
+
+      setImmediate(() => {
+        sub.unsubscribe();
+        setImmediate(() => {
+          expect(warnSpy).toHaveBeenCalledWith(
+            'Redis auth unsubscribe failed user=12',
+            expect.any(Error),
+          );
+          warnSpy.mockRestore();
           done();
         });
       });

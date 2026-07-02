@@ -5,6 +5,12 @@ export class StartTimerInput {
   @Field(() => Int, { nullable: true })
   projectId?: number;
 
+  @Field(() => Int, { nullable: true })
+  taskId?: number;
+
+  @Field(() => Int, { nullable: true })
+  subtaskId?: number;
+
   @Field({ nullable: true })
   description?: string;
 

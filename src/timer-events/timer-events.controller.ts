@@ -13,7 +13,7 @@ import {
 type RequestUser = { id: number };
 
 // Heartbeat interval — keeps connection alive through LB/proxy idle timeouts.
-const HEARTBEAT_MS = 25_000;
+export const HEARTBEAT_MS = 25_000;
 
 @ApiTags('timer-events')
 @Controller('timer')

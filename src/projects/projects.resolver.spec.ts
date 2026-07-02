@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectsResolver } from './projects.resolver';
 import { ProjectsService } from './projects.service';
 import { ProjectStatus } from './entities/project.entity';
+import { PrismaService } from '../prisma.service';
 import { mockProject } from '../__test-helpers__/mock-factories';
 
 describe('ProjectsResolver', () => {
@@ -14,6 +15,8 @@ describe('ProjectsResolver', () => {
     delete: jest.Mock;
   };
 
+  let prisma: { timeEntry: { aggregate: jest.Mock } };
+
   const user = { id: 1, role: 'USER' };
   const adminUser = { id: 2, role: 'ADMIN' };
 
@@ -25,11 +28,13 @@ describe('ProjectsResolver', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
+    prisma = { timeEntry: { aggregate: jest.fn() } };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProjectsResolver,
         { provide: ProjectsService, useValue: service },
+        { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
 
@@ -129,6 +134,32 @@ describe('ProjectsResolver', () => {
       const result = await resolver.deleteProject(3, user);
       expect(service.delete).toHaveBeenCalledWith(3, 1);
       expect(result).toBe(true);
+    });
+  });
+
+  describe('totalTimeSeconds field resolver', () => {
+    it('sums durationSeconds for the project from Prisma', async () => {
+      prisma.timeEntry.aggregate.mockResolvedValue({
+        _sum: { durationSeconds: 7200 },
+      });
+
+      const result = await resolver.totalTimeSeconds({ id: 4 });
+
+      expect(prisma.timeEntry.aggregate).toHaveBeenCalledWith({
+        where: { projectId: 4 },
+        _sum: { durationSeconds: true },
+      });
+      expect(result).toBe(7200);
+    });
+
+    it('returns null when the project has no time entries', async () => {
+      prisma.timeEntry.aggregate.mockResolvedValue({
+        _sum: { durationSeconds: null },
+      });
+
+      const result = await resolver.totalTimeSeconds({ id: 5 });
+
+      expect(result).toBeNull();
     });
   });
 });

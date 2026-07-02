@@ -230,6 +230,33 @@ describe('InvoicesService', () => {
     });
   });
 
+  describe('updateItem', () => {
+    it('delegates to repository', async () => {
+      const item = {
+        id: 1,
+        invoiceId: 1,
+        projectId: null,
+        timeEntryId: null,
+        description: 'Revised',
+        quantity: 2,
+        unitPrice: 50,
+        total: 100,
+      };
+      repo.updateItem.mockResolvedValue(item);
+
+      const result = await service.updateItem(1, {
+        id: 1,
+        description: 'Revised',
+      });
+
+      expect(repo.updateItem).toHaveBeenCalledWith(1, {
+        id: 1,
+        description: 'Revised',
+      });
+      expect(result).toEqual(item);
+    });
+  });
+
   describe('removeItem', () => {
     it('delegates to repository', async () => {
       repo.removeItem.mockResolvedValue(true);
@@ -424,6 +451,123 @@ describe('InvoicesService', () => {
       // isAllowedLogoUrl blocks http:// and private IPs — fetch must not be called
       expect(fetchSpy).not.toHaveBeenCalled();
       jest.restoreAllMocks();
+    });
+
+    it('loads and embeds a JPEG logo', async () => {
+      const invoice = mockInvoice({ clientId: null, items: [], notes: null });
+      repo.findById.mockResolvedValue(invoice);
+      usersService.findOne.mockResolvedValue({
+        id: 1,
+        logoUrl: 'https://example.com/logo.jpg',
+      });
+
+      const jpegChunk = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+      const mockBody = (function* () {
+        yield jpegChunk;
+      })();
+      jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+        body: mockBody,
+        headers: {
+          get: (k: string) => (k === 'content-type' ? 'image/jpeg' : null),
+        },
+      } as unknown as Response);
+
+      const svc = await buildService();
+      const result = await svc.generatePdf(1, 1);
+
+      expect(result).toBeInstanceOf(Uint8Array);
+      jest.restoreAllMocks();
+    });
+
+    it('silently skips logo when the response has no body', async () => {
+      const invoice = mockInvoice({ clientId: null, items: [], notes: null });
+      repo.findById.mockResolvedValue(invoice);
+      usersService.findOne.mockResolvedValue({
+        id: 1,
+        logoUrl: 'https://example.com/logo.png',
+      });
+
+      jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+        body: null,
+        headers: { get: () => null },
+      } as unknown as Response);
+
+      const svc = await buildService();
+      const result = await svc.generatePdf(1, 1);
+
+      expect(result).toBeInstanceOf(Uint8Array);
+      jest.restoreAllMocks();
+    });
+
+    it('silently skips logo when it exceeds the size limit', async () => {
+      const invoice = mockInvoice({ clientId: null, items: [], notes: null });
+      repo.findById.mockResolvedValue(invoice);
+      usersService.findOne.mockResolvedValue({
+        id: 1,
+        logoUrl: 'https://example.com/logo.png',
+      });
+
+      const hugeChunk = new Uint8Array(2_097_153); // just over the 2MB cap
+      const mockBody = (function* () {
+        yield hugeChunk;
+      })();
+      jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+        body: mockBody,
+        headers: {
+          get: (k: string) => (k === 'content-type' ? 'image/png' : null),
+        },
+      } as unknown as Response);
+
+      const svc = await buildService();
+      const result = await svc.generatePdf(1, 1);
+
+      expect(result).toBeInstanceOf(Uint8Array);
+      jest.restoreAllMocks();
+    });
+
+    it('renders client block gracefully when optional fields are absent', async () => {
+      const invoice = mockInvoice({
+        clientId: 5,
+        items: [],
+        notes: null,
+      });
+      const client = {
+        id: 5,
+        name: 'Acme Corp',
+        company: null,
+        email: null,
+        phone: null,
+        address: '123 Main\n\nSuite 4', // includes a blank line
+      };
+      repo.findById.mockResolvedValue(invoice);
+      clientsService.findOne.mockResolvedValue(client);
+      usersService.findOne.mockResolvedValue({ id: 1, logoUrl: null });
+
+      const svc = await buildService();
+      const result = await svc.generatePdf(1, 1);
+
+      expect(result).toBeInstanceOf(Uint8Array);
+    });
+
+    it('paginates onto a new page when there are many items', async () => {
+      const items = Array.from({ length: 60 }, (_, i) => ({
+        id: i + 1,
+        invoiceId: 1,
+        projectId: null,
+        timeEntryId: null,
+        description: `Item ${i + 1}`,
+        quantity: 1,
+        unitPrice: 10,
+        total: 10,
+      }));
+      const invoice = mockInvoice({ clientId: null, items, notes: 'Thanks!' });
+      repo.findById.mockResolvedValue(invoice);
+      usersService.findOne.mockResolvedValue({ id: 1, logoUrl: null });
+
+      const svc = await buildService();
+      const result = await svc.generatePdf(1, 1);
+
+      expect(result).toBeInstanceOf(Uint8Array);
     });
   });
 });

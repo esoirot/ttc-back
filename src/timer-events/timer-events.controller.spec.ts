@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Subject } from 'rxjs';
+import { Subject, throwError } from 'rxjs';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { TimerEventsController } from './timer-events.controller';
+import { TimerEventsController, HEARTBEAT_MS } from './timer-events.controller';
 import { TimerEventsService } from './timer-events.service';
 import type { RequestUser } from '../auth/types/gql-context.type';
 
@@ -20,10 +20,21 @@ const makeReply = (raw = makeRaw(), hijack = jest.fn()) => ({
   typed: { hijack, raw } as unknown as FastifyReply,
 });
 
-const makeReq = (userId = 7) =>
+const makeReqRaw = () => {
+  const listeners: Record<string, (...args: unknown[]) => void> = {};
+  return {
+    on: jest.fn((event: string, fn: (...args: unknown[]) => void) => {
+      listeners[event] = fn;
+    }),
+    _trigger: (event: string, ...args: unknown[]) =>
+      listeners[event]?.(...args),
+  };
+};
+
+const makeReq = (userId = 7, raw: unknown = { on: jest.fn() }) =>
   ({
     user: { id: userId } as RequestUser,
-    raw: { on: jest.fn() },
+    raw,
   }) as unknown as FastifyRequest & { user: RequestUser };
 
 describe('TimerEventsController', () => {
@@ -140,6 +151,181 @@ describe('TimerEventsController', () => {
       expect(reply.raw.end).toHaveBeenCalled();
 
       jest.clearAllTimers();
+    });
+
+    it('closes connection when subject errors', () => {
+      jest.useFakeTimers();
+      const subject = new Subject<any>();
+      service.subscribe.mockReturnValue(subject.asObservable());
+      const raw = makeRaw();
+
+      controller.sseEvents(makeReq(), makeReply(raw).typed);
+      subject.error(new Error('boom'));
+
+      expect(raw.end).toHaveBeenCalled();
+
+      jest.clearAllTimers();
+    });
+
+    it('closes when write returns false (backpressure)', () => {
+      jest.useFakeTimers();
+      const subject = new Subject<any>();
+      service.subscribe.mockReturnValue(subject.asObservable());
+      const raw = makeRaw();
+      raw.write.mockReturnValue(false);
+
+      controller.sseEvents(makeReq(), makeReply(raw).typed);
+      subject.next({ id: 1 });
+
+      expect(raw.end).toHaveBeenCalled();
+
+      subject.complete();
+      jest.clearAllTimers();
+    });
+
+    it('skips write when raw not writable', () => {
+      jest.useFakeTimers();
+      const subject = new Subject<any>();
+      service.subscribe.mockReturnValue(subject.asObservable());
+      const raw = makeRaw();
+      raw.writable = false;
+
+      controller.sseEvents(makeReq(), makeReply(raw).typed);
+      const writeCallsBefore = raw.write.mock.calls.length;
+      subject.next({ id: 1 });
+
+      expect(raw.write.mock.calls.length).toBe(writeCallsBefore);
+
+      subject.complete();
+      jest.clearAllTimers();
+    });
+
+    it('closes when write throws inside the next handler', () => {
+      jest.useFakeTimers();
+      const subject = new Subject<any>();
+      service.subscribe.mockReturnValue(subject.asObservable());
+      const raw = makeRaw();
+      let calls = 0;
+      raw.write.mockImplementation(() => {
+        calls++;
+        if (calls === 1) return true; // initial "connected" write
+        throw new Error('write failed');
+      });
+
+      controller.sseEvents(makeReq(), makeReply(raw).typed);
+      subject.next({ id: 1 });
+
+      expect(raw.end).toHaveBeenCalled();
+
+      jest.clearAllTimers();
+    });
+
+    it('closes on req close event', () => {
+      jest.useFakeTimers();
+      const subject = new Subject<any>();
+      service.subscribe.mockReturnValue(subject.asObservable());
+      const raw = makeRaw();
+      const reqRaw = makeReqRaw();
+
+      controller.sseEvents(makeReq(1, reqRaw), makeReply(raw).typed);
+      reqRaw._trigger('close');
+
+      expect(raw.end).toHaveBeenCalled();
+
+      jest.clearAllTimers();
+    });
+
+    it('closes on req error event', () => {
+      jest.useFakeTimers();
+      const subject = new Subject<any>();
+      service.subscribe.mockReturnValue(subject.asObservable());
+      const raw = makeRaw();
+      const reqRaw = makeReqRaw();
+
+      controller.sseEvents(makeReq(1, reqRaw), makeReply(raw).typed);
+      reqRaw._trigger('error');
+
+      expect(raw.end).toHaveBeenCalled();
+
+      jest.clearAllTimers();
+    });
+
+    it('does not close twice once already closed', () => {
+      jest.useFakeTimers();
+      const subject = new Subject<any>();
+      service.subscribe.mockReturnValue(subject.asObservable());
+      const raw = makeRaw();
+      const reqRaw = makeReqRaw();
+
+      controller.sseEvents(makeReq(1, reqRaw), makeReply(raw).typed);
+      subject.complete();
+      reqRaw._trigger('close');
+
+      expect(raw.end).toHaveBeenCalledTimes(1);
+
+      jest.clearAllTimers();
+    });
+
+    it('closes safely when the observable errors synchronously, before the heartbeat timer is set', () => {
+      service.subscribe.mockReturnValue(throwError(() => new Error('boom')));
+      const raw = makeRaw();
+
+      expect(() =>
+        controller.sseEvents(makeReq(), makeReply(raw).typed),
+      ).not.toThrow();
+      expect(raw.end).toHaveBeenCalled();
+    });
+
+    describe('heartbeat', () => {
+      it('writes a ping on each heartbeat tick while writable', () => {
+        jest.useFakeTimers();
+        const subject = new Subject<any>();
+        service.subscribe.mockReturnValue(subject.asObservable());
+        const raw = makeRaw();
+
+        controller.sseEvents(makeReq(), makeReply(raw).typed);
+        jest.advanceTimersByTime(HEARTBEAT_MS);
+
+        expect(raw.write).toHaveBeenCalledWith(': ping\n\n');
+
+        subject.complete();
+        jest.clearAllTimers();
+      });
+
+      it('closes when raw becomes unwritable before a heartbeat tick', () => {
+        jest.useFakeTimers();
+        const subject = new Subject<any>();
+        service.subscribe.mockReturnValue(subject.asObservable());
+        const raw = makeRaw();
+
+        controller.sseEvents(makeReq(), makeReply(raw).typed);
+        raw.writable = false;
+        jest.advanceTimersByTime(HEARTBEAT_MS);
+
+        expect(raw.end).toHaveBeenCalled();
+
+        jest.clearAllTimers();
+      });
+
+      it('closes when the ping write throws', () => {
+        jest.useFakeTimers();
+        const subject = new Subject<any>();
+        service.subscribe.mockReturnValue(subject.asObservable());
+        const raw = makeRaw();
+        let calls = 0;
+        raw.write.mockImplementation(() => {
+          calls++;
+          if (calls === 1) return true; // initial "connected" write
+          throw new Error('ping failed');
+        });
+
+        controller.sseEvents(makeReq(), makeReply(raw).typed);
+        jest.advanceTimersByTime(HEARTBEAT_MS);
+
+        expect(raw.end).toHaveBeenCalled();
+
+        jest.clearAllTimers();
+      });
     });
   });
 });

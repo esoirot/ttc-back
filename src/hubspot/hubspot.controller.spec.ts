@@ -111,6 +111,22 @@ describe('HubspotController', () => {
     expect(service.listContacts).toHaveBeenCalledWith(1, 'cursor-1', 10);
   });
 
+  it('listContacts — passes undefined limit when omitted', async () => {
+    await controller.listContacts(makeReq());
+    expect(service.listContacts).toHaveBeenCalledWith(1, undefined, undefined);
+  });
+
+  it('searchContacts — passes dto', async () => {
+    const dto = { filterGroups: [] };
+    await controller.searchContacts(makeReq(), dto);
+    expect(service.searchContacts).toHaveBeenCalledWith(1, dto);
+  });
+
+  it('getContact — passes id', async () => {
+    await controller.getContact(makeReq(), 'c-1');
+    expect(service.getContact).toHaveBeenCalledWith(1, 'c-1');
+  });
+
   it('createContact — passes dto', async () => {
     const dto = { email: 'x@y.com' };
     await controller.createContact(makeReq(), dto);
@@ -126,6 +142,62 @@ describe('HubspotController', () => {
   it('importContact — passes contactId', async () => {
     await controller.importContact(makeReq(), 'c-42');
     expect(service.importContact).toHaveBeenCalledWith(1, 'c-42');
+  });
+
+  it('listCompanies — passes optional pagination params', async () => {
+    await controller.listCompanies(makeReq(), 'cursor-1', '10');
+    expect(service.listCompanies).toHaveBeenCalledWith(1, 'cursor-1', 10);
+  });
+
+  it('searchCompanies — passes dto', async () => {
+    const dto = { filterGroups: [] };
+    await controller.searchCompanies(makeReq(), dto);
+    expect(service.searchCompanies).toHaveBeenCalledWith(1, dto);
+  });
+
+  it('createCompany — passes dto', async () => {
+    const dto = { name: 'ACME' };
+    await controller.createCompany(makeReq(), dto);
+    expect(service.createCompany).toHaveBeenCalledWith(1, dto);
+  });
+
+  it('getCompany — passes id', async () => {
+    await controller.getCompany(makeReq(), 'co-1');
+    expect(service.getCompany).toHaveBeenCalledWith(1, 'co-1');
+  });
+
+  it('updateCompany — passes id and dto', async () => {
+    const dto = { name: 'Updated' };
+    await controller.updateCompany(makeReq(), 'co-1', dto);
+    expect(service.updateCompany).toHaveBeenCalledWith(1, 'co-1', dto);
+  });
+
+  it('listDeals — passes optional pagination params', async () => {
+    await controller.listDeals(makeReq(), 'cursor-1', '10');
+    expect(service.listDeals).toHaveBeenCalledWith(1, 'cursor-1', 10);
+  });
+
+  it('searchDeals — passes dto', async () => {
+    const dto = { filterGroups: [] };
+    await controller.searchDeals(makeReq(), dto);
+    expect(service.searchDeals).toHaveBeenCalledWith(1, dto);
+  });
+
+  it('getDeal — passes id', async () => {
+    await controller.getDeal(makeReq(), 'd-1');
+    expect(service.getDeal).toHaveBeenCalledWith(1, 'd-1');
+  });
+
+  it('updateDeal — passes id and dto', async () => {
+    const dto = { dealname: 'Updated' };
+    await controller.updateDeal(makeReq(), 'd-1', dto);
+    expect(service.updateDeal).toHaveBeenCalledWith(1, 'd-1', dto);
+  });
+
+  it('subscribeWebhook — passes dto', async () => {
+    const dto = { subscriptionType: 'contact.creation' };
+    await controller.subscribeWebhook(dto);
+    expect(service.subscribeWebhook).toHaveBeenCalledWith(dto);
   });
 
   it('createDeal — passes dto', async () => {

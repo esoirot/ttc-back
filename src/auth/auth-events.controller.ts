@@ -7,7 +7,7 @@ import { AuthEventsService } from './auth-events.service';
 
 type RequestUser = { id: number };
 
-const HEARTBEAT_MS = 25_000;
+export const HEARTBEAT_MS = 25_000;
 
 @ApiTags('auth-events')
 @Controller('auth')

@@ -15,12 +15,16 @@ import { UpdateTimeEntryInput } from '../dto/update-time-entry.input';
 
 const TAG_INCLUDE = {
   tags: { include: { tag: { select: { id: true, name: true } } } },
+  task: { select: { id: true, title: true } },
+  subtask: { select: { id: true, title: true, checklistTitle: true } },
 } as const;
 
 type PrismaEntryWithTags = {
   id: number;
   userId: number;
   projectId: number | null;
+  taskId: number | null;
+  subtaskId: number | null;
   description: string | null;
   startTime: Date;
   endTime: Date | null;
@@ -30,6 +34,8 @@ type PrismaEntryWithTags = {
   createdAt: Date;
   updatedAt: Date;
   tags: { tag: { id: number; name: string } }[];
+  task: { id: number; title: string } | null;
+  subtask: { id: number; title: string; checklistTitle: string | null } | null;
 };
 
 function toModel(row: PrismaEntryWithTags): TimeEntryModel {
@@ -69,6 +75,8 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     filters: {
       projectId?: number;
       projectIds?: number[];
+      taskId?: number;
+      subtaskId?: number;
       start?: Date;
       end?: Date;
     },
@@ -78,11 +86,15 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     const cursor = pagination?.cursor;
     const baseWhere = {
       userId,
-      ...(filters.projectIds !== undefined && filters.projectIds.length > 0
-        ? { projectId: { in: filters.projectIds } }
-        : filters.projectId !== undefined
-          ? { projectId: filters.projectId }
-          : {}),
+      ...(filters.subtaskId !== undefined
+        ? { subtaskId: filters.subtaskId }
+        : filters.taskId !== undefined
+          ? { taskId: filters.taskId }
+          : filters.projectIds !== undefined && filters.projectIds.length > 0
+            ? { projectId: { in: filters.projectIds } }
+            : filters.projectId !== undefined
+              ? { projectId: filters.projectId }
+              : {}),
       ...(filters.start || filters.end
         ? {
             startTime: {
@@ -126,6 +138,8 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
       data: {
         userId,
         projectId: data.projectId,
+        taskId: data.taskId,
+        subtaskId: data.subtaskId,
         description: data.description,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -151,6 +165,8 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
       data: {
         userId,
         projectId: data.projectId,
+        taskId: data.taskId,
+        subtaskId: data.subtaskId,
         description: data.description,
         startTime: new Date(),
         billable: data.billable ?? true,
@@ -209,6 +225,23 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
       include: TAG_INCLUDE,
     });
     return toModel(updated);
+  }
+
+  async resumeEntry(id: number, userId: number): Promise<TimeEntryModel> {
+    const active = await this.findActive(userId);
+    if (active) throw new ConflictException('A timer is already running');
+    const entry = await this.prisma.timeEntry.findFirst({
+      where: { id, userId },
+    });
+    if (!entry) throw new NotFoundException(`TimeEntry ${id} not found`);
+    const previousSecs = entry.durationSeconds ?? 0;
+    const newStart = new Date(Date.now() - previousSecs * 1000);
+    const resumed = await this.prisma.timeEntry.update({
+      where: { id },
+      data: { startTime: newStart, endTime: null, durationSeconds: null },
+      include: TAG_INCLUDE,
+    });
+    return toModel(resumed);
   }
 
   async delete(id: number, userId: number): Promise<TimeEntryModel> {

@@ -254,6 +254,7 @@ model Task {
   labels      TaskLabel[]
   activities  TaskActivity[]
   attachments TaskAttachment[]
+  timeEntries TimeEntry[]
 }
 
 model TaskAttachment {
@@ -270,15 +271,16 @@ model TaskAttachment {
 }
 
 model Subtask {
-  id             Int       @id @default(autoincrement())
+  id             Int         @id @default(autoincrement())
   taskId         Int
-  task           Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task           Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
   checklistTitle String?
   title          String
-  done           Boolean   @default(false)
+  done           Boolean     @default(false)
   dueDate        DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  timeEntries    TimeEntry[]
 }
 
 model TaskComment {
@@ -318,6 +320,10 @@ model TimeEntry {
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   projectId       Int?
   project         Project?         @relation(fields: [projectId], references: [id])
+  taskId          Int?
+  task            Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  subtaskId       Int?
+  subtask         Subtask?         @relation(fields: [subtaskId], references: [id], onDelete: SetNull)
   description     String?
   startTime       DateTime
   endTime         DateTime?

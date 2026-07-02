@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TimeEntriesService } from './time-entries.service';
 import { TimeEntryRepository } from './repositories/time-entry.repository';
+import { PrismaService } from '../prisma.service';
 import { mockTimeEntry } from '../__test-helpers__/mock-factories';
 
 describe('TimeEntriesService', () => {
@@ -34,6 +35,10 @@ describe('TimeEntriesService', () => {
       providers: [
         TimeEntriesService,
         { provide: TimeEntryRepository, useValue: repo },
+        {
+          provide: PrismaService,
+          useValue: { subtask: { findUnique: jest.fn() } },
+        },
       ],
     }).compile();
 

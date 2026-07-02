@@ -6,6 +6,7 @@ import { CommentsService } from './comments.service';
 import { LabelsService } from './labels.service';
 import { ActivitiesService } from './activities.service';
 import { AttachmentsService } from './attachments.service';
+import { PrismaService } from '../prisma.service';
 import type { Task } from './entities/task.entity';
 import { mockTask } from '../__test-helpers__/mock-factories';
 
@@ -44,6 +45,7 @@ describe('TasksResolver', () => {
   };
   let activitiesService: { findByTask: jest.Mock; log: jest.Mock };
   let attachmentsService: { findByTask: jest.Mock };
+  let prisma: { timeEntry: { aggregate: jest.Mock } };
 
   const user = { id: 7 };
 
@@ -78,6 +80,7 @@ describe('TasksResolver', () => {
     };
     activitiesService = { findByTask: jest.fn(), log: jest.fn() };
     attachmentsService = { findByTask: jest.fn() };
+    prisma = { timeEntry: { aggregate: jest.fn() } };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -88,6 +91,7 @@ describe('TasksResolver', () => {
         { provide: LabelsService, useValue: labelsService },
         { provide: ActivitiesService, useValue: activitiesService },
         { provide: AttachmentsService, useValue: attachmentsService },
+        { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
 
@@ -197,6 +201,32 @@ describe('TasksResolver', () => {
 
     await resolver.attachments(makeParentTask({ id: 1 }));
     expect(attachmentsService.findByTask).toHaveBeenCalledWith(1);
+  });
+
+  describe('totalTimeSeconds field resolver', () => {
+    it('sums durationSeconds for the task from Prisma', async () => {
+      prisma.timeEntry.aggregate.mockResolvedValue({
+        _sum: { durationSeconds: 3600 },
+      });
+
+      const result = await resolver.totalTimeSeconds({ id: 1 });
+
+      expect(prisma.timeEntry.aggregate).toHaveBeenCalledWith({
+        where: { taskId: 1 },
+        _sum: { durationSeconds: true },
+      });
+      expect(result).toBe(3600);
+    });
+
+    it('returns null when the task has no time entries', async () => {
+      prisma.timeEntry.aggregate.mockResolvedValue({
+        _sum: { durationSeconds: null },
+      });
+
+      const result = await resolver.totalTimeSeconds({ id: 2 });
+
+      expect(result).toBeNull();
+    });
   });
 
   it('updateSubtask — delegates with id, input, user id', async () => {

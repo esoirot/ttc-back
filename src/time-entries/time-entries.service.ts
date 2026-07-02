@@ -7,16 +7,22 @@ import { TimeEntryModel } from './types/time-entry.type';
 import { CreateTimeEntryInput } from './dto/create-time-entry.input';
 import { StartTimerInput } from './dto/start-timer.input';
 import { UpdateTimeEntryInput } from './dto/update-time-entry.input';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class TimeEntriesService {
-  constructor(private readonly repo: TimeEntryRepository) {}
+  constructor(
+    private readonly repo: TimeEntryRepository,
+    private readonly prisma: PrismaService,
+  ) {}
 
   findAll(
     userId: number,
     filters: {
       projectId?: number;
       projectIds?: number[];
+      taskId?: number;
+      subtaskId?: number;
       start?: Date;
       end?: Date;
     },
@@ -29,16 +35,38 @@ export class TimeEntriesService {
     return this.repo.findActive(userId);
   }
 
-  create(userId: number, input: CreateTimeEntryInput): Promise<TimeEntryModel> {
+  async create(
+    userId: number,
+    input: CreateTimeEntryInput,
+  ): Promise<TimeEntryModel> {
+    if (input.subtaskId && !input.taskId) {
+      const sub = await this.prisma.subtask.findUnique({
+        where: { id: input.subtaskId },
+      });
+      if (sub) input.taskId = sub.taskId;
+    }
     return this.repo.create(userId, input);
   }
 
-  startTimer(userId: number, input: StartTimerInput): Promise<TimeEntryModel> {
+  async startTimer(
+    userId: number,
+    input: StartTimerInput,
+  ): Promise<TimeEntryModel> {
+    if (input.subtaskId && !input.taskId) {
+      const sub = await this.prisma.subtask.findUnique({
+        where: { id: input.subtaskId },
+      });
+      if (sub) input.taskId = sub.taskId;
+    }
     return this.repo.startTimer(userId, input);
   }
 
   stopTimer(userId: number): Promise<TimeEntryModel> {
     return this.repo.stopTimer(userId);
+  }
+
+  resumeEntry(id: number, userId: number): Promise<TimeEntryModel> {
+    return this.repo.resumeEntry(id, userId);
   }
 
   update(

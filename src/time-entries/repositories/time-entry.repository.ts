@@ -22,6 +22,8 @@ export abstract class TimeEntryRepository {
     filters: {
       projectId?: number;
       projectIds?: number[];
+      taskId?: number;
+      subtaskId?: number;
       start?: Date;
       end?: Date;
     },
@@ -42,5 +44,6 @@ export abstract class TimeEntryRepository {
     userId: number,
     data: UpdateTimeEntryInput,
   ): Promise<TimeEntryModel>;
+  abstract resumeEntry(id: number, userId: number): Promise<TimeEntryModel>;
   abstract delete(id: number, userId: number): Promise<TimeEntryModel>;
 }

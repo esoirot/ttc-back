@@ -51,6 +51,9 @@ export class Task {
   @Field(() => [String])
   checklistTitles!: string[];
 
+  @Field(() => Int, { nullable: true })
+  totalTimeSeconds?: number | null;
+
   @Field()
   createdAt!: Date;
 
