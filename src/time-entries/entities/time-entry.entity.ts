@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { EntryTag } from './entry-tag.entity';
+import { TaskActivity } from '../../tasks/entities/task-activity.entity';
 
 @ObjectType()
 class TimeEntryTaskRef {
@@ -71,4 +72,7 @@ export class TimeEntry {
 
   @Field()
   updatedAt!: Date;
+
+  @Field(() => [TaskActivity])
+  activities?: TaskActivity[];
 }

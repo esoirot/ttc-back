@@ -304,14 +304,16 @@ model TaskLabel {
 }
 
 model TaskActivity {
-  id        Int      @id @default(autoincrement())
-  taskId    Int
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String
-  payload   String?
-  createdAt DateTime @default(now())
+  id          Int        @id @default(autoincrement())
+  taskId      Int?
+  task        Task?      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  timeEntryId Int?
+  timeEntry   TimeEntry? @relation(fields: [timeEntryId], references: [id], onDelete: SetNull)
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String
+  payload     String?
+  createdAt   DateTime   @default(now())
 }
 
 model TimeEntry {
@@ -334,6 +336,7 @@ model TimeEntry {
   updatedAt       DateTime         @updatedAt
   invoiceItems    InvoiceItem[]
   tags            TimeEntryTag[]
+  activities      TaskActivity[]
 }
 
 model Tag {

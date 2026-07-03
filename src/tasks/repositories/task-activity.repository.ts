@@ -1,6 +1,7 @@
 export type TaskActivityModel = {
   id: number;
-  taskId: number;
+  taskId: number | null;
+  timeEntryId: number | null;
   userId: number;
   type: string;
   payload: string | null;
@@ -9,7 +10,8 @@ export type TaskActivityModel = {
 };
 
 export type LogActivityInput = {
-  taskId: number;
+  taskId?: number;
+  timeEntryId?: number;
   userId: number;
   type: string;
   payload?: Record<string, unknown>;
@@ -17,5 +19,6 @@ export type LogActivityInput = {
 
 export abstract class TaskActivityRepository {
   abstract findByTask(taskId: number): Promise<TaskActivityModel[]>;
+  abstract findByTimeEntry(timeEntryId: number): Promise<TaskActivityModel[]>;
   abstract log(data: LogActivityInput): Promise<TaskActivityModel>;
 }

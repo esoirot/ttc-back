@@ -1037,7 +1037,8 @@ type TaskActivity {
   createdAt: DateTime!
   id: Int!
   payload: String
-  taskId: Int!
+  taskId: Int
+  timeEntryId: Int
   type: String!
   user: TaskActivityUser
   userId: Int!
@@ -1088,6 +1089,7 @@ enum TaskStatus {
 }
 
 type TimeEntry {
+  activities: [TaskActivity!]!
   billable: Boolean!
   clockifyEntryId: String
   createdAt: DateTime!

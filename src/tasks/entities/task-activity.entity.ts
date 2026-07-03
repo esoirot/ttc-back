@@ -14,8 +14,11 @@ export class TaskActivity {
   @Field(() => Int)
   id!: number;
 
-  @Field(() => Int)
-  taskId!: number;
+  @Field(() => Int, { nullable: true })
+  taskId?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  timeEntryId?: number | null;
 
   @Field(() => Int)
   userId!: number;

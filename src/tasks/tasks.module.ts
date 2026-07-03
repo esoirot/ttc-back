@@ -50,5 +50,6 @@ import { PrismaService } from '../prisma.service';
       useClass: PrismaTaskAttachmentRepository,
     },
   ],
+  exports: [ActivitiesService],
 })
 export class TasksModule {}

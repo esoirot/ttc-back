@@ -1,8 +1,18 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { Logger, UseGuards } from '@nestjs/common';
 import { TimeEntriesService } from './time-entries.service';
 import { TimerEventsService } from '../timer-events/timer-events.service';
+import { ActivitiesService } from '../tasks/activities.service';
 import { TimeEntry } from './entities/time-entry.entity';
+import { TaskActivity } from '../tasks/entities/task-activity.entity';
 import { TimeEntryConnection } from './types/time-entry-connection.type';
 import { CreateTimeEntryInput } from './dto/create-time-entry.input';
 import { StartTimerInput } from './dto/start-timer.input';
@@ -20,6 +30,7 @@ export class TimeEntriesResolver {
   constructor(
     private readonly timeEntriesService: TimeEntriesService,
     private readonly timerEventsService: TimerEventsService,
+    private readonly activitiesService: ActivitiesService,
   ) {}
 
   @UseGuards(GqlAuthGuard)
@@ -115,5 +126,10 @@ export class TimeEntriesResolver {
     @CurrentUser() user: RequestUser,
   ) {
     return this.timeEntriesService.delete(id, user.id);
+  }
+
+  @ResolveField(() => [TaskActivity])
+  activities(@Parent() entry: TimeEntry) {
+    return this.activitiesService.findByTimeEntry(entry.id);
   }
 }

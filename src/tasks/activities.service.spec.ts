@@ -4,10 +4,18 @@ import { TaskActivityRepository } from './repositories/task-activity.repository'
 
 describe('ActivitiesService (tasks)', () => {
   let service: ActivitiesService;
-  let repo: { findByTask: jest.Mock; log: jest.Mock };
+  let repo: {
+    findByTask: jest.Mock;
+    findByTimeEntry: jest.Mock;
+    log: jest.Mock;
+  };
 
   beforeEach(async () => {
-    repo = { findByTask: jest.fn(), log: jest.fn() };
+    repo = {
+      findByTask: jest.fn(),
+      findByTimeEntry: jest.fn(),
+      log: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -63,6 +71,70 @@ describe('ActivitiesService (tasks)', () => {
       taskId: 1,
       userId: 7,
       type: 'CREATED',
+      payload: undefined,
+    });
+  });
+
+  it('findByTimeEntry — delegates to repo', async () => {
+    const activities = [{ id: 5, timeEntryId: 3, type: 'STARTED' }];
+    repo.findByTimeEntry.mockResolvedValue(activities);
+
+    const result = await service.findByTimeEntry(3);
+
+    expect(repo.findByTimeEntry).toHaveBeenCalledWith(3);
+    expect(result).toEqual(activities);
+  });
+
+  it('logForTimeEntry — delegates to repo with timeEntryId, userId, type, payload', async () => {
+    const activity = { id: 6, timeEntryId: 3, userId: 7, type: 'STOPPED' };
+    repo.log.mockResolvedValue(activity);
+
+    const payload = { durationSeconds: 3600 };
+    const result = await service.logForTimeEntry(3, 7, 'STOPPED', payload);
+
+    expect(repo.log).toHaveBeenCalledWith({
+      timeEntryId: 3,
+      userId: 7,
+      type: 'STOPPED',
+      payload,
+    });
+    expect(result).toEqual(activity);
+  });
+
+  it('logForTimeEntry — works without payload', async () => {
+    repo.log.mockResolvedValue({
+      id: 7,
+      timeEntryId: 3,
+      userId: 7,
+      type: 'RESUMED',
+    });
+
+    await service.logForTimeEntry(3, 7, 'RESUMED');
+
+    expect(repo.log).toHaveBeenCalledWith({
+      timeEntryId: 3,
+      userId: 7,
+      type: 'RESUMED',
+      payload: undefined,
+    });
+  });
+
+  it('logForTimeEntry — passes taskId through when the entry is task-linked', async () => {
+    repo.log.mockResolvedValue({
+      id: 8,
+      timeEntryId: 3,
+      taskId: 5,
+      userId: 7,
+      type: 'STARTED',
+    });
+
+    await service.logForTimeEntry(3, 7, 'STARTED', undefined, 5);
+
+    expect(repo.log).toHaveBeenCalledWith({
+      timeEntryId: 3,
+      taskId: 5,
+      userId: 7,
+      type: 'STARTED',
       payload: undefined,
     });
   });

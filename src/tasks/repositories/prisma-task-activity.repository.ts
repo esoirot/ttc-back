@@ -18,10 +18,19 @@ export class PrismaTaskActivityRepository implements TaskActivityRepository {
     });
   }
 
+  findByTimeEntry(timeEntryId: number): Promise<TaskActivityModel[]> {
+    return this.prisma.taskActivity.findMany({
+      where: { timeEntryId },
+      orderBy: { createdAt: 'asc' },
+      include: { user: { select: { id: true, name: true } } },
+    });
+  }
+
   log(data: LogActivityInput): Promise<TaskActivityModel> {
     return this.prisma.taskActivity.create({
       data: {
         taskId: data.taskId,
+        timeEntryId: data.timeEntryId,
         userId: data.userId,
         type: data.type,
         payload: data.payload ? JSON.stringify(data.payload) : null,

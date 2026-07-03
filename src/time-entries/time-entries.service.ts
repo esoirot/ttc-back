@@ -8,12 +8,14 @@ import { CreateTimeEntryInput } from './dto/create-time-entry.input';
 import { StartTimerInput } from './dto/start-timer.input';
 import { UpdateTimeEntryInput } from './dto/update-time-entry.input';
 import { PrismaService } from '../prisma.service';
+import { ActivitiesService } from '../tasks/activities.service';
 
 @Injectable()
 export class TimeEntriesService {
   constructor(
     private readonly repo: TimeEntryRepository,
     private readonly prisma: PrismaService,
+    private readonly activitiesService: ActivitiesService,
   ) {}
 
   findAll(
@@ -58,15 +60,46 @@ export class TimeEntriesService {
       });
       if (sub) input.taskId = sub.taskId;
     }
-    return this.repo.startTimer(userId, input);
+    const entry = await this.repo.startTimer(userId, input);
+    await this.activitiesService.logForTimeEntry(
+      entry.id,
+      userId,
+      'STARTED',
+      {
+        projectId: entry.projectId,
+        taskId: entry.taskId,
+        description: entry.description,
+      },
+      entry.taskId ?? undefined,
+    );
+    return entry;
   }
 
-  stopTimer(userId: number): Promise<TimeEntryModel> {
-    return this.repo.stopTimer(userId);
+  async stopTimer(userId: number): Promise<TimeEntryModel> {
+    const entry = await this.repo.stopTimer(userId);
+    await this.activitiesService.logForTimeEntry(
+      entry.id,
+      userId,
+      'STOPPED',
+      {
+        durationSeconds: entry.durationSeconds,
+        description: entry.description,
+      },
+      entry.taskId ?? undefined,
+    );
+    return entry;
   }
 
-  resumeEntry(id: number, userId: number): Promise<TimeEntryModel> {
-    return this.repo.resumeEntry(id, userId);
+  async resumeEntry(id: number, userId: number): Promise<TimeEntryModel> {
+    const entry = await this.repo.resumeEntry(id, userId);
+    await this.activitiesService.logForTimeEntry(
+      entry.id,
+      userId,
+      'RESUMED',
+      undefined,
+      entry.taskId ?? undefined,
+    );
+    return entry;
   }
 
   update(
@@ -117,6 +150,22 @@ export class TimeEntriesService {
   }
 
   async delete(id: number, userId: number): Promise<boolean> {
+    const entry = await this.repo.findById(id, userId);
+    await this.activitiesService.logForTimeEntry(
+      entry.id,
+      userId,
+      'DELETED',
+      {
+        description: entry.description,
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        durationSeconds: entry.durationSeconds,
+        projectId: entry.projectId,
+        taskId: entry.taskId,
+        subtaskId: entry.subtaskId,
+      },
+      entry.taskId ?? undefined,
+    );
     await this.repo.delete(id, userId);
     return true;
   }

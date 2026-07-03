@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TimeEntriesResolver } from './time-entries.resolver';
 import { TimeEntriesService } from './time-entries.service';
 import { TimerEventsService } from '../timer-events/timer-events.service';
+import { ActivitiesService } from '../tasks/activities.service';
+import type { TimeEntry } from './entities/time-entry.entity';
 import { mockTimeEntry } from '../__test-helpers__/mock-factories';
 
 describe('TimeEntriesResolver', () => {
@@ -17,6 +19,7 @@ describe('TimeEntriesResolver', () => {
     delete: jest.Mock;
   };
   let timerEvents: { publish: jest.Mock };
+  let activitiesService: { findByTimeEntry: jest.Mock };
 
   const user = { id: 1 };
 
@@ -32,12 +35,14 @@ describe('TimeEntriesResolver', () => {
       delete: jest.fn(),
     };
     timerEvents = { publish: jest.fn().mockResolvedValue(undefined) };
+    activitiesService = { findByTimeEntry: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TimeEntriesResolver,
         { provide: TimeEntriesService, useValue: service },
         { provide: TimerEventsService, useValue: timerEvents },
+        { provide: ActivitiesService, useValue: activitiesService },
       ],
     }).compile();
 
@@ -184,5 +189,13 @@ describe('TimeEntriesResolver', () => {
     const result = await resolver.deleteTimeEntry(1, user);
     expect(service.delete).toHaveBeenCalledWith(1, 1);
     expect(result).toBe(true);
+  });
+
+  it('activities field resolver — delegates to activitiesService', async () => {
+    activitiesService.findByTimeEntry.mockResolvedValue([]);
+    const entry = mockTimeEntry({ id: 9 }) as unknown as TimeEntry;
+
+    await resolver.activities(entry);
+    expect(activitiesService.findByTimeEntry).toHaveBeenCalledWith(9);
   });
 });

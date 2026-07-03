@@ -12,6 +12,10 @@ export class ActivitiesService {
     return this.repo.findByTask(taskId);
   }
 
+  findByTimeEntry(timeEntryId: number): Promise<TaskActivityModel[]> {
+    return this.repo.findByTimeEntry(timeEntryId);
+  }
+
   log(
     taskId: number,
     userId: number,
@@ -19,5 +23,15 @@ export class ActivitiesService {
     payload?: Record<string, unknown>,
   ): Promise<TaskActivityModel> {
     return this.repo.log({ taskId, userId, type, payload });
+  }
+
+  logForTimeEntry(
+    timeEntryId: number,
+    userId: number,
+    type: string,
+    payload?: Record<string, unknown>,
+    taskId?: number,
+  ): Promise<TaskActivityModel> {
+    return this.repo.log({ timeEntryId, taskId, userId, type, payload });
   }
 }
