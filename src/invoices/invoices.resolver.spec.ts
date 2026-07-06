@@ -110,7 +110,7 @@ describe('InvoicesResolver', () => {
     expect(result).toBe(true);
   });
 
-  it('addInvoiceItem — delegates to service', async () => {
+  it('addInvoiceItem — delegates to service with current user id', async () => {
     const item = {
       id: 1,
       invoiceId: 1,
@@ -123,17 +123,28 @@ describe('InvoicesResolver', () => {
     };
     service.addItem.mockResolvedValue(item);
 
-    const result = await resolver.addInvoiceItem({
-      invoiceId: 1,
-      description: 'Work',
-      quantity: 1,
-      unitPrice: 100,
-    });
-    expect(service.addItem).toHaveBeenCalled();
+    const result = await resolver.addInvoiceItem(
+      {
+        invoiceId: 1,
+        description: 'Work',
+        quantity: 1,
+        unitPrice: 100,
+      },
+      user,
+    );
+    expect(service.addItem).toHaveBeenCalledWith(
+      {
+        invoiceId: 1,
+        description: 'Work',
+        quantity: 1,
+        unitPrice: 100,
+      },
+      1,
+    );
     expect(result).toEqual(item);
   });
 
-  it('updateInvoiceItem — delegates with id from input', async () => {
+  it('updateInvoiceItem — delegates with id from input and current user id', async () => {
     const item = {
       id: 2,
       invoiceId: 1,
@@ -146,22 +157,29 @@ describe('InvoicesResolver', () => {
     };
     service.updateItem.mockResolvedValue(item);
 
-    const result = await resolver.updateInvoiceItem({
-      id: 2,
-      description: 'Updated',
-    });
-    expect(service.updateItem).toHaveBeenCalledWith(2, {
-      id: 2,
-      description: 'Updated',
-    });
+    const result = await resolver.updateInvoiceItem(
+      {
+        id: 2,
+        description: 'Updated',
+      },
+      user,
+    );
+    expect(service.updateItem).toHaveBeenCalledWith(
+      2,
+      {
+        id: 2,
+        description: 'Updated',
+      },
+      1,
+    );
     expect(result).toEqual(item);
   });
 
-  it('removeInvoiceItem — delegates to service', async () => {
+  it('removeInvoiceItem — delegates to service with current user id', async () => {
     service.removeItem.mockResolvedValue(true);
 
-    const result = await resolver.removeInvoiceItem(2);
-    expect(service.removeItem).toHaveBeenCalledWith(2);
+    const result = await resolver.removeInvoiceItem(2, user);
+    expect(service.removeItem).toHaveBeenCalledWith(2, 1);
     expect(result).toBe(true);
   });
 });

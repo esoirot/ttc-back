@@ -10,19 +10,22 @@ import { TaskStatus } from '../../generated/prisma/client';
 export class PrismaTaskRepository implements TaskRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findById(id: number): Promise<TaskModel> {
-    const task = await this.prisma.task.findUnique({ where: { id } });
+  async findById(id: number, userId: number): Promise<TaskModel> {
+    const task = await this.prisma.task.findFirst({
+      where: { id, OR: [{ project: { userId } }, { assigneeId: userId }] },
+    });
     if (!task) throw new NotFoundException(`Task ${id} not found`);
     return task;
   }
 
   async findByProject(
     projectId: number,
+    userId: number,
     pagination?: { limit?: number; cursor?: number },
   ): Promise<TaskConnectionModel> {
     const limit = pagination?.limit ?? 20;
     const cursor = pagination?.cursor;
-    const baseWhere = { projectId };
+    const baseWhere = { projectId, project: { userId } };
     const where = {
       ...baseWhere,
       ...(cursor !== undefined ? { id: { gt: cursor } } : {}),
@@ -75,9 +78,15 @@ export class PrismaTaskRepository implements TaskRepository {
     });
   }
 
-  async update(id: number, data: UpdateTaskInput): Promise<TaskModel> {
+  async update(
+    id: number,
+    userId: number,
+    data: UpdateTaskInput,
+  ): Promise<TaskModel> {
     const { id: _id, ...fields } = data;
-    const task = await this.prisma.task.findUnique({ where: { id } });
+    const task = await this.prisma.task.findFirst({
+      where: { id, OR: [{ project: { userId } }, { assigneeId: userId }] },
+    });
     if (!task) throw new NotFoundException(`Task ${id} not found`);
     return this.prisma.task.update({
       where: { id },
@@ -88,8 +97,10 @@ export class PrismaTaskRepository implements TaskRepository {
     });
   }
 
-  async delete(id: number): Promise<TaskModel> {
-    const task = await this.prisma.task.findUnique({ where: { id } });
+  async delete(id: number, userId: number): Promise<TaskModel> {
+    const task = await this.prisma.task.findFirst({
+      where: { id, project: { userId } },
+    });
     if (!task) throw new NotFoundException(`Task ${id} not found`);
     return this.prisma.task.delete({ where: { id } });
   }

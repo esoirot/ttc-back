@@ -11,9 +11,10 @@ export interface TaskConnectionModel {
 type PaginationArgs = { limit?: number; cursor?: number };
 
 export abstract class TaskRepository {
-  abstract findById(id: number): Promise<TaskModel>;
+  abstract findById(id: number, userId: number): Promise<TaskModel>;
   abstract findByProject(
     projectId: number,
+    userId: number,
     pagination?: PaginationArgs,
   ): Promise<TaskConnectionModel>;
   abstract findByAssignee(
@@ -21,8 +22,12 @@ export abstract class TaskRepository {
     pagination?: PaginationArgs,
   ): Promise<TaskConnectionModel>;
   abstract create(data: CreateTaskInput): Promise<TaskModel>;
-  abstract update(id: number, data: UpdateTaskInput): Promise<TaskModel>;
-  abstract delete(id: number): Promise<TaskModel>;
+  abstract update(
+    id: number,
+    userId: number,
+    data: UpdateTaskInput,
+  ): Promise<TaskModel>;
+  abstract delete(id: number, userId: number): Promise<TaskModel>;
   abstract addChecklistTitle(taskId: number, title: string): Promise<void>;
   abstract renameChecklistTitle(
     taskId: number,

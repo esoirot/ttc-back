@@ -255,4 +255,12 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     });
     return toModel(deleted);
   }
+
+  async sumDurationForTask(taskId: number): Promise<number | null> {
+    const result = await this.prisma.timeEntry.aggregate({
+      where: { taskId },
+      _sum: { durationSeconds: true },
+    });
+    return result._sum.durationSeconds;
+  }
 }

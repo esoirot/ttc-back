@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { SubtasksService } from './subtasks.service';
 import { SubtaskRepository } from './repositories/subtask.repository';
 import { TaskRepository } from './repositories/task.repository';
@@ -28,6 +29,7 @@ describe('SubtasksService', () => {
     renameChecklist: jest.Mock;
   };
   let taskRepo: {
+    findById: jest.Mock;
     addChecklistTitle: jest.Mock;
     removeChecklistTitle: jest.Mock;
     renameChecklistTitle: jest.Mock;
@@ -45,6 +47,7 @@ describe('SubtasksService', () => {
       renameChecklist: jest.fn(),
     };
     taskRepo = {
+      findById: jest.fn().mockResolvedValue({ id: 1 }),
       addChecklistTitle: jest.fn(),
       removeChecklistTitle: jest.fn(),
       renameChecklistTitle: jest.fn(),
@@ -77,6 +80,7 @@ describe('SubtasksService', () => {
         7,
       );
 
+      expect(taskRepo.findById).toHaveBeenCalledWith(1, 7);
       expect(repo.create).toHaveBeenCalled();
       expect(activitiesService.log).toHaveBeenCalledWith(
         1,
@@ -85,6 +89,17 @@ describe('SubtasksService', () => {
         { title: 'Task 1' },
       );
       expect(result).toEqual(subtask);
+    });
+
+    it('rejects adding a subtask to a task the caller cannot access (#18)', async () => {
+      taskRepo.findById.mockRejectedValue(
+        new NotFoundException('Task 1 not found'),
+      );
+
+      await expect(
+        service.create({ taskId: 1, title: 'Task 1' }, 7),
+      ).rejects.toThrow(NotFoundException);
+      expect(repo.create).not.toHaveBeenCalled();
     });
   });
 
@@ -102,6 +117,8 @@ describe('SubtasksService', () => {
 
       await service.update(1, { id: 1, done: true }, 7);
 
+      expect(repo.findById).toHaveBeenCalledWith(1, 7);
+      expect(repo.update).toHaveBeenCalledWith(1, 7, { id: 1, done: true });
       expect(activitiesService.log).toHaveBeenCalledWith(
         1,
         7,
@@ -145,6 +162,17 @@ describe('SubtasksService', () => {
         expect.any(Object),
       );
     });
+
+    it('rejects updating a subtask the caller cannot access (#18)', async () => {
+      repo.findById.mockRejectedValue(
+        new NotFoundException('Subtask 1 not found'),
+      );
+
+      await expect(service.update(1, { id: 1, done: true }, 7)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repo.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('createChecklist', () => {
@@ -153,6 +181,7 @@ describe('SubtasksService', () => {
 
       const result = await service.createChecklist(1, 'My List', 7);
 
+      expect(taskRepo.findById).toHaveBeenCalledWith(1, 7);
       expect(taskRepo.addChecklistTitle).toHaveBeenCalledWith(1, 'My List');
       expect(activitiesService.log).toHaveBeenCalledWith(
         1,
@@ -161,6 +190,17 @@ describe('SubtasksService', () => {
         { title: 'My List' },
       );
       expect(result).toBe(true);
+    });
+
+    it('rejects creating a checklist on a task the caller cannot access (#18)', async () => {
+      taskRepo.findById.mockRejectedValue(
+        new NotFoundException('Task 1 not found'),
+      );
+
+      await expect(service.createChecklist(1, 'My List', 7)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(taskRepo.addChecklistTitle).not.toHaveBeenCalled();
     });
   });
 
@@ -171,6 +211,7 @@ describe('SubtasksService', () => {
 
       const result = await service.deleteChecklist(1, 'My List', 7);
 
+      expect(taskRepo.findById).toHaveBeenCalledWith(1, 7);
       expect(repo.deleteByChecklist).toHaveBeenCalledWith(1, 'My List');
       expect(taskRepo.removeChecklistTitle).toHaveBeenCalledWith(1, 'My List');
       expect(activitiesService.log).toHaveBeenCalledWith(
@@ -181,6 +222,17 @@ describe('SubtasksService', () => {
       );
       expect(result).toBe(true);
     });
+
+    it('rejects deleting a checklist on a task the caller cannot access (#18)', async () => {
+      taskRepo.findById.mockRejectedValue(
+        new NotFoundException('Task 1 not found'),
+      );
+
+      await expect(service.deleteChecklist(1, 'My List', 7)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repo.deleteByChecklist).not.toHaveBeenCalled();
+    });
   });
 
   describe('renameChecklist', () => {
@@ -190,6 +242,7 @@ describe('SubtasksService', () => {
 
       const result = await service.renameChecklist(1, 'Old', 'New', 7);
 
+      expect(taskRepo.findById).toHaveBeenCalledWith(1, 7);
       expect(repo.renameChecklist).toHaveBeenCalledWith(1, 'Old', 'New');
       expect(taskRepo.renameChecklistTitle).toHaveBeenCalledWith(
         1,
@@ -204,6 +257,17 @@ describe('SubtasksService', () => {
       );
       expect(result).toBe(true);
     });
+
+    it('rejects renaming a checklist on a task the caller cannot access (#18)', async () => {
+      taskRepo.findById.mockRejectedValue(
+        new NotFoundException('Task 1 not found'),
+      );
+
+      await expect(service.renameChecklist(1, 'Old', 'New', 7)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repo.renameChecklist).not.toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {
@@ -213,7 +277,7 @@ describe('SubtasksService', () => {
 
       const result = await service.delete(1, 7);
 
-      expect(repo.delete).toHaveBeenCalledWith(1);
+      expect(repo.delete).toHaveBeenCalledWith(1, 7);
       expect(activitiesService.log).toHaveBeenCalledWith(
         1,
         7,
@@ -221,6 +285,14 @@ describe('SubtasksService', () => {
         { title: 'Item' },
       );
       expect(result).toBe(true);
+    });
+
+    it('rejects deleting a subtask the caller cannot access (#18)', async () => {
+      repo.delete.mockRejectedValue(
+        new NotFoundException('Subtask 1 not found'),
+      );
+
+      await expect(service.delete(1, 7)).rejects.toThrow(NotFoundException);
     });
   });
 

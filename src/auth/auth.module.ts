@@ -15,6 +15,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import {
+  GoogleInitiateGuard,
+  GoogleCallbackGuard,
+} from './guards/google-auth.guard';
 import { EmailService } from './email.service';
 import { AuditModule } from '../audit/audit.module';
 
@@ -46,6 +50,8 @@ import { AuditModule } from '../audit/audit.module';
     GoogleStrategy,
     GqlAuthGuard,
     RolesGuard,
+    GoogleInitiateGuard,
+    GoogleCallbackGuard,
     EmailService,
   ],
   exports: [AuthService, AuthEventsService, GqlAuthGuard, RolesGuard],

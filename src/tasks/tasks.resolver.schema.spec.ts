@@ -1,5 +1,9 @@
 import { Test } from '@nestjs/testing';
-import { GraphQLModule, GraphQLSchemaHost } from '@nestjs/graphql';
+import {
+  GraphQLModule,
+  GraphQLSchemaHost,
+  GqlExecutionContext,
+} from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import {
   FastifyAdapter,
@@ -13,7 +17,8 @@ import { CommentsService } from './comments.service';
 import { LabelsService } from './labels.service';
 import { ActivitiesService } from './activities.service';
 import { AttachmentsService } from './attachments.service';
-import { PrismaService } from '../prisma.service';
+import { TaskTimeResolver } from '../time-entries/task-time.resolver';
+import { TimeEntriesService } from '../time-entries/time-entries.service';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 
 // Exercises the GraphQL type thunks (`() => Foo`, `type: () => Int`) that
@@ -36,6 +41,7 @@ describe('TasksResolver GraphQL schema', () => {
       ],
       providers: [
         TasksResolver,
+        TaskTimeResolver,
         {
           provide: TasksService,
           useValue: {
@@ -70,19 +76,25 @@ describe('TasksResolver GraphQL schema', () => {
           useValue: { findByTask: jest.fn().mockResolvedValue([]) },
         },
         {
-          provide: PrismaService,
+          provide: TimeEntriesService,
           useValue: {
-            timeEntry: {
-              aggregate: jest
-                .fn()
-                .mockResolvedValue({ _sum: { durationSeconds: 120 } }),
-            },
+            getTotalDuration: jest.fn().mockResolvedValue(120),
           },
         },
       ],
     })
       .overrideGuard(GqlAuthGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (
+          ctx: Parameters<typeof GqlExecutionContext.create>[0],
+        ) => {
+          const gql = GqlExecutionContext.create(ctx);
+          gql.getContext<{
+            req: { user: { id: number } };
+          }>().req = { user: { id: 1 } };
+          return true;
+        },
+      })
       .compile();
 
     app = module.createNestApplication<NestFastifyApplication>(

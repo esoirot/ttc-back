@@ -57,13 +57,13 @@ export abstract class AuthRepository {
   ): Promise<AuthUser>;
   abstract createPasswordResetToken(
     userId: number,
-    token: string,
+    tokenHash: string,
     expiresAt: Date,
   ): Promise<void>;
   abstract findPasswordResetToken(
-    token: string,
+    tokenHash: string,
   ): Promise<{ userId: number; expiresAt: Date } | null>;
-  abstract deletePasswordResetToken(token: string): Promise<void>;
+  abstract deletePasswordResetToken(tokenHash: string): Promise<void>;
   abstract deleteUserPasswordResetTokens(userId: number): Promise<void>;
   abstract updatePassword(
     userId: number,

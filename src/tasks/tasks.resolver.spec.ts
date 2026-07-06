@@ -6,7 +6,6 @@ import { CommentsService } from './comments.service';
 import { LabelsService } from './labels.service';
 import { ActivitiesService } from './activities.service';
 import { AttachmentsService } from './attachments.service';
-import { PrismaService } from '../prisma.service';
 import type { Task } from './entities/task.entity';
 import { mockTask } from '../__test-helpers__/mock-factories';
 
@@ -45,7 +44,6 @@ describe('TasksResolver', () => {
   };
   let activitiesService: { findByTask: jest.Mock; log: jest.Mock };
   let attachmentsService: { findByTask: jest.Mock };
-  let prisma: { timeEntry: { aggregate: jest.Mock } };
 
   const user = { id: 7 };
 
@@ -80,7 +78,6 @@ describe('TasksResolver', () => {
     };
     activitiesService = { findByTask: jest.fn(), log: jest.fn() };
     attachmentsService = { findByTask: jest.fn() };
-    prisma = { timeEntry: { aggregate: jest.fn() } };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -91,7 +88,6 @@ describe('TasksResolver', () => {
         { provide: LabelsService, useValue: labelsService },
         { provide: ActivitiesService, useValue: activitiesService },
         { provide: AttachmentsService, useValue: attachmentsService },
-        { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
 
@@ -102,21 +98,23 @@ describe('TasksResolver', () => {
     expect(resolver).toBeDefined();
   });
 
-  it('findOne — delegates to tasksService', async () => {
+  it('findOne — delegates to tasksService with current user id', async () => {
     const task = mockTask();
     tasksService.findOne.mockResolvedValue(task);
 
-    const result = await resolver.findOne(1);
-    expect(tasksService.findOne).toHaveBeenCalledWith(1);
+    const result = await resolver.findOne(1, user);
+    expect(tasksService.findOne).toHaveBeenCalledWith(1, 7);
     expect(result).toEqual(task);
   });
 
-  it('findByProject — delegates to tasksService', async () => {
+  it('findByProject — delegates to tasksService with current user id', async () => {
     const conn = { edges: [] };
     tasksService.findByProject.mockResolvedValue(conn);
 
-    const result = await resolver.findByProject(1, { limit: 10 });
-    expect(tasksService.findByProject).toHaveBeenCalledWith(1, { limit: 10 });
+    const result = await resolver.findByProject(1, user, { limit: 10 });
+    expect(tasksService.findByProject).toHaveBeenCalledWith(1, 7, {
+      limit: 10,
+    });
     expect(result).toEqual(conn);
   });
 
@@ -160,11 +158,11 @@ describe('TasksResolver', () => {
     expect(result).toEqual(task);
   });
 
-  it('deleteTask — delegates to tasksService', async () => {
+  it('deleteTask — delegates to tasksService with current user id', async () => {
     tasksService.delete.mockResolvedValue(true);
 
-    const result = await resolver.deleteTask(1);
-    expect(tasksService.delete).toHaveBeenCalledWith(1);
+    const result = await resolver.deleteTask(1, user);
+    expect(tasksService.delete).toHaveBeenCalledWith(1, 7);
     expect(result).toBe(true);
   });
 
@@ -201,32 +199,6 @@ describe('TasksResolver', () => {
 
     await resolver.attachments(makeParentTask({ id: 1 }));
     expect(attachmentsService.findByTask).toHaveBeenCalledWith(1);
-  });
-
-  describe('totalTimeSeconds field resolver', () => {
-    it('sums durationSeconds for the task from Prisma', async () => {
-      prisma.timeEntry.aggregate.mockResolvedValue({
-        _sum: { durationSeconds: 3600 },
-      });
-
-      const result = await resolver.totalTimeSeconds({ id: 1 });
-
-      expect(prisma.timeEntry.aggregate).toHaveBeenCalledWith({
-        where: { taskId: 1 },
-        _sum: { durationSeconds: true },
-      });
-      expect(result).toBe(3600);
-    });
-
-    it('returns null when the task has no time entries', async () => {
-      prisma.timeEntry.aggregate.mockResolvedValue({
-        _sum: { durationSeconds: null },
-      });
-
-      const result = await resolver.totalTimeSeconds({ id: 2 });
-
-      expect(result).toBeNull();
-    });
   });
 
   it('updateSubtask — delegates with id, input, user id', async () => {
@@ -345,22 +317,22 @@ describe('TasksResolver', () => {
     const label = { id: 1, taskId: 1, name: 'bug' };
     labelsService.create.mockResolvedValue(label);
 
-    const result = await resolver.createTaskLabel({
+    const result = await resolver.createTaskLabel(user, {
       taskId: 1,
       name: 'bug',
     });
-    expect(labelsService.create).toHaveBeenCalledWith({
-      taskId: 1,
-      name: 'bug',
-    });
+    expect(labelsService.create).toHaveBeenCalledWith(
+      { taskId: 1, name: 'bug' },
+      7,
+    );
     expect(result).toEqual(label);
   });
 
   it('deleteTaskLabel — delegates to labelsService', async () => {
     labelsService.delete.mockResolvedValue(true);
 
-    const result = await resolver.deleteTaskLabel(2);
-    expect(labelsService.delete).toHaveBeenCalledWith(2);
+    const result = await resolver.deleteTaskLabel(user, 2);
+    expect(labelsService.delete).toHaveBeenCalledWith(2, 7);
     expect(result).toBe(true);
   });
 });

@@ -54,4 +54,6 @@ export abstract class ClientRepository {
     id: number,
     userId: number,
   ): Promise<CompanyContactModel>;
+
+  abstract promoteStaleFollowUps(cutoffDate: Date): Promise<number>;
 }

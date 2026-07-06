@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { AuditService } from '../audit/audit.service';
@@ -6,6 +7,17 @@ import { ClientsService } from '../clients/clients.service';
 import { UsersService } from '../users/users.service';
 import { InvoiceStatus } from './entities/invoice.entity';
 import { mockInvoice } from '../__test-helpers__/mock-factories';
+
+jest.mock('../common/logo-url.util', () => ({
+  ...jest.requireActual<typeof import('../common/logo-url.util')>(
+    '../common/logo-url.util',
+  ),
+  resolvesToBlockedIp: jest.fn(),
+}));
+import { resolvesToBlockedIp } from '../common/logo-url.util';
+const mockResolvesToBlockedIp = resolvesToBlockedIp as jest.MockedFunction<
+  typeof resolvesToBlockedIp
+>;
 
 const makePage = () => ({
   getSize: jest.fn().mockReturnValue({ height: 842, width: 595 }),
@@ -207,7 +219,7 @@ describe('InvoicesService', () => {
   });
 
   describe('addItem', () => {
-    it('delegates to repository', async () => {
+    it('delegates to repository with the acting user id (ownership check)', async () => {
       const item = {
         id: 1,
         invoiceId: 1,
@@ -220,18 +232,44 @@ describe('InvoicesService', () => {
       };
       repo.addItem.mockResolvedValue(item);
 
-      const result = await service.addItem({
-        invoiceId: 1,
-        description: 'Work',
-        quantity: 1,
-        unitPrice: 100,
-      });
+      const result = await service.addItem(
+        {
+          invoiceId: 1,
+          description: 'Work',
+          quantity: 1,
+          unitPrice: 100,
+        },
+        7,
+      );
+
+      expect(repo.addItem).toHaveBeenCalledWith(
+        {
+          invoiceId: 1,
+          description: 'Work',
+          quantity: 1,
+          unitPrice: 100,
+        },
+        7,
+      );
       expect(result).toEqual(item);
+    });
+
+    it('propagates NotFoundException when the invoice is not owned by the caller', async () => {
+      repo.addItem.mockRejectedValue(
+        new NotFoundException('Invoice 1 not found'),
+      );
+
+      await expect(
+        service.addItem(
+          { invoiceId: 1, description: 'Work', quantity: 1, unitPrice: 100 },
+          999,
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('updateItem', () => {
-    it('delegates to repository', async () => {
+    it('delegates to repository with the acting user id (ownership check)', async () => {
       const item = {
         id: 1,
         invoiceId: 1,
@@ -244,26 +282,54 @@ describe('InvoicesService', () => {
       };
       repo.updateItem.mockResolvedValue(item);
 
-      const result = await service.updateItem(1, {
-        id: 1,
-        description: 'Revised',
-      });
+      const result = await service.updateItem(
+        1,
+        {
+          id: 1,
+          description: 'Revised',
+        },
+        7,
+      );
 
-      expect(repo.updateItem).toHaveBeenCalledWith(1, {
-        id: 1,
-        description: 'Revised',
-      });
+      expect(repo.updateItem).toHaveBeenCalledWith(
+        1,
+        {
+          id: 1,
+          description: 'Revised',
+        },
+        7,
+      );
       expect(result).toEqual(item);
+    });
+
+    it('propagates NotFoundException when the item does not belong to the caller', async () => {
+      repo.updateItem.mockRejectedValue(
+        new NotFoundException('InvoiceItem 1 not found'),
+      );
+
+      await expect(
+        service.updateItem(1, { id: 1, description: 'Revised' }, 999),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('removeItem', () => {
-    it('delegates to repository', async () => {
+    it('delegates to repository with the acting user id (ownership check)', async () => {
       repo.removeItem.mockResolvedValue(true);
 
-      const result = await service.removeItem(1);
-      expect(repo.removeItem).toHaveBeenCalledWith(1);
+      const result = await service.removeItem(1, 7);
+      expect(repo.removeItem).toHaveBeenCalledWith(1, 7);
       expect(result).toBe(true);
+    });
+
+    it('propagates NotFoundException when the item does not belong to the caller', async () => {
+      repo.removeItem.mockRejectedValue(
+        new NotFoundException('InvoiceItem 1 not found'),
+      );
+
+      await expect(service.removeItem(1, 999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -274,6 +340,7 @@ describe('InvoicesService', () => {
     beforeEach(() => {
       clientsService = { findOne: jest.fn() };
       usersService = { findOne: jest.fn() };
+      mockResolvesToBlockedIp.mockResolvedValue(false);
     });
 
     const buildService = async () => {
@@ -449,6 +516,27 @@ describe('InvoicesService', () => {
       await svc.generatePdf(1, 1);
 
       // isAllowedLogoUrl blocks http:// and private IPs — fetch must not be called
+      expect(fetchSpy).not.toHaveBeenCalled();
+      jest.restoreAllMocks();
+    });
+
+    it('skips logo when the hostname resolves to a blocked address (DNS rebinding, #13)', async () => {
+      const invoice = mockInvoice({ clientId: null, items: [], notes: null });
+      repo.findById.mockResolvedValue(invoice);
+      usersService.findOne.mockResolvedValue({
+        id: 1,
+        logoUrl: 'https://attacker-controlled.example/logo.png',
+      });
+      mockResolvesToBlockedIp.mockResolvedValue(true);
+
+      const fetchSpy = jest.spyOn(global, 'fetch');
+
+      const svc = await buildService();
+      await svc.generatePdf(1, 1);
+
+      expect(mockResolvesToBlockedIp).toHaveBeenCalledWith(
+        'attacker-controlled.example',
+      );
       expect(fetchSpy).not.toHaveBeenCalled();
       jest.restoreAllMocks();
     });

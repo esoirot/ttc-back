@@ -27,11 +27,18 @@ type UpdateInput = {
 
 export abstract class TaskAttachmentRepository {
   abstract findByTask(taskId: number): Promise<TaskAttachmentModel[]>;
-  abstract findById(id: number): Promise<TaskAttachmentModel | null>;
+  abstract findById(
+    id: number,
+    userId: number,
+  ): Promise<TaskAttachmentModel | null>;
   abstract create(data: CreateInput): Promise<TaskAttachmentModel>;
   abstract update(
     id: number,
     data: UpdateInput,
+    userId: number,
   ): Promise<TaskAttachmentModel | null>;
-  abstract delete(id: number): Promise<TaskAttachmentModel | null>;
+  abstract delete(
+    id: number,
+    userId: number,
+  ): Promise<TaskAttachmentModel | null>;
 }

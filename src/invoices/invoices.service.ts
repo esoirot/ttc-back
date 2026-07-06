@@ -15,7 +15,7 @@ import {
 import { UpdateInvoiceInput } from './dto/update-invoice.input';
 import { GenerateInvoiceInput } from './dto/generate-invoice.input';
 import type { ClientModel } from '../clients/types/client.type';
-import { isAllowedLogoUrl } from '../common/logo-url.util';
+import { isAllowedLogoUrl, resolvesToBlockedIp } from '../common/logo-url.util';
 
 @Injectable()
 export class InvoicesService {
@@ -98,19 +98,23 @@ export class InvoicesService {
     return true;
   }
 
-  addItem(input: AddInvoiceItemInput): Promise<InvoiceItemModel> {
-    return this.repo.addItem(input);
+  addItem(
+    input: AddInvoiceItemInput,
+    userId: number,
+  ): Promise<InvoiceItemModel> {
+    return this.repo.addItem(input, userId);
   }
 
   updateItem(
     id: number,
     data: UpdateInvoiceItemInput,
+    userId: number,
   ): Promise<InvoiceItemModel> {
-    return this.repo.updateItem(id, data);
+    return this.repo.updateItem(id, data, userId);
   }
 
-  removeItem(id: number): Promise<boolean> {
-    return this.repo.removeItem(id);
+  removeItem(id: number, userId: number): Promise<boolean> {
+    return this.repo.removeItem(id, userId);
   }
 
   async generatePdf(id: number, userId: number): Promise<Uint8Array> {
@@ -136,7 +140,14 @@ export class InvoicesService {
     let logoImage: Awaited<ReturnType<typeof doc.embedPng>> | null = null;
     try {
       const user = await this.usersService.findOne(userId);
-      if (user.logoUrl && isAllowedLogoUrl(user.logoUrl)) {
+      if (
+        user.logoUrl &&
+        isAllowedLogoUrl(user.logoUrl) &&
+        // #13 — re-check the resolved IP right before fetching: the hostname
+        // check above only guards a literal IP in the URL, not a domain that
+        // resolves to a blocked address (DNS rebinding).
+        !(await resolvesToBlockedIp(new URL(user.logoUrl).hostname))
+      ) {
         const res = await fetch(user.logoUrl, {
           redirect: 'error',
           signal: AbortSignal.timeout(15_000),

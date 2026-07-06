@@ -18,6 +18,7 @@ export function mockUser(overrides: Partial<AuthUser> = {}): AuthUser {
     name: 'Test User',
     password: '$2b$12$hashedpassword',
     role: 'USER',
+    adminPermissions: [],
     twoFactorSecret: null,
     twoFactorEnabled: false,
     ...overrides,

@@ -28,12 +28,31 @@ describe('JwtStrategy', () => {
       sub: 42,
       email: 'user@example.com',
       role: 'USER',
+      adminPermissions: ['MANAGE_INVOICES'],
       type: 'access',
     };
 
     const result = strategy.validate(payload);
 
-    expect(result).toEqual({ id: 42, email: 'user@example.com', role: 'USER' });
+    expect(result).toEqual({
+      id: 42,
+      email: 'user@example.com',
+      role: 'USER',
+      adminPermissions: ['MANAGE_INVOICES'],
+    });
+  });
+
+  it('validate — defaults adminPermissions to [] for a stale pre-fix JWT missing the claim', () => {
+    const payload = {
+      sub: 42,
+      email: 'user@example.com',
+      role: 'ADMIN',
+      type: 'access',
+    } as unknown as JwtPayload;
+
+    const result = strategy.validate(payload);
+
+    expect(result.adminPermissions).toEqual([]);
   });
 
   it('validate — throws UnauthorizedException for an unexpected token type', () => {
@@ -41,6 +60,7 @@ describe('JwtStrategy', () => {
       sub: 42,
       email: 'user@example.com',
       role: 'USER',
+      adminPermissions: [],
       type: 'refresh',
     } as unknown as JwtPayload;
 
@@ -52,6 +72,7 @@ describe('JwtStrategy', () => {
       sub: 42,
       email: 'user@example.com',
       role: 'USER',
+      adminPermissions: [],
       type: 'temp',
     };
 

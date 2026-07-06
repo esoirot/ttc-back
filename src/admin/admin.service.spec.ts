@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminRepository } from './repositories/admin.repository';
 import { AuditService } from '../audit/audit.service';
@@ -39,10 +40,10 @@ describe('AdminService', () => {
       findRates: jest.fn().mockResolvedValue([]),
       createClient: jest.fn().mockResolvedValue({ id: 1, name: 'Corp' }),
       updateClient: jest.fn().mockResolvedValue({ id: 1, name: 'Updated' }),
-      deleteClient: jest.fn().mockResolvedValue({ deleted: true }),
+      deleteClient: jest.fn().mockResolvedValue({ id: 1, orphanedRecords: 0 }),
       createProject: jest.fn().mockResolvedValue({ id: 1, title: 'Proj' }),
       updateProject: jest.fn().mockResolvedValue({ id: 1, title: 'Updated' }),
-      deleteProject: jest.fn().mockResolvedValue({ deleted: true }),
+      deleteProject: jest.fn().mockResolvedValue({ id: 5, orphanedRecords: 0 }),
       updateInvoice: jest.fn().mockResolvedValue({ id: 1, status: 'PAID' }),
       deleteInvoice: jest.fn().mockResolvedValue({ deleted: true }),
       deleteTimeEntry: jest.fn().mockResolvedValue({ deleted: true }),
@@ -147,7 +148,18 @@ describe('AdminService', () => {
         99,
         'ADMIN_CLIENT_DELETE',
         'client',
-        { clientId: 1 },
+        { clientId: 1, orphanedRecords: 0 },
+      );
+    });
+
+    it('surfaces the repo-reported orphaned-record count in the audit log (#12)', async () => {
+      repo.deleteClient.mockResolvedValueOnce({ id: 1, orphanedRecords: 3 });
+      await service.deleteClient(99, 1);
+      expect(audit.log).toHaveBeenCalledWith(
+        99,
+        'ADMIN_CLIENT_DELETE',
+        'client',
+        { clientId: 1, orphanedRecords: 3 },
       );
     });
   });
@@ -187,7 +199,18 @@ describe('AdminService', () => {
         99,
         'ADMIN_PROJECT_DELETE',
         'project',
-        { projectId: 5 },
+        { projectId: 5, orphanedRecords: 0 },
+      );
+    });
+
+    it('surfaces the repo-reported orphaned-record count in the audit log (#12)', async () => {
+      repo.deleteProject.mockResolvedValueOnce({ id: 5, orphanedRecords: 7 });
+      await service.deleteProject(99, 5);
+      expect(audit.log).toHaveBeenCalledWith(
+        99,
+        'ADMIN_PROJECT_DELETE',
+        'project',
+        { projectId: 5, orphanedRecords: 7 },
       );
     });
   });
@@ -217,6 +240,17 @@ describe('AdminService', () => {
         'invoice',
         { invoiceId: 3 },
       );
+    });
+
+    it('propagates BadRequestException when the invoice is not DRAFT and does not log', async () => {
+      repo.deleteInvoice.mockRejectedValue(
+        new BadRequestException('Only DRAFT invoices can be deleted'),
+      );
+
+      await expect(service.deleteInvoice(99, 3)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(audit.log).not.toHaveBeenCalled();
     });
   });
 

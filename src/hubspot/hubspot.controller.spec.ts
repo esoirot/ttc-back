@@ -149,6 +149,11 @@ describe('HubspotController', () => {
     expect(service.listCompanies).toHaveBeenCalledWith(1, 'cursor-1', 10);
   });
 
+  it('listCompanies — passes undefined limit when omitted', async () => {
+    await controller.listCompanies(makeReq());
+    expect(service.listCompanies).toHaveBeenCalledWith(1, undefined, undefined);
+  });
+
   it('searchCompanies — passes dto', async () => {
     const dto = { filterGroups: [] };
     await controller.searchCompanies(makeReq(), dto);
@@ -175,6 +180,11 @@ describe('HubspotController', () => {
   it('listDeals — passes optional pagination params', async () => {
     await controller.listDeals(makeReq(), 'cursor-1', '10');
     expect(service.listDeals).toHaveBeenCalledWith(1, 'cursor-1', 10);
+  });
+
+  it('listDeals — passes undefined limit when omitted', async () => {
+    await controller.listDeals(makeReq());
+    expect(service.listDeals).toHaveBeenCalledWith(1, undefined, undefined);
   });
 
   it('searchDeals — passes dto', async () => {
@@ -222,9 +232,9 @@ describe('HubspotController', () => {
     expect(service.listConnections).toHaveBeenCalled();
   });
 
-  it('forceDisconnect — passes userId param', async () => {
-    await controller.forceDisconnect(99);
-    expect(service.disconnect).toHaveBeenCalledWith(99);
+  it('forceDisconnect — passes target userId and acting admin id', async () => {
+    await controller.forceDisconnect(99, makeReq(7));
+    expect(service.disconnect).toHaveBeenCalledWith(99, 7);
   });
 
   it('handleWebhook — verifies signature then dispatches events', () => {
@@ -234,7 +244,7 @@ describe('HubspotController', () => {
     expect(service.verifyWebhookSignature).toHaveBeenCalledWith(
       '[]',
       'sig-abc',
-      1234567890,
+      '1234567890',
     );
     expect(service.handleWebhookEvents).toHaveBeenCalledWith(body);
   });
@@ -242,11 +252,11 @@ describe('HubspotController', () => {
   it('handleWebhook — uses JSON.stringify(body) when no rawBody', () => {
     const req = {} as unknown as RawBodyRequest;
     const body = [makeWebhookEvent({ eventId: 1 })];
-    controller.handleWebhook(req, body, 'sig', '');
+    controller.handleWebhook(req, body, 'sig', '1234567890');
     expect(service.verifyWebhookSignature).toHaveBeenCalledWith(
       JSON.stringify(body),
       'sig',
-      undefined,
+      '1234567890',
     );
   });
 });

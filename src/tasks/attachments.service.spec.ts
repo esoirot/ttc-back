@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { AttachmentsService } from './attachments.service';
 import { TaskAttachmentRepository } from './repositories/task-attachment.repository';
+import { TaskRepository } from './repositories/task.repository';
 import { ActivitiesService } from './activities.service';
 import { StorageRegistry } from '../storage';
 
@@ -38,6 +40,7 @@ describe('AttachmentsService', () => {
   let activitiesService: { log: jest.Mock };
   let storageRegistry: { get: jest.Mock };
   let storageProvider: ReturnType<typeof makeStorageProvider>;
+  let taskRepo: { findById: jest.Mock };
 
   beforeEach(async () => {
     repo = {
@@ -50,11 +53,15 @@ describe('AttachmentsService', () => {
     activitiesService = { log: jest.fn().mockResolvedValue(undefined) };
     storageProvider = makeStorageProvider();
     storageRegistry = { get: jest.fn().mockReturnValue(storageProvider) };
+    taskRepo = {
+      findById: jest.fn().mockResolvedValue({ id: 10, projectId: 1 }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AttachmentsService,
         { provide: TaskAttachmentRepository, useValue: repo },
+        { provide: TaskRepository, useValue: taskRepo },
         { provide: ActivitiesService, useValue: activitiesService },
         { provide: StorageRegistry, useValue: storageRegistry },
       ],
@@ -95,6 +102,7 @@ describe('AttachmentsService', () => {
         7,
       );
 
+      expect(taskRepo.findById).toHaveBeenCalledWith(10, 7);
       expect(storageRegistry.get).toHaveBeenCalledWith(undefined);
       expect(storageProvider.upload).toHaveBeenCalledWith('doc.pdf', buffer);
       expect(repo.create).toHaveBeenCalledWith({
@@ -128,6 +136,18 @@ describe('AttachmentsService', () => {
       );
       expect(storageRegistry.get).toHaveBeenCalledWith('s3');
     });
+
+    it('throws NotFoundException when caller does not own/is not assigned the task', async () => {
+      taskRepo.findById.mockRejectedValue(
+        new NotFoundException('Task 10 not found'),
+      );
+
+      await expect(
+        service.createFileAttachment(10, 'doc.pdf', Buffer.from('x'), 999),
+      ).rejects.toThrow(NotFoundException);
+      expect(storageRegistry.get).not.toHaveBeenCalled();
+      expect(repo.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('createUrlAttachment', () => {
@@ -142,6 +162,7 @@ describe('AttachmentsService', () => {
         7,
       );
 
+      expect(taskRepo.findById).toHaveBeenCalledWith(10, 7);
       expect(repo.create).toHaveBeenCalledWith({
         taskId: 10,
         type: 'URL',
@@ -177,6 +198,17 @@ describe('AttachmentsService', () => {
         { name: 'https://example.com', url: 'https://example.com' },
       );
     });
+
+    it('throws NotFoundException when caller does not own/is not assigned the task', async () => {
+      taskRepo.findById.mockRejectedValue(
+        new NotFoundException('Task 10 not found'),
+      );
+
+      await expect(
+        service.createUrlAttachment(10, 'https://example.com', 'My Link', 999),
+      ).rejects.toThrow(NotFoundException);
+      expect(repo.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('update', () => {
@@ -185,6 +217,7 @@ describe('AttachmentsService', () => {
 
       const result = await service.update(99, 'https://new.com', 'New Text', 7);
 
+      expect(repo.findById).toHaveBeenCalledWith(99, 7);
       expect(result).toBeNull();
       expect(repo.update).not.toHaveBeenCalled();
     });
@@ -200,10 +233,15 @@ describe('AttachmentsService', () => {
 
       const result = await service.update(1, 'https://new.com', 'New Text', 7);
 
-      expect(repo.update).toHaveBeenCalledWith(1, {
-        url: 'https://new.com',
-        displayText: 'New Text',
-      });
+      expect(repo.findById).toHaveBeenCalledWith(1, 7);
+      expect(repo.update).toHaveBeenCalledWith(
+        1,
+        {
+          url: 'https://new.com',
+          displayText: 'New Text',
+        },
+        7,
+      );
       expect(activitiesService.log).toHaveBeenCalledWith(
         10,
         7,
@@ -241,6 +279,7 @@ describe('AttachmentsService', () => {
 
       await service.delete(1, 7);
 
+      expect(repo.delete).toHaveBeenCalledWith(1, 7);
       expect(activitiesService.log).toHaveBeenCalledWith(
         10,
         7,

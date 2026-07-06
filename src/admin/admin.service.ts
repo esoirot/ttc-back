@@ -84,6 +84,7 @@ export class AdminService {
     const result = await this.repo.deleteClient(id);
     this.audit.log(adminUserId, 'ADMIN_CLIENT_DELETE', 'client', {
       clientId: id,
+      orphanedRecords: result.orphanedRecords,
     });
     return result;
   }
@@ -113,6 +114,7 @@ export class AdminService {
     const result = await this.repo.deleteProject(id);
     this.audit.log(adminUserId, 'ADMIN_PROJECT_DELETE', 'project', {
       projectId: id,
+      orphanedRecords: result.orphanedRecords,
     });
     return result;
   }

@@ -2,10 +2,11 @@ import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { SentryModule } from '@sentry/nestjs/setup';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import Joi from 'joi';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -69,6 +70,9 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
         HUBSPOT_CLIENT_ID: Joi.string().optional(),
         HUBSPOT_CLIENT_SECRET: Joi.string().optional(),
         HUBSPOT_WEBHOOK_SECRET: Joi.string().optional(),
+        HUBSPOT_WEBHOOK_URL: Joi.string().default(
+          'http://localhost:3000/hubspot/webhooks',
+        ),
         HUBSPOT_APP_ID: Joi.string().optional(),
         HUBSPOT_PRIVATE_APP_TOKEN: Joi.string().optional(),
         SMTP_HOST: Joi.string().optional(),
@@ -77,6 +81,7 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
         STORAGE_DRIVER: Joi.string()
           .valid('local', 's3', 'azure')
           .default('local'),
+        GRAPHQL_SANDBOX: Joi.boolean().default(true),
         AWS_REGION: Joi.when('STORAGE_DRIVER', {
           is: 's3',
           then: Joi.string().required(),
@@ -109,18 +114,37 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
         ),
       }),
     }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      sortSchema: true,
-      buildSchemaOptions: {
-        orphanedTypes: [TranslatorActivity, CorrectorActivity, CustomActivity],
-      },
-      // @as-integrations/fastify@3 calls context(request, reply) as two
-      // positional args, not as a single { request, reply } object.
-      context: (request: FastifyRequest, reply: FastifyReply) => ({
-        req: request,
-        res: reply,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        driver: ApolloDriver,
+        autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+        sortSchema: true,
+        buildSchemaOptions: {
+          orphanedTypes: [
+            TranslatorActivity,
+            CorrectorActivity,
+            CustomActivity,
+          ],
+        },
+        // playground: false stops @nestjs/apollo from injecting its own
+        // deprecated GraphQL Playground landing-page plugin, which would
+        // collide with ours below (Apollo Server allows only one plugin
+        // implementing renderLandingPage).
+        playground: false,
+        // Apollo's default landing page swaps to a link-out-only page when
+        // NODE_ENV === 'production'. Force the embedded Sandbox everywhere
+        // (still full introspection either way) unless explicitly opted out.
+        plugins: config.get('GRAPHQL_SANDBOX', true)
+          ? [ApolloServerPluginLandingPageLocalDefault({ embed: true })]
+          : [],
+        // @as-integrations/fastify@3 calls context(request, reply) as two
+        // positional args, not as a single { request, reply } object.
+        context: (request: FastifyRequest, reply: FastifyReply) => ({
+          req: request,
+          res: reply,
+        }),
       }),
     }),
     AuthModule,

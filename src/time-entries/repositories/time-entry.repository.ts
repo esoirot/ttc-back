@@ -46,4 +46,5 @@ export abstract class TimeEntryRepository {
   ): Promise<TimeEntryModel>;
   abstract resumeEntry(id: number, userId: number): Promise<TimeEntryModel>;
   abstract delete(id: number, userId: number): Promise<TimeEntryModel>;
+  abstract sumDurationForTask(taskId: number): Promise<number | null>;
 }

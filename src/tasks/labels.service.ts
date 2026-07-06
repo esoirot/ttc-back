@@ -3,22 +3,32 @@ import {
   TaskLabelRepository,
   TaskLabelModel,
 } from './repositories/task-label.repository';
+import { TaskRepository } from './repositories/task.repository';
 import { CreateTaskLabelInput } from './dto/create-task-label.input';
 
 @Injectable()
 export class LabelsService {
-  constructor(private readonly repo: TaskLabelRepository) {}
+  constructor(
+    private readonly repo: TaskLabelRepository,
+    private readonly taskRepo: TaskRepository,
+  ) {}
 
   findByTask(taskId: number): Promise<TaskLabelModel[]> {
     return this.repo.findByTask(taskId);
   }
 
-  create(input: CreateTaskLabelInput): Promise<TaskLabelModel> {
+  async create(
+    input: CreateTaskLabelInput,
+    userId: number,
+  ): Promise<TaskLabelModel> {
+    // #19 — findById throws NotFoundException unless the caller owns the
+    // task's project or is its assignee.
+    await this.taskRepo.findById(input.taskId, userId);
     return this.repo.create(input);
   }
 
-  async delete(id: number): Promise<boolean> {
-    await this.repo.delete(id);
+  async delete(id: number, userId: number): Promise<boolean> {
+    await this.repo.delete(id, userId);
     return true;
   }
 }

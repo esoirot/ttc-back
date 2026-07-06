@@ -1,6 +1,6 @@
 import { CreateUserInput } from './create-user.input';
 import { InputType, Field, PartialType, Int } from '@nestjs/graphql';
-import { Role } from '../entities/user.entity';
+import { Role, AdminPermission } from '../entities/user.entity';
 
 @InputType()
 export class UpdateUserInput extends PartialType(CreateUserInput) {
@@ -10,6 +10,6 @@ export class UpdateUserInput extends PartialType(CreateUserInput) {
   @Field(() => Role, { nullable: true })
   role?: Role;
 
-  @Field(() => [String], { nullable: true })
+  @Field(() => [AdminPermission], { nullable: true })
   adminPermissions?: string[];
 }

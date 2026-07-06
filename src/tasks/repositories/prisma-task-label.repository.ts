@@ -24,8 +24,15 @@ export class PrismaTaskLabelRepository implements TaskLabelRepository {
     });
   }
 
-  async delete(id: number): Promise<TaskLabelModel> {
-    const label = await this.prisma.taskLabel.findUnique({ where: { id } });
+  async delete(id: number, userId: number): Promise<TaskLabelModel> {
+    // #19 — owner-or-assignee, joined through the parent Task (mirrors
+    // prisma-task.repository.ts's findById).
+    const label = await this.prisma.taskLabel.findFirst({
+      where: {
+        id,
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
+    });
     if (!label) throw new NotFoundException(`Label ${id} not found`);
     return this.prisma.taskLabel.delete({ where: { id } });
   }

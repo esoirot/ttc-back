@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash } from 'crypto';
+import { createHmac } from 'crypto';
 import { HubspotService } from './hubspot.service';
 import { UsersService } from '../users/users.service';
 import { AuditService } from '../audit/audit.service';
@@ -27,6 +27,7 @@ import { fetchWithRetry } from '../common/retry.util';
 const mockFetch = fetchWithRetry as jest.MockedFunction<typeof fetchWithRetry>;
 
 const WEBHOOK_SECRET = 'test-webhook-secret';
+const WEBHOOK_URL = 'http://localhost:3000/hubspot/webhooks';
 const JWT_SECRET = 'test-jwt-secret';
 
 const makeUser = (overrides: Record<string, unknown> = {}) => ({
@@ -96,6 +97,7 @@ describe('HubspotService', () => {
       HUBSPOT_CLIENT_SECRET: 'client-secret',
       HUBSPOT_REDIRECT_URI: 'http://localhost:3000/hubspot/auth/callback',
       HUBSPOT_WEBHOOK_SECRET: WEBHOOK_SECRET,
+      HUBSPOT_WEBHOOK_URL: WEBHOOK_URL,
       FRONTEND_URL: 'http://localhost:5173',
       JWT_SECRET,
       HUBSPOT_APP_ID: 'app-123',
@@ -200,6 +202,20 @@ describe('HubspotService', () => {
       );
     });
 
+    it('does not audit-log a self-service disconnect (no actingAdminId)', async () => {
+      await service.disconnect(1);
+      expect(auditService.log).not.toHaveBeenCalled();
+    });
+
+    it('audit-logs when an admin force-disconnects another user', async () => {
+      await service.disconnect(1, 99);
+      expect(auditService.log).toHaveBeenCalledWith(
+        99,
+        'HUBSPOT_ADMIN_FORCE_DISCONNECT',
+        'hubspot:connections/1',
+      );
+    });
+
     it('skips revocation when the user has no refresh token', async () => {
       usersService.findOne.mockResolvedValue(
         makeUser({ hubspotRefreshToken: null }),
@@ -258,34 +274,58 @@ describe('HubspotService', () => {
 
   describe('verifyWebhookSignature', () => {
     const rawBody = '[]';
-    const validSig = createHash('sha256')
-      .update(WEBHOOK_SECRET + rawBody)
-      .digest('hex');
+    const sign = (timestamp: string, body = rawBody) =>
+      createHmac('sha256', WEBHOOK_SECRET)
+        .update(`POST${WEBHOOK_URL}${body}${timestamp}`)
+        .digest('base64');
 
     it('passes for valid signature', () => {
+      const ts = String(Date.now());
       expect(() =>
-        service.verifyWebhookSignature(rawBody, validSig),
+        service.verifyWebhookSignature(rawBody, sign(ts), ts),
       ).not.toThrow();
     });
 
-    it('throws UnauthorizedException for stale request (replay protection)', () => {
-      const staleTs = Date.now() - 6 * 60 * 1000; // 6 min ago
+    it('throws UnauthorizedException when timestamp is missing', () => {
+      const ts = String(Date.now());
       expect(() =>
-        service.verifyWebhookSignature(rawBody, validSig, staleTs),
+        service.verifyWebhookSignature(rawBody, sign(ts), ''),
+      ).toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException for stale request (replay protection)', () => {
+      const staleTs = String(Date.now() - 6 * 60 * 1000); // 6 min ago
+      expect(() =>
+        service.verifyWebhookSignature(rawBody, sign(staleTs), staleTs),
       ).toThrow(UnauthorizedException);
     });
 
     it('throws UnauthorizedException for invalid signature', () => {
+      const ts = String(Date.now());
       expect(() =>
-        service.verifyWebhookSignature(rawBody, 'a'.repeat(64)),
+        service.verifyWebhookSignature(rawBody, 'a'.repeat(44), ts),
       ).toThrow(UnauthorizedException);
     });
 
     it('recent timestamp passes replay check', () => {
-      const recentTs = Date.now() - 60 * 1000; // 1 min ago
+      const recentTs = String(Date.now() - 60 * 1000); // 1 min ago
       expect(() =>
-        service.verifyWebhookSignature(rawBody, validSig, recentTs),
+        service.verifyWebhookSignature(rawBody, sign(recentTs), recentTs),
       ).not.toThrow();
+    });
+
+    it('rejects a captured signature replayed with a forged fresh timestamp (#8)', () => {
+      // Old v1 scheme (sha256(secret+body)) never bound the timestamp into the
+      // signature, so an attacker replaying a captured payload+signature pair
+      // could just forge a fresh `x-hubspot-request-timestamp` and pass the
+      // replay-window check every time. The v3 scheme signs the timestamp
+      // itself, so a mismatched (forged) timestamp invalidates the signature.
+      const originalTs = String(Date.now() - 60 * 1000);
+      const capturedSignature = sign(originalTs);
+      const forgedTs = String(Date.now());
+      expect(() =>
+        service.verifyWebhookSignature(rawBody, capturedSignature, forgedTs),
+      ).toThrow(UnauthorizedException);
     });
   });
 

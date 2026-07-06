@@ -9,6 +9,17 @@ export enum Role {
 
 registerEnumType(Role, { name: 'Role' });
 
+export enum AdminPermission {
+  MANAGE_USERS = 'MANAGE_USERS',
+  MANAGE_CLIENTS = 'MANAGE_CLIENTS',
+  MANAGE_PROJECTS = 'MANAGE_PROJECTS',
+  MANAGE_INVOICES = 'MANAGE_INVOICES',
+  MANAGE_TIME = 'MANAGE_TIME',
+  MANAGE_RATES = 'MANAGE_RATES',
+}
+
+registerEnumType(AdminPermission, { name: 'AdminPermission' });
+
 @ObjectType()
 export class User {
   @Field(() => Int)
@@ -29,7 +40,7 @@ export class User {
   @Field({ nullable: true })
   logoUrl?: string;
 
-  @Field(() => [String])
+  @Field(() => [AdminPermission])
   adminPermissions!: string[];
 
   @Field()

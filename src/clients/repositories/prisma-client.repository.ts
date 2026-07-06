@@ -220,4 +220,15 @@ export class PrismaClientRepository implements ClientRepository {
       throw err;
     }
   }
+
+  async promoteStaleFollowUps(cutoffDate: Date): Promise<number> {
+    const { count } = await this.prisma.client.updateMany({
+      where: {
+        status: PrismaClientStatus.FOLLOW_UP_3,
+        contactedAt: { lt: cutoffDate },
+      },
+      data: { status: PrismaClientStatus.RECONTACT_LATER },
+    });
+    return count;
+  }
 }

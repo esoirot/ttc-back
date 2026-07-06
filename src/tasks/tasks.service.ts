@@ -16,15 +16,16 @@ export class TasksService {
     private readonly activitiesService: ActivitiesService,
   ) {}
 
-  findOne(id: number): Promise<TaskModel> {
-    return this.repo.findById(id);
+  findOne(id: number, userId: number): Promise<TaskModel> {
+    return this.repo.findById(id, userId);
   }
 
   findByProject(
     projectId: number,
+    userId: number,
     pagination?: { limit?: number; cursor?: number },
   ): Promise<TaskConnectionModel> {
-    return this.repo.findByProject(projectId, pagination);
+    return this.repo.findByProject(projectId, userId, pagination);
   }
 
   findByAssignee(
@@ -45,8 +46,8 @@ export class TasksService {
     input: UpdateTaskInput,
     userId: number,
   ): Promise<TaskModel> {
-    const before = await this.repo.findById(id);
-    const task = await this.repo.update(id, input);
+    const before = await this.repo.findById(id, userId);
+    const task = await this.repo.update(id, userId, input);
     if (input.title !== undefined && input.title !== before.title) {
       await this.activitiesService.log(id, userId, 'TITLE_CHANGED', {
         from: before.title,
@@ -87,8 +88,8 @@ export class TasksService {
     return task;
   }
 
-  async delete(id: number): Promise<boolean> {
-    await this.repo.delete(id);
+  async delete(id: number, userId: number): Promise<boolean> {
+    await this.repo.delete(id, userId);
     return true;
   }
 }

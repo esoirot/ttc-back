@@ -37,6 +37,10 @@ export class TimeEntriesService {
     return this.repo.findActive(userId);
   }
 
+  getTotalDuration(taskId: number): Promise<number | null> {
+    return this.repo.sumDurationForTask(taskId);
+  }
+
   async create(
     userId: number,
     input: CreateTimeEntryInput,

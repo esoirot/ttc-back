@@ -29,7 +29,7 @@ const COOKIE_OPTS_BASE = {
   path: '/',
 };
 
-function sha256(token: string): string {
+export function sha256(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
@@ -96,8 +96,22 @@ export class AuthService {
     const record = await this.repo.findRefreshTokenByHash(
       sha256(rawRefreshToken),
     );
-    if (!record || record.expiresAt < new Date())
+    if (!record) {
+      // Signature verified above, so this token was legitimately issued —
+      // a missing DB record means it was already rotated/logged-out and is
+      // being replayed. Treat as theft: revoke every session for this user.
+      await this.repo.deleteUserRefreshTokens(payload.sub);
+      this.auditService.log(
+        payload.sub,
+        'REFRESH_TOKEN_REUSE_DETECTED',
+        'auth',
+      );
+      void this.authEventsService.publish(payload.sub, {
+        type: 'session_revoked',
+      });
       throw new UnauthorizedException();
+    }
+    if (record.expiresAt < new Date()) throw new UnauthorizedException();
 
     const user = await this.repo.findUserById(payload.sub);
     if (!user) throw new UnauthorizedException();
@@ -304,7 +318,7 @@ export class AuthService {
     await this.repo.deleteUserPasswordResetTokens(user.id);
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-    await this.repo.createPasswordResetToken(user.id, token, expiresAt);
+    await this.repo.createPasswordResetToken(user.id, sha256(token), expiresAt);
     await this.emailService.sendPasswordReset(email, token);
     return true;
   }
@@ -344,13 +358,13 @@ export class AuthService {
     if (newPassword.length < 8) {
       throw new BadRequestException('Password must be at least 8 characters');
     }
-    const record = await this.repo.findPasswordResetToken(token);
+    const record = await this.repo.findPasswordResetToken(sha256(token));
     if (!record || record.expiresAt < new Date()) {
       throw new BadRequestException('Invalid or expired token');
     }
     const hashed = await bcrypt.hash(newPassword, 12);
     await this.repo.updatePassword(record.userId, hashed);
-    await this.repo.deletePasswordResetToken(token);
+    await this.repo.deletePasswordResetToken(sha256(token));
     return true;
   }
 
@@ -360,6 +374,7 @@ export class AuthService {
       email: authUser.email,
       name: authUser.name ?? undefined,
       role: authUser.role as Role,
+      adminPermissions: authUser.adminPermissions,
       twoFactorEnabled: authUser.twoFactorEnabled,
     });
   }
@@ -373,6 +388,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      adminPermissions: user.adminPermissions,
       type,
     };
     return expiresIn
@@ -397,6 +413,7 @@ export class AuthService {
         sub: user.id,
         email: user.email,
         role: user.role,
+        adminPermissions: user.adminPermissions,
         type: 'access',
         jti: randomBytes(16).toString('hex'),
       } satisfies JwtPayload,

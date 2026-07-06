@@ -26,8 +26,13 @@ export class PrismaTaskAttachmentRepository implements TaskAttachmentRepository 
     });
   }
 
-  findById(id: number): Promise<TaskAttachmentModel | null> {
-    return this.prisma.taskAttachment.findUnique({ where: { id } });
+  findById(id: number, userId: number): Promise<TaskAttachmentModel | null> {
+    return this.prisma.taskAttachment.findFirst({
+      where: {
+        id,
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
+    });
   }
 
   create(data: CreateInput): Promise<TaskAttachmentModel> {
@@ -47,9 +52,13 @@ export class PrismaTaskAttachmentRepository implements TaskAttachmentRepository 
   async update(
     id: number,
     data: { url?: string; displayText?: string | null },
+    userId: number,
   ): Promise<TaskAttachmentModel | null> {
-    const existing = await this.prisma.taskAttachment.findUnique({
-      where: { id },
+    const existing = await this.prisma.taskAttachment.findFirst({
+      where: {
+        id,
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
     });
     if (!existing) return null;
     return this.prisma.taskAttachment.update({
@@ -63,9 +72,15 @@ export class PrismaTaskAttachmentRepository implements TaskAttachmentRepository 
     });
   }
 
-  async delete(id: number): Promise<TaskAttachmentModel | null> {
-    const existing = await this.prisma.taskAttachment.findUnique({
-      where: { id },
+  async delete(
+    id: number,
+    userId: number,
+  ): Promise<TaskAttachmentModel | null> {
+    const existing = await this.prisma.taskAttachment.findFirst({
+      where: {
+        id,
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
     });
     if (!existing) return null;
     return this.prisma.taskAttachment.delete({ where: { id } });

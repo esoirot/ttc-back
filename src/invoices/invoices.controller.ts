@@ -7,18 +7,30 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiCookieAuth,
+  ApiOperation,
+  ApiParam,
+  ApiProduces,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import type { FastifyReply } from 'fastify';
 import { InvoicesService } from './invoices.service';
 
 type RequestWithUser = { user: { id: number } };
 
+@ApiTags('invoices')
+@ApiCookieAuth('access_token')
 @Controller('invoices')
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Get(':id/pdf')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Download invoice as PDF (owner only)' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiProduces('application/pdf')
   async downloadPdf(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: RequestWithUser,

@@ -40,11 +40,15 @@ export abstract class InvoiceRepository {
     data: UpdateInvoiceInput,
   ): Promise<InvoiceModel>;
   abstract delete(id: number, userId: number): Promise<InvoiceModel>;
-  abstract addItem(data: AddInvoiceItemInput): Promise<InvoiceItemModel>;
+  abstract addItem(
+    data: AddInvoiceItemInput,
+    userId: number,
+  ): Promise<InvoiceItemModel>;
   abstract updateItem(
     id: number,
     data: UpdateInvoiceItemInput,
+    userId: number,
   ): Promise<InvoiceItemModel>;
-  abstract removeItem(id: number): Promise<boolean>;
+  abstract removeItem(id: number, userId: number): Promise<boolean>;
   abstract nextNumber(userId: number): Promise<string>;
 }

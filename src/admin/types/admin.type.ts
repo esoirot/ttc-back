@@ -123,4 +123,4 @@ export type AdminConnectionModel<T> = {
   total: number;
 };
 
-export type AdminDeleteResultModel = { id: number };
+export type AdminDeleteResultModel = { id: number; orphanedRecords?: number };

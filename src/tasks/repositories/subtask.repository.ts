@@ -14,10 +14,14 @@ export type SubtaskModel = {
 
 export abstract class SubtaskRepository {
   abstract findByTask(taskId: number): Promise<SubtaskModel[]>;
-  abstract findById(id: number): Promise<SubtaskModel>;
+  abstract findById(id: number, userId: number): Promise<SubtaskModel>;
   abstract create(data: CreateSubtaskInput): Promise<SubtaskModel>;
-  abstract update(id: number, data: UpdateSubtaskInput): Promise<SubtaskModel>;
-  abstract delete(id: number): Promise<SubtaskModel>;
+  abstract update(
+    id: number,
+    userId: number,
+    data: UpdateSubtaskInput,
+  ): Promise<SubtaskModel>;
+  abstract delete(id: number, userId: number): Promise<SubtaskModel>;
   abstract renameChecklist(
     taskId: number,
     oldTitle: string,

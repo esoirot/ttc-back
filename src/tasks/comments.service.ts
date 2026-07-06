@@ -3,6 +3,7 @@ import {
   CommentRepository,
   TaskCommentModel,
 } from './repositories/comment.repository';
+import { TaskRepository } from './repositories/task.repository';
 import { ActivitiesService } from './activities.service';
 import { CreateCommentInput } from './dto/create-comment.input';
 import { UpdateCommentInput } from './dto/update-comment.input';
@@ -11,6 +12,7 @@ import { UpdateCommentInput } from './dto/update-comment.input';
 export class CommentsService {
   constructor(
     private readonly repo: CommentRepository,
+    private readonly taskRepo: TaskRepository,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -22,6 +24,10 @@ export class CommentsService {
     input: CreateCommentInput,
     authorId: number,
   ): Promise<TaskCommentModel> {
+    // #20 — findById throws NotFoundException unless the caller owns the
+    // task's project or is its assignee (same owner-or-assignee check used
+    // by tasks.findOne/update); otherwise anyone could comment on any task.
+    await this.taskRepo.findById(input.taskId, authorId);
     const comment = await this.repo.create(input, authorId);
     await this.activitiesService.log(input.taskId, authorId, 'COMMENT_ADDED');
     return comment;

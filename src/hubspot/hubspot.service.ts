@@ -6,12 +6,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { UsersService } from '../users/users.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ClientsService } from '../clients/clients.service.js';
 import type { ClientModel } from '../clients/types/client.type.js';
 import { fetchWithRetry } from '../common/retry.util.js';
+import {
+  signOAuthState,
+  verifyOAuthState,
+} from '../common/oauth-state.util.js';
 import type { HubspotContact } from './types/hubspot-contact.type.js';
 import type { HubspotCompany } from './types/hubspot-company.type.js';
 import type { HubspotDeal } from './types/hubspot-deal.type.js';
@@ -48,9 +52,6 @@ type HubspotListResponse<T> = {
 
 type FetchErrorBody = { message?: string };
 
-type OAuthStatePayload = { userId: number; nonce: string; exp: number };
-type SignedState = { payload: string; sig: string };
-
 @Injectable()
 export class HubspotService {
   private readonly logger = new Logger(HubspotService.name);
@@ -58,6 +59,7 @@ export class HubspotService {
   private readonly clientSecret: string;
   private readonly redirectUri: string;
   private readonly webhookSecret: string;
+  private readonly webhookUrl: string;
   private readonly frontendUrl: string;
   private readonly jwtSecret: string;
   private readonly appId: string;
@@ -77,6 +79,9 @@ export class HubspotService {
       'http://localhost:3000/hubspot/auth/callback';
     this.webhookSecret =
       this.config.get<string>('HUBSPOT_WEBHOOK_SECRET') ?? '';
+    this.webhookUrl =
+      this.config.get<string>('HUBSPOT_WEBHOOK_URL') ??
+      'http://localhost:3000/hubspot/webhooks';
     if (!this.webhookSecret) {
       this.logger.warn(
         'HUBSPOT_WEBHOOK_SECRET not set — webhook signature verification DISABLED',
@@ -93,43 +98,11 @@ export class HubspotService {
   // ─── OAuth state signing (#12) ────────────────────────────────────────────
 
   private signOAuthState(userId: number): string {
-    const nonce = randomBytes(16).toString('hex');
-    const exp = Date.now() + OAUTH_STATE_TTL_MS;
-    const payload = JSON.stringify({
-      userId,
-      nonce,
-      exp,
-    } satisfies OAuthStatePayload);
-    const sig = createHmac('sha256', this.jwtSecret)
-      .update(payload)
-      .digest('hex');
-    return Buffer.from(
-      JSON.stringify({ payload, sig } satisfies SignedState),
-    ).toString('base64url');
+    return signOAuthState(this.jwtSecret, { userId }, OAUTH_STATE_TTL_MS);
   }
 
   private verifyOAuthState(state: string): number {
-    let parsed: SignedState;
-    try {
-      parsed = JSON.parse(
-        Buffer.from(state, 'base64url').toString('utf8'),
-      ) as SignedState;
-    } catch {
-      throw new BadRequestException('Invalid OAuth state');
-    }
-    const expected = createHmac('sha256', this.jwtSecret)
-      .update(parsed.payload)
-      .digest('hex');
-    const expBuf = Buffer.from(expected, 'hex');
-    const recBuf = Buffer.from(parsed.sig, 'hex');
-    if (expBuf.length !== recBuf.length || !timingSafeEqual(expBuf, recBuf)) {
-      throw new BadRequestException('Invalid OAuth state signature');
-    }
-    const data = JSON.parse(parsed.payload) as OAuthStatePayload;
-    if (Date.now() > data.exp) {
-      throw new BadRequestException('OAuth state expired');
-    }
-    return data.userId;
+    return verifyOAuthState<{ userId: number }>(this.jwtSecret, state).userId;
   }
 
   // ─── Auth URL / Callback ──────────────────────────────────────────────────
@@ -206,7 +179,7 @@ export class HubspotService {
     };
   }
 
-  async disconnect(userId: number): Promise<void> {
+  async disconnect(userId: number, actingAdminId?: number): Promise<void> {
     const user = await this.usersService.findOne(userId);
     const refreshToken = user.hubspotRefreshToken;
 
@@ -216,6 +189,14 @@ export class HubspotService {
       hubspotTokenExpiresAt: null,
       hubspotPortalId: null,
     });
+
+    if (actingAdminId !== undefined) {
+      this.auditService.log(
+        actingAdminId,
+        'HUBSPOT_ADMIN_FORCE_DISCONNECT',
+        `hubspot:connections/${userId}`,
+      );
+    }
 
     // #14 — revoke refresh token server-side (fire-and-forget)
     if (refreshToken) {
@@ -724,22 +705,34 @@ export class HubspotService {
   verifyWebhookSignature(
     rawBody: string,
     signature: string,
-    timestampMs?: number,
+    rawTimestamp?: string,
   ): void {
-    // #13 — replay protection
-    if (timestampMs !== undefined && Date.now() - timestampMs > 5 * 60 * 1000) {
-      throw new UnauthorizedException('Stale webhook request');
-    }
-
     if (!this.webhookSecret) {
       throw new UnauthorizedException(
         'Webhook signature verification disabled — HUBSPOT_WEBHOOK_SECRET not configured',
       );
     }
-    const expected = createHash('sha256')
-      .update(this.webhookSecret + rawBody)
+
+    // #8 — timestamp must be part of the signed payload (v3 scheme), not just
+    // a header checked separately, otherwise a captured payload+signature
+    // pair can be replayed indefinitely with a freshly-forged timestamp.
+    const timestampMs = rawTimestamp ? parseInt(rawTimestamp, 10) : NaN;
+    if (
+      !Number.isFinite(timestampMs) ||
+      Date.now() - timestampMs > 5 * 60 * 1000
+    ) {
+      throw new UnauthorizedException('Stale or missing webhook timestamp');
+    }
+
+    // #9 — HubSpot's v3 signature: HMAC-SHA256(client secret, method + uri +
+    // body + timestamp), base64-encoded. Replaces the old v1 scheme
+    // (sha256(secret + body), a plain hash not a keyed MAC, and blind to
+    // timestamp/replay).
+    const signedPayload = `POST${this.webhookUrl}${rawBody}${rawTimestamp}`;
+    const expected = createHmac('sha256', this.webhookSecret)
+      .update(signedPayload)
       .digest();
-    const received = Buffer.from(signature, 'hex');
+    const received = Buffer.from(signature, 'base64');
     if (
       expected.length !== received.length ||
       !timingSafeEqual(expected, received)

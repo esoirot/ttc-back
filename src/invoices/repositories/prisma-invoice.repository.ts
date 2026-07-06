@@ -296,7 +296,16 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     return invoiceToModel(deleted);
   }
 
-  async addItem(data: AddInvoiceItemInput): Promise<InvoiceItemModel> {
+  async addItem(
+    data: AddInvoiceItemInput,
+    userId: number,
+  ): Promise<InvoiceItemModel> {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id: data.invoiceId, userId },
+    });
+    if (!invoice) {
+      throw new NotFoundException(`Invoice ${data.invoiceId} not found`);
+    }
     const total = data.quantity * data.unitPrice;
     const item = await this.prisma.invoiceItem.create({
       data: {
@@ -315,9 +324,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
   async updateItem(
     id: number,
     data: UpdateInvoiceItemInput,
+    userId: number,
   ): Promise<InvoiceItemModel> {
-    const existing = await this.prisma.invoiceItem.findUnique({
-      where: { id },
+    const existing = await this.prisma.invoiceItem.findFirst({
+      where: { id, invoice: { userId } },
     });
     if (!existing) throw new NotFoundException(`InvoiceItem ${id} not found`);
     const quantity = data.quantity ?? decimalToNumber(existing.quantity);
@@ -336,8 +346,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     return itemToModel(updated);
   }
 
-  async removeItem(id: number): Promise<boolean> {
-    const item = await this.prisma.invoiceItem.findUnique({ where: { id } });
+  async removeItem(id: number, userId: number): Promise<boolean> {
+    const item = await this.prisma.invoiceItem.findFirst({
+      where: { id, invoice: { userId } },
+    });
     if (!item) throw new NotFoundException(`InvoiceItem ${id} not found`);
     await this.prisma.invoiceItem.delete({ where: { id } });
     return true;

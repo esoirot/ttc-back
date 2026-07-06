@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import type { FastifyReply } from 'fastify';
-import { AuthService } from './auth.service';
+import { AuthService, sha256 } from './auth.service';
 import { AuthRepository } from './repositories/auth.repository';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from './email.service';
@@ -228,7 +228,7 @@ describe('AuthService', () => {
       );
     });
 
-    it('throws UnauthorizedException when DB record not found', async () => {
+    it('throws UnauthorizedException and revokes all sessions when a validly-signed token has no DB record (reuse detected)', async () => {
       jwtService.verify.mockReturnValue({
         sub: 1,
         email: 'u@e.com',
@@ -236,13 +236,24 @@ describe('AuthService', () => {
         type: 'access',
       });
       repo.findRefreshTokenByHash.mockResolvedValue(null);
+      repo.deleteUserRefreshTokens.mockResolvedValue(undefined);
 
       await expect(service.refresh('valid-token', makeReply())).rejects.toThrow(
         UnauthorizedException,
       );
+
+      expect(repo.deleteUserRefreshTokens).toHaveBeenCalledWith(1);
+      expect(auditService.log).toHaveBeenCalledWith(
+        1,
+        'REFRESH_TOKEN_REUSE_DETECTED',
+        'auth',
+      );
+      expect(authEventsService.publish).toHaveBeenCalledWith(1, {
+        type: 'session_revoked',
+      });
     });
 
-    it('throws UnauthorizedException when DB record is expired', async () => {
+    it('throws UnauthorizedException without mass-revoking sessions when the DB record is merely expired', async () => {
       jwtService.verify.mockReturnValue({
         sub: 1,
         email: 'u@e.com',
@@ -258,6 +269,13 @@ describe('AuthService', () => {
 
       await expect(service.refresh('valid-token', makeReply())).rejects.toThrow(
         UnauthorizedException,
+      );
+
+      expect(repo.deleteUserRefreshTokens).not.toHaveBeenCalled();
+      expect(auditService.log).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'REFRESH_TOKEN_REUSE_DETECTED',
+        expect.anything(),
       );
     });
 
@@ -362,6 +380,9 @@ describe('AuthService', () => {
       await expect(
         service.resetPassword('bad-token', 'newpassword'),
       ).rejects.toThrow(BadRequestException);
+      expect(repo.findPasswordResetToken).toHaveBeenCalledWith(
+        sha256('bad-token'),
+      );
     });
 
     it('throws BadRequestException when token is expired', async () => {
@@ -373,9 +394,12 @@ describe('AuthService', () => {
       await expect(
         service.resetPassword('expired-token', 'newpassword'),
       ).rejects.toThrow(BadRequestException);
+      expect(repo.findPasswordResetToken).toHaveBeenCalledWith(
+        sha256('expired-token'),
+      );
     });
 
-    it('resets password and deletes token on success', async () => {
+    it('resets password and deletes token on success, looking up/deleting by hash not raw token', async () => {
       repo.findPasswordResetToken.mockResolvedValue({
         userId: 1,
         expiresAt: new Date(Date.now() + 60000),
@@ -386,8 +410,13 @@ describe('AuthService', () => {
 
       const result = await service.resetPassword('valid-token', 'newpassword');
 
+      expect(repo.findPasswordResetToken).toHaveBeenCalledWith(
+        sha256('valid-token'),
+      );
       expect(repo.updatePassword).toHaveBeenCalledWith(1, 'new-hash');
-      expect(repo.deletePasswordResetToken).toHaveBeenCalledWith('valid-token');
+      expect(repo.deletePasswordResetToken).toHaveBeenCalledWith(
+        sha256('valid-token'),
+      );
       expect(result).toBe(true);
     });
   });
@@ -421,6 +450,31 @@ describe('AuthService', () => {
         expect.any(String),
       );
       expect(result).toBe(true);
+    });
+
+    it('stores only the sha256 hash of the token, never the raw value emailed to the user', async () => {
+      const user = mockUser();
+      let rawTokenEmailed = '';
+      let storedTokenHash = '';
+      repo.findUserByEmail.mockResolvedValue(user);
+      repo.deleteUserPasswordResetTokens.mockResolvedValue(undefined);
+      repo.createPasswordResetToken.mockImplementation(
+        (_userId: number, tokenHash: string) => {
+          storedTokenHash = tokenHash;
+          return Promise.resolve();
+        },
+      );
+      emailService.sendPasswordReset.mockImplementation(
+        (_email: string, token: string) => {
+          rawTokenEmailed = token;
+          return Promise.resolve();
+        },
+      );
+
+      await service.requestPasswordReset('user@example.com');
+
+      expect(storedTokenHash).toBe(sha256(rawTokenEmailed));
+      expect(storedTokenHash).not.toBe(rawTokenEmailed);
     });
   });
 

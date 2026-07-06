@@ -87,19 +87,28 @@ export class InvoicesResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => InvoiceItem)
-  addInvoiceItem(@Args('input') input: AddInvoiceItemInput) {
-    return this.invoicesService.addItem(input);
+  addInvoiceItem(
+    @Args('input') input: AddInvoiceItemInput,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.invoicesService.addItem(input, user.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => InvoiceItem)
-  updateInvoiceItem(@Args('input') input: UpdateInvoiceItemInput) {
-    return this.invoicesService.updateItem(input.id, input);
+  updateInvoiceItem(
+    @Args('input') input: UpdateInvoiceItemInput,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.invoicesService.updateItem(input.id, input, user.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  removeInvoiceItem(@Args('id', { type: () => Int }) id: number) {
-    return this.invoicesService.removeItem(id);
+  removeInvoiceItem(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.invoicesService.removeItem(id, user.id);
   }
 }

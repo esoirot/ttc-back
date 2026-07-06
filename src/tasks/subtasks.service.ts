@@ -24,6 +24,9 @@ export class SubtasksService {
     input: CreateSubtaskInput,
     userId: number,
   ): Promise<SubtaskModel> {
+    // #18 — findById throws NotFoundException unless the caller owns the
+    // task's project or is its assignee.
+    await this.taskRepo.findById(input.taskId, userId);
     const subtask = await this.repo.create(input);
     await this.activitiesService.log(input.taskId, userId, 'CHECKLIST_ADDED', {
       title: input.title,
@@ -36,8 +39,8 @@ export class SubtasksService {
     input: UpdateSubtaskInput,
     userId: number,
   ): Promise<SubtaskModel> {
-    const before = await this.repo.findById(id);
-    const subtask = await this.repo.update(id, input);
+    const before = await this.repo.findById(id, userId);
+    const subtask = await this.repo.update(id, userId, input);
     if (input.done !== undefined && input.done !== before.done) {
       await this.activitiesService.log(
         subtask.taskId,
@@ -65,6 +68,7 @@ export class SubtasksService {
     title: string,
     userId: number,
   ): Promise<boolean> {
+    await this.taskRepo.findById(taskId, userId);
     await this.taskRepo.addChecklistTitle(taskId, title);
     await this.activitiesService.log(taskId, userId, 'CHECKLIST_CREATED', {
       title,
@@ -77,6 +81,7 @@ export class SubtasksService {
     title: string,
     userId: number,
   ): Promise<boolean> {
+    await this.taskRepo.findById(taskId, userId);
     await this.repo.deleteByChecklist(taskId, title);
     await this.taskRepo.removeChecklistTitle(taskId, title);
     await this.activitiesService.log(taskId, userId, 'CHECKLIST_REMOVED', {
@@ -91,6 +96,7 @@ export class SubtasksService {
     newTitle: string,
     userId: number,
   ): Promise<boolean> {
+    await this.taskRepo.findById(taskId, userId);
     await this.repo.renameChecklist(taskId, oldTitle, newTitle);
     await this.taskRepo.renameChecklistTitle(taskId, oldTitle, newTitle);
     await this.activitiesService.log(taskId, userId, 'CHECKLIST_RENAMED', {
@@ -101,7 +107,7 @@ export class SubtasksService {
   }
 
   async delete(id: number, userId: number): Promise<boolean> {
-    const subtask = await this.repo.delete(id);
+    const subtask = await this.repo.delete(id, userId);
     await this.activitiesService.log(
       subtask.taskId,
       userId,

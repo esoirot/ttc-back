@@ -4,12 +4,14 @@ import {
   TaskAttachmentRepository,
   TaskAttachmentModel,
 } from './repositories/task-attachment.repository';
+import { TaskRepository } from './repositories/task.repository';
 import { ActivitiesService } from './activities.service';
 
 @Injectable()
 export class AttachmentsService {
   constructor(
     private readonly repo: TaskAttachmentRepository,
+    private readonly taskRepo: TaskRepository,
     private readonly activitiesService: ActivitiesService,
     private readonly storageRegistry: StorageRegistry,
   ) {}
@@ -25,6 +27,7 @@ export class AttachmentsService {
     userId: number,
     driver?: string,
   ): Promise<TaskAttachmentModel> {
+    await this.taskRepo.findById(taskId, userId);
     const provider = this.storageRegistry.get(driver);
     const { storageKey, url } = await provider.upload(fileName, buffer);
 
@@ -49,6 +52,7 @@ export class AttachmentsService {
     displayText: string | undefined,
     userId: number,
   ): Promise<TaskAttachmentModel> {
+    await this.taskRepo.findById(taskId, userId);
     const attachment = await this.repo.create({
       taskId,
       type: 'URL',
@@ -68,12 +72,16 @@ export class AttachmentsService {
     displayText: string | undefined,
     userId: number,
   ): Promise<TaskAttachmentModel | null> {
-    const existing = await this.repo.findById(id);
+    const existing = await this.repo.findById(id, userId);
     if (!existing) return null;
-    const updated = await this.repo.update(id, {
-      url,
-      displayText: displayText ?? null,
-    });
+    const updated = await this.repo.update(
+      id,
+      {
+        url,
+        displayText: displayText ?? null,
+      },
+      userId,
+    );
     await this.activitiesService.log(
       existing.taskId,
       userId,
@@ -87,7 +95,7 @@ export class AttachmentsService {
   }
 
   async delete(id: number, userId: number): Promise<void> {
-    const attachment = await this.repo.delete(id);
+    const attachment = await this.repo.delete(id, userId);
     if (attachment) {
       await this.activitiesService.log(
         attachment.taskId,

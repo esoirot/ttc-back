@@ -1,5 +1,6 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AdminService } from './admin.service';
 import {
   AdminStats,
@@ -27,11 +28,13 @@ import {
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
 import { ProjectStatus } from '../projects/entities/project.entity';
 import { InvoiceStatus } from '../invoices/entities/invoice.entity';
 import { RateType } from '../generated/prisma/client';
+import { AdminPermission } from '../users/entities/user.entity';
 
 type RequestUser = { id: number; role: string };
 
@@ -46,6 +49,7 @@ export class AdminResolver {
     return this.adminService.getStats();
   }
 
+  @RequirePermission(AdminPermission.MANAGE_CLIENTS)
   @Query(() => AdminClientConnection, { name: 'adminClients' })
   findClients(
     @Args('pagination', { type: () => PaginationInput, nullable: true })
@@ -55,6 +59,7 @@ export class AdminResolver {
     return this.adminService.findClients(pagination, search);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_PROJECTS)
   @Query(() => AdminProjectConnection, { name: 'adminProjects' })
   findProjects(
     @Args('pagination', { type: () => PaginationInput, nullable: true })
@@ -66,6 +71,7 @@ export class AdminResolver {
     return this.adminService.findProjects(pagination, search, status);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_INVOICES)
   @Query(() => AdminInvoiceConnection, { name: 'adminInvoices' })
   findInvoices(
     @Args('pagination', { type: () => PaginationInput, nullable: true })
@@ -77,6 +83,7 @@ export class AdminResolver {
     return this.adminService.findInvoices(pagination, search, status);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_TIME)
   @Query(() => AdminTimeEntryConnection, { name: 'adminTimeEntries' })
   findTimeEntries(
     @Args('pagination', { type: () => PaginationInput, nullable: true })
@@ -86,6 +93,7 @@ export class AdminResolver {
     return this.adminService.findTimeEntries(pagination, userId);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_RATES)
   @Query(() => AdminRateConnection, { name: 'adminRates' })
   findRates(
     @Args('type', { type: () => RateType, nullable: true }) type?: RateType,
@@ -93,6 +101,8 @@ export class AdminResolver {
     return this.adminService.findRates(type);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_CLIENTS)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminClient)
   adminCreateClient(
     @Args('input') input: AdminCreateClientInput,
@@ -101,6 +111,8 @@ export class AdminResolver {
     return this.adminService.createClient(user.id, input);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_CLIENTS)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminClient)
   adminUpdateClient(
     @Args('input') input: AdminUpdateClientInput,
@@ -109,6 +121,8 @@ export class AdminResolver {
     return this.adminService.updateClient(user.id, input.id, input);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_CLIENTS)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminDeleteResult)
   adminDeleteClient(
     @Args('id', { type: () => Int }) id: number,
@@ -117,6 +131,8 @@ export class AdminResolver {
     return this.adminService.deleteClient(user.id, id);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_PROJECTS)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminProject)
   adminCreateProject(
     @Args('input') input: AdminCreateProjectInput,
@@ -125,6 +141,8 @@ export class AdminResolver {
     return this.adminService.createProject(user.id, input);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_PROJECTS)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminProject)
   adminUpdateProject(
     @Args('input') input: AdminUpdateProjectInput,
@@ -133,6 +151,8 @@ export class AdminResolver {
     return this.adminService.updateProject(user.id, input.id, input);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_PROJECTS)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminDeleteResult)
   adminDeleteProject(
     @Args('id', { type: () => Int }) id: number,
@@ -141,6 +161,8 @@ export class AdminResolver {
     return this.adminService.deleteProject(user.id, id);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_INVOICES)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminInvoice)
   adminUpdateInvoice(
     @Args('input') input: AdminUpdateInvoiceInput,
@@ -149,6 +171,8 @@ export class AdminResolver {
     return this.adminService.updateInvoice(user.id, input.id, input);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_INVOICES)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminDeleteResult)
   adminDeleteInvoice(
     @Args('id', { type: () => Int }) id: number,
@@ -157,6 +181,8 @@ export class AdminResolver {
     return this.adminService.deleteInvoice(user.id, id);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_TIME)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminDeleteResult)
   adminDeleteTimeEntry(
     @Args('id', { type: () => Int }) id: number,
@@ -165,6 +191,8 @@ export class AdminResolver {
     return this.adminService.deleteTimeEntry(user.id, id);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_RATES)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminRate)
   adminCreateRate(
     @Args('input') input: AdminCreateRateInput,
@@ -173,6 +201,8 @@ export class AdminResolver {
     return this.adminService.createRate(user.id, input);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_RATES)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminRate)
   adminUpdateRate(
     @Args('input') input: AdminUpdateRateInput,
@@ -181,6 +211,8 @@ export class AdminResolver {
     return this.adminService.updateRate(user.id, input.id, input);
   }
 
+  @RequirePermission(AdminPermission.MANAGE_RATES)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Mutation(() => AdminDeleteResult)
   adminDeleteRate(
     @Args('id', { type: () => Int }) id: number,

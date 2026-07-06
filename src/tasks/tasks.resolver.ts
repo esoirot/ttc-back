@@ -31,7 +31,6 @@ import { CreateTaskLabelInput } from './dto/create-task-label.input';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
-import { PrismaService } from '../prisma.service';
 
 type RequestUser = { id: number };
 
@@ -44,22 +43,25 @@ export class TasksResolver {
     private readonly labelsService: LabelsService,
     private readonly activitiesService: ActivitiesService,
     private readonly attachmentsService: AttachmentsService,
-    private readonly prisma: PrismaService,
   ) {}
 
   @UseGuards(GqlAuthGuard)
   @Query(() => Task, { name: 'task' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.tasksService.findOne(id);
+  findOne(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.tasksService.findOne(id, user.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => TaskConnection, { name: 'tasks' })
   findByProject(
     @Args('projectId', { type: () => Int }) projectId: number,
+    @CurrentUser() user: RequestUser,
     @Args('pagination', { nullable: true }) pagination?: PaginationInput,
   ) {
-    return this.tasksService.findByProject(projectId, pagination);
+    return this.tasksService.findByProject(projectId, user.id, pagination);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -91,8 +93,11 @@ export class TasksResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  deleteTask(@Args('id', { type: () => Int }) id: number) {
-    return this.tasksService.delete(id);
+  deleteTask(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.tasksService.delete(id, user.id);
   }
 
   @ResolveField(() => [Subtask])
@@ -118,17 +123,6 @@ export class TasksResolver {
   @ResolveField(() => [TaskAttachment])
   attachments(@Parent() task: Task) {
     return this.attachmentsService.findByTask(task.id);
-  }
-
-  @ResolveField(() => Int, { nullable: true })
-  async totalTimeSeconds(
-    @Parent() task: { id: number },
-  ): Promise<number | null> {
-    const result = await this.prisma.timeEntry.aggregate({
-      where: { taskId: task.id },
-      _sum: { durationSeconds: true },
-    });
-    return result._sum.durationSeconds;
   }
 
   @UseGuards(GqlAuthGuard)
@@ -223,13 +217,19 @@ export class TasksResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => TaskLabel)
-  createTaskLabel(@Args('input') input: CreateTaskLabelInput) {
-    return this.labelsService.create(input);
+  createTaskLabel(
+    @CurrentUser() user: RequestUser,
+    @Args('input') input: CreateTaskLabelInput,
+  ) {
+    return this.labelsService.create(input, user.id);
   }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  deleteTaskLabel(@Args('id', { type: () => Int }) id: number) {
-    return this.labelsService.delete(id);
+  deleteTaskLabel(
+    @CurrentUser() user: RequestUser,
+    @Args('id', { type: () => Int }) id: number,
+  ) {
+    return this.labelsService.delete(id, user.id);
   }
 }

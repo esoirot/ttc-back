@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { AdminRepository } from './admin.repository';
 import {
@@ -406,12 +410,18 @@ export class PrismaAdminRepository implements AdminRepository {
   }
 
   async deleteClient(id: number): Promise<AdminDeleteResultModel> {
-    try {
-      await this.prisma.client.delete({ where: { id } });
-      return { id };
-    } catch {
-      throw new NotFoundException(`Client ${id} not found`);
-    }
+    const client = await this.prisma.client.findUnique({ where: { id } });
+    if (!client) throw new NotFoundException(`Client ${id} not found`);
+    // #12 — Project.clientId / Invoice.clientId are optional FKs with no
+    // explicit onDelete, so Prisma defaults to SetNull: deleting a client
+    // silently orphans its projects/invoices instead of erroring or
+    // cascading. Count them so the caller/audit trail isn't blind to it.
+    const [orphanedProjects, orphanedInvoices] = await Promise.all([
+      this.prisma.project.count({ where: { clientId: id } }),
+      this.prisma.invoice.count({ where: { clientId: id } }),
+    ]);
+    await this.prisma.client.delete({ where: { id } });
+    return { id, orphanedRecords: orphanedProjects + orphanedInvoices };
   }
 
   async createProject(
@@ -477,12 +487,17 @@ export class PrismaAdminRepository implements AdminRepository {
   }
 
   async deleteProject(id: number): Promise<AdminDeleteResultModel> {
-    try {
-      await this.prisma.project.delete({ where: { id } });
-      return { id };
-    } catch {
-      throw new NotFoundException(`Project ${id} not found`);
-    }
+    const project = await this.prisma.project.findUnique({ where: { id } });
+    if (!project) throw new NotFoundException(`Project ${id} not found`);
+    // #12 — TimeEntry.projectId / InvoiceItem.projectId are optional FKs with
+    // no explicit onDelete, so Prisma defaults to SetNull: deleting a project
+    // silently orphans historical time entries/invoice line items.
+    const [orphanedTimeEntries, orphanedInvoiceItems] = await Promise.all([
+      this.prisma.timeEntry.count({ where: { projectId: id } }),
+      this.prisma.invoiceItem.count({ where: { projectId: id } }),
+    ]);
+    await this.prisma.project.delete({ where: { id } });
+    return { id, orphanedRecords: orphanedTimeEntries + orphanedInvoiceItems };
   }
 
   private async invoiceWithOwner(id: number): Promise<AdminInvoiceModel> {
@@ -523,12 +538,13 @@ export class PrismaAdminRepository implements AdminRepository {
   }
 
   async deleteInvoice(id: number): Promise<AdminDeleteResultModel> {
-    try {
-      await this.prisma.invoice.delete({ where: { id } });
-      return { id };
-    } catch {
-      throw new NotFoundException(`Invoice ${id} not found`);
+    const invoice = await this.prisma.invoice.findUnique({ where: { id } });
+    if (!invoice) throw new NotFoundException(`Invoice ${id} not found`);
+    if (invoice.status !== 'DRAFT') {
+      throw new BadRequestException('Only DRAFT invoices can be deleted');
     }
+    await this.prisma.invoice.delete({ where: { id } });
+    return { id };
   }
 
   async deleteTimeEntry(id: number): Promise<AdminDeleteResultModel> {

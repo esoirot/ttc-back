@@ -20,8 +20,18 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  validate(payload: JwtPayload): { id: number; email: string; role: string } {
+  validate(payload: JwtPayload): {
+    id: number;
+    email: string;
+    role: string;
+    adminPermissions: string[];
+  } {
     if (payload.type !== 'access') throw new UnauthorizedException();
-    return { id: payload.sub, email: payload.email, role: payload.role };
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      adminPermissions: payload.adminPermissions ?? [],
+    };
   }
 }

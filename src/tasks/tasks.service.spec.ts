@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { TaskRepository } from './repositories/task.repository';
 import { ActivitiesService } from './activities.service';
@@ -63,6 +64,17 @@ describe('TasksService', () => {
   });
 
   describe('update', () => {
+    it('propagates NotFoundException when the caller is neither owner nor assignee', async () => {
+      repo.findById.mockRejectedValue(
+        new NotFoundException('Task 1 not found'),
+      );
+
+      await expect(
+        service.update(1, { id: 1, title: 'New' }, 999),
+      ).rejects.toThrow(NotFoundException);
+      expect(repo.update).not.toHaveBeenCalled();
+    });
+
     it('does not log any activity when no tracked fields change', async () => {
       const before = mockTask({
         title: 'Old',
@@ -218,34 +230,48 @@ describe('TasksService', () => {
   });
 
   describe('delete', () => {
-    it('deletes task and returns true', async () => {
+    it('deletes task and returns true (scoped to the acting user)', async () => {
       repo.delete.mockResolvedValue(undefined);
 
-      const result = await service.delete(1);
+      const result = await service.delete(1, 7);
 
-      expect(repo.delete).toHaveBeenCalledWith(1);
+      expect(repo.delete).toHaveBeenCalledWith(1, 7);
       expect(result).toBe(true);
+    });
+
+    it('propagates NotFoundException when the caller does not own the project', async () => {
+      repo.delete.mockRejectedValue(new NotFoundException('Task 1 not found'));
+
+      await expect(service.delete(1, 999)).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('findOne', () => {
-    it('delegates to repository', async () => {
+    it('delegates to repository with the acting user id', async () => {
       const task = mockTask();
       repo.findById.mockResolvedValue(task);
 
-      const result = await service.findOne(1);
-      expect(repo.findById).toHaveBeenCalledWith(1);
+      const result = await service.findOne(1, 7);
+      expect(repo.findById).toHaveBeenCalledWith(1, 7);
       expect(result).toEqual(task);
+    });
+
+    it('propagates NotFoundException when the caller is neither owner nor assignee', async () => {
+      repo.findById.mockRejectedValue(
+        new NotFoundException('Task 1 not found'),
+      );
+
+      await expect(service.findOne(1, 999)).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('findByProject', () => {
-    it('delegates to repository with pagination', async () => {
+    it('delegates to repository with pagination and the acting user id', async () => {
       const connection = { edges: [], pageInfo: { hasNextPage: false } };
       repo.findByProject.mockResolvedValue(connection);
 
-      const result = await service.findByProject(1, { limit: 10 });
-      expect(repo.findByProject).toHaveBeenCalledWith(1, { limit: 10 });
+      const result = await service.findByProject(1, 7, { limit: 10 });
+      expect(repo.findByProject).toHaveBeenCalledWith(1, 7, { limit: 10 });
       expect(result).toEqual(connection);
     });
   });

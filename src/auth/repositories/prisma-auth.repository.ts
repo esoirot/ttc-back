@@ -9,26 +9,26 @@ import { encrypt, decrypt } from '../../common/crypto.util';
 
 @Injectable()
 export class PrismaAuthRepository implements AuthRepository {
-  private readonly encKey: string | undefined;
+  private readonly encKey: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
   ) {
-    this.encKey = this.config.get<string>('APP_ENCRYPTION_KEY');
+    this.encKey = this.config.getOrThrow<string>('APP_ENCRYPTION_KEY');
   }
 
   private encryptField(
     val: string | null | undefined,
   ): string | null | undefined {
-    if (val == null || !this.encKey) return val;
+    if (val == null) return val;
     return encrypt(val, this.encKey);
   }
 
   private decryptField(
     val: string | null | undefined,
   ): string | null | undefined {
-    if (val == null || !this.encKey) return val;
+    if (val == null) return val;
     try {
       return decrypt(val, this.encKey);
     } catch {
@@ -164,26 +164,26 @@ export class PrismaAuthRepository implements AuthRepository {
 
   async createPasswordResetToken(
     userId: number,
-    token: string,
+    tokenHash: string,
     expiresAt: Date,
   ): Promise<void> {
     await this.prisma.passwordResetToken.create({
-      data: { userId, token, expiresAt },
+      data: { userId, tokenHash, expiresAt },
     });
   }
 
   async findPasswordResetToken(
-    token: string,
+    tokenHash: string,
   ): Promise<{ userId: number; expiresAt: Date } | null> {
     const row = await this.prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { tokenHash },
     });
     if (!row) return null;
     return { userId: row.userId, expiresAt: row.expiresAt };
   }
 
-  async deletePasswordResetToken(token: string): Promise<void> {
-    await this.prisma.passwordResetToken.deleteMany({ where: { token } });
+  async deletePasswordResetToken(tokenHash: string): Promise<void> {
+    await this.prisma.passwordResetToken.deleteMany({ where: { tokenHash } });
   }
 
   async deleteUserPasswordResetTokens(userId: number): Promise<void> {
@@ -251,7 +251,6 @@ export class PrismaAuthRepository implements AuthRepository {
   }
 
   async isTwoFactorSecretEncrypted(userId: number): Promise<boolean> {
-    if (!this.encKey) return false;
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { twoFactorSecret: true },

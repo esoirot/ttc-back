@@ -78,6 +78,7 @@ export class AuthResolver {
     return this.authService.logout(user.id, res);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Mutation(() => Boolean)
   refreshToken(@Context() { req, res }: GqlContext) {
     return this.authService.refresh(req.cookies['refresh_token'], res);

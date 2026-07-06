@@ -321,4 +321,7 @@ export class AdminRateConnection {
 export class AdminDeleteResult {
   @Field(() => Int)
   id!: number;
+
+  @Field(() => Int, { nullable: true })
+  orphanedRecords?: number;
 }

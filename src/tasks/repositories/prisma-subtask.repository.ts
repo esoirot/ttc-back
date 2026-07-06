@@ -15,8 +15,15 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
     });
   }
 
-  async findById(id: number): Promise<SubtaskModel> {
-    const s = await this.prisma.subtask.findUnique({ where: { id } });
+  async findById(id: number, userId: number): Promise<SubtaskModel> {
+    // #18 — owner-or-assignee, joined through the parent Task (mirrors
+    // prisma-task.repository.ts's findById).
+    const s = await this.prisma.subtask.findFirst({
+      where: {
+        id,
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
+    });
     if (!s) throw new NotFoundException(`Subtask ${id} not found`);
     return s;
   }
@@ -32,8 +39,17 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
     });
   }
 
-  async update(id: number, data: UpdateSubtaskInput): Promise<SubtaskModel> {
-    const existing = await this.prisma.subtask.findUnique({ where: { id } });
+  async update(
+    id: number,
+    userId: number,
+    data: UpdateSubtaskInput,
+  ): Promise<SubtaskModel> {
+    const existing = await this.prisma.subtask.findFirst({
+      where: {
+        id,
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
+    });
     if (!existing) throw new NotFoundException(`Subtask ${id} not found`);
     return this.prisma.subtask.update({
       where: { id },
@@ -48,8 +64,13 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
     });
   }
 
-  async delete(id: number): Promise<SubtaskModel> {
-    const existing = await this.prisma.subtask.findUnique({ where: { id } });
+  async delete(id: number, userId: number): Promise<SubtaskModel> {
+    const existing = await this.prisma.subtask.findFirst({
+      where: {
+        id,
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
+    });
     if (!existing) throw new NotFoundException(`Subtask ${id} not found`);
     return this.prisma.subtask.delete({ where: { id } });
   }
