@@ -22,6 +22,7 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { AuthModule } from './auth/auth.module';
 import { ClockifyModule } from './clockify/clockify.module';
 import { HubspotModule } from './hubspot/hubspot.module';
+import { GoogleCalendarModule } from './google-calendar/google-calendar.module';
 import { AuditModule } from './audit/audit.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CleanupModule } from './common/cleanup/cleanup.module';
@@ -59,6 +60,9 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
         ),
         HUBSPOT_REDIRECT_URI: Joi.string().default(
           'http://localhost:3000/hubspot/auth/callback',
+        ),
+        GOOGLE_CALENDAR_REDIRECT_URI: Joi.string().default(
+          'http://localhost:3000/google-calendar/auth/callback',
         ),
         SMTP_PORT: Joi.number().default(587),
         SMTP_FROM: Joi.string().default('noreply@ttc.local'),
@@ -156,6 +160,7 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
     InvoicesModule,
     ClockifyModule,
     HubspotModule,
+    GoogleCalendarModule,
     AuditModule,
     DashboardModule,
     CleanupModule,

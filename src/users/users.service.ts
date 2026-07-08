@@ -5,6 +5,7 @@ import {
   UserRepository,
   type ClockifyUpdate,
   type HubspotUpdate,
+  type GoogleCalendarUpdate,
 } from './repositories/users.repository';
 import { UserModel } from './types/user.type';
 import { DeleteUserResponse } from './types/delete-user.response';
@@ -35,6 +36,13 @@ export class UsersService {
 
   updateHubspot(id: number, data: HubspotUpdate): Promise<UserModel> {
     return this.repo.updateHubspot(id, data);
+  }
+
+  updateGoogleCalendar(
+    id: number,
+    data: GoogleCalendarUpdate,
+  ): Promise<UserModel> {
+    return this.repo.updateGoogleCalendar(id, data);
   }
 
   async delete(id: number): Promise<DeleteUserResponse> {

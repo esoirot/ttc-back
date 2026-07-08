@@ -4,6 +4,7 @@ import {
   UserRepository,
   type ClockifyUpdate,
   type HubspotUpdate,
+  type GoogleCalendarUpdate,
 } from './users.repository';
 import { PrismaService } from '../../prisma.service';
 import { UserModel } from '../types/user.type';
@@ -46,6 +47,12 @@ export class PrismaUserRepository implements UserRepository {
       clockifyApiKey: this.decryptField(user.clockifyApiKey),
       hubspotAccessToken: this.decryptField(user.hubspotAccessToken),
       hubspotRefreshToken: this.decryptField(user.hubspotRefreshToken),
+      googleCalendarAccessToken: this.decryptField(
+        user.googleCalendarAccessToken,
+      ),
+      googleCalendarRefreshToken: this.decryptField(
+        user.googleCalendarRefreshToken,
+      ),
     };
   }
 
@@ -102,6 +109,29 @@ export class PrismaUserRepository implements UserRepository {
         ...data,
         hubspotAccessToken: this.encryptField(data.hubspotAccessToken),
         hubspotRefreshToken: this.encryptField(data.hubspotRefreshToken),
+      };
+      return await this.prisma.user.update({
+        where: { id },
+        data: encrypted,
+      });
+    } catch {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+  }
+
+  async updateGoogleCalendar(
+    id: number,
+    data: GoogleCalendarUpdate,
+  ): Promise<UserModel> {
+    try {
+      const encrypted: GoogleCalendarUpdate = {
+        ...data,
+        googleCalendarAccessToken: this.encryptField(
+          data.googleCalendarAccessToken,
+        ),
+        googleCalendarRefreshToken: this.encryptField(
+          data.googleCalendarRefreshToken,
+        ),
       };
       return await this.prisma.user.update({
         where: { id },

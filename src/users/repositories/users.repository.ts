@@ -15,6 +15,13 @@ export type HubspotUpdate = {
   hubspotPortalId?: string | null;
 };
 
+export type GoogleCalendarUpdate = {
+  googleCalendarAccessToken?: string | null;
+  googleCalendarRefreshToken?: string | null;
+  googleCalendarTokenExpiresAt?: Date | null;
+  googleCalendarEmail?: string | null;
+};
+
 export abstract class UserRepository {
   abstract findById(id: number): Promise<UserModel>;
   abstract findAll(): Promise<UserModel[]>;
@@ -22,5 +29,9 @@ export abstract class UserRepository {
   abstract update(id: number, data: UpdateUserInput): Promise<UserModel>;
   abstract updateClockify(id: number, data: ClockifyUpdate): Promise<UserModel>;
   abstract updateHubspot(id: number, data: HubspotUpdate): Promise<UserModel>;
+  abstract updateGoogleCalendar(
+    id: number,
+    data: GoogleCalendarUpdate,
+  ): Promise<UserModel>;
   abstract delete(id: number): Promise<UserModel>;
 }

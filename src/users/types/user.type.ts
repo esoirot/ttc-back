@@ -14,6 +14,10 @@ export type UserModel = {
   hubspotRefreshToken?: string | null;
   hubspotTokenExpiresAt?: Date | null;
   hubspotPortalId?: string | null;
+  googleCalendarAccessToken?: string | null;
+  googleCalendarRefreshToken?: string | null;
+  googleCalendarTokenExpiresAt?: Date | null;
+  googleCalendarEmail?: string | null;
   logoUrl?: string | null;
   adminPermissions?: string[];
   projects?: ProjectModel[];

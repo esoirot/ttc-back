@@ -63,6 +63,10 @@ model User {
   hubspotRefreshToken   String?
   hubspotTokenExpiresAt DateTime?
   hubspotPortalId       String?
+  googleCalendarAccessToken    String?
+  googleCalendarRefreshToken   String?
+  googleCalendarTokenExpiresAt DateTime?
+  googleCalendarEmail          String?
   logoUrl               String?
   adminPermissions      String[]       @default([])
   refreshTokens         RefreshToken[]
