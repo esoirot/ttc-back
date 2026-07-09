@@ -26,6 +26,7 @@ import { GoogleCalendarModule } from './google-calendar/google-calendar.module';
 import { AuditModule } from './audit/audit.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CleanupModule } from './common/cleanup/cleanup.module';
+import { DbBackupModule } from './common/db-backup/db-backup.module';
 import { TranslationRatesModule } from './translation-rates/translation-rates.module';
 import { ClientRatesModule } from './client-rates/client-rates.module';
 import { RateSheetsModule } from './rate-sheets/rate-sheets.module';
@@ -164,6 +165,7 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
     AuditModule,
     DashboardModule,
     CleanupModule,
+    DbBackupModule,
     TranslationRatesModule,
     ClientRatesModule,
     RateSheetsModule,

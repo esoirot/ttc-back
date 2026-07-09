@@ -24,7 +24,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:export": "node --env-file .env -r tsconfig-paths/register -r ts-node/register src/scripts/export-db.ts",
+    "db:import": "node --env-file .env -r tsconfig-paths/register -r ts-node/register src/scripts/import-db.ts"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
@@ -151,6 +153,8 @@
       "!main.ts",
       "!instrument.ts",
       "!prisma.service.ts",
+      "!**/scripts/export-db.ts",
+      "!**/scripts/import-db.ts",
       "!jest.setup.ts"
     ],
     "coverageDirectory": "../coverage",
