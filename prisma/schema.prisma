@@ -171,10 +171,14 @@ model Client {
   phone             String?
   company           String?
   address           String?
+  addressLine2      String?
   city              String?
   country           String?
+  state             String?
   postalCode        String?
   vatNumber         String?
+  legalForm         String?
+  color             String?
   notes             String?
   hubspotId         String?
   clientType        ClientType       @default(COMPANY)
@@ -206,6 +210,8 @@ model CompanyContact {
   lastName  String?
   email     String?
   phone     String?
+  jobTitle  String?
+  color     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

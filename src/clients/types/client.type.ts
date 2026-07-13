@@ -5,6 +5,8 @@ export type CompanyContactModel = {
   lastName: string | null;
   email: string | null;
   phone: string | null;
+  jobTitle: string | null;
+  color: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -18,10 +20,14 @@ export type ClientModel = {
   phone: string | null;
   company: string | null;
   address: string | null;
+  addressLine2: string | null;
   city: string | null;
   country: string | null;
+  state: string | null;
   postalCode: string | null;
   vatNumber: string | null;
+  legalForm: string | null;
+  color: string | null;
   notes: string | null;
   hubspotId: string | null;
   clientType: 'COMPANY' | 'INDIVIDUAL';

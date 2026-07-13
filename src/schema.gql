@@ -271,9 +271,11 @@ enum ChargeType {
 
 type Client {
   address: String
+  addressLine2: String
   billingEndOfMonth: Boolean!
   city: String
   clientType: ClientType!
+  color: String
   company: String
   contactedAt: DateTime
   contacts: [CompanyContact!]!
@@ -285,12 +287,14 @@ type Client {
   id: Int!
   industry: ClientIndustry
   lastName: String
+  legalForm: String
   legalName: String
   name: String!
   notes: String
   paymentDelayDays: Int
   phone: String
   postalCode: String
+  state: String
   status: ClientStatus!
   tags: [ClientTagItem!]!
   taxRate: Float
@@ -360,10 +364,12 @@ enum ClientType {
 
 type CompanyContact {
   clientId: Int!
+  color: String
   createdAt: DateTime!
   email: String
   firstName: String
   id: Int!
+  jobTitle: String
   lastName: String
   phone: String
   updatedAt: DateTime!
@@ -412,9 +418,11 @@ input CreateChargeInput {
 
 input CreateClientInput {
   address: String
+  addressLine2: String
   billingEndOfMonth: Boolean
   city: String
   clientType: ClientType
+  color: String
   company: String
   contactedAt: DateTime
   country: String
@@ -423,12 +431,14 @@ input CreateClientInput {
   hubspotId: String
   industry: ClientIndustry
   lastName: String
+  legalForm: String
   legalName: String
   name: String!
   notes: String
   paymentDelayDays: Int
   phone: String
   postalCode: String
+  state: String
   status: ClientStatus
   tagIds: [Int!]
   taxRate: Float
@@ -452,8 +462,10 @@ input CreateCommentInput {
 
 input CreateCompanyContactInput {
   clientId: Int!
+  color: String
   email: String
   firstName: String
+  jobTitle: String
   lastName: String
   phone: String
 }
@@ -882,73 +894,33 @@ enum ProjectStatus {
 type Query {
   activeTimer: TimeEntry
   activity(id: Int!): Activity!
-  adminClients(
-    pagination: PaginationInput
-    search: String
-  ): AdminClientConnection!
-  adminInvoices(
-    pagination: PaginationInput
-    search: String
-    status: InvoiceStatus
-  ): AdminInvoiceConnection!
-  adminProjects(
-    pagination: PaginationInput
-    search: String
-    status: ProjectStatus
-  ): AdminProjectConnection!
+  adminClients(pagination: PaginationInput, search: String): AdminClientConnection!
+  adminInvoices(pagination: PaginationInput, search: String, status: InvoiceStatus): AdminInvoiceConnection!
+  adminProjects(pagination: PaginationInput, search: String, status: ProjectStatus): AdminProjectConnection!
   adminRates(type: RateType): AdminRateConnection!
   adminStats: AdminStats!
-  adminTimeEntries(
-    pagination: PaginationInput
-    userId: Int
-  ): AdminTimeEntryConnection!
+  adminTimeEntries(pagination: PaginationInput, userId: Int): AdminTimeEntryConnection!
   backupCodeCount: Int!
   client(id: Int!): Client!
   clientRates(clientId: Int!): [ClientRate!]!
-  clients(
-    clientType: ClientType
-    excludeStatus: ClientStatus
-    pagination: PaginationInput
-    search: String
-    status: ClientStatus
-  ): ClientConnection!
+  clients(clientType: ClientType, excludeStatus: ClientStatus, pagination: PaginationInput, search: String, status: ClientStatus): ClientConnection!
   dashboard: DashboardData!
   invoice(id: Int!): Invoice!
-  invoices(
-    clientId: Int
-    pagination: PaginationInput
-    search: String
-    status: InvoiceStatus
-  ): InvoiceConnection!
+  invoices(clientId: Int, pagination: PaginationInput, search: String, status: InvoiceStatus): InvoiceConnection!
   me: User!
   members: [User!]!
   myActivities: [Activity!]!
   myTasks(pagination: PaginationInput): TaskConnection!
   project(id: Int!): Project
-  projects(
-    pagination: PaginationInput
-    search: String
-    status: ProjectStatus
-  ): ProjectConnection!
+  projects(pagination: PaginationInput, search: String, status: ProjectStatus): ProjectConnection!
   rateSheet(id: Int!): RateSheet!
   rateSheets: [RateSheet!]!
   tags: [Tag!]!
   task(id: Int!): Task!
   tasks(pagination: PaginationInput, projectId: Int!): TaskConnection!
-  timeEntries(
-    end: DateTime
-    pagination: PaginationInput
-    projectId: Int
-    projectIds: [Int!]
-    start: DateTime
-    subtaskId: Int
-    taskId: Int
-  ): TimeEntryConnection!
+  timeEntries(end: DateTime, pagination: PaginationInput, projectId: Int, projectIds: [Int!], start: DateTime, subtaskId: Int, taskId: Int): TimeEntryConnection!
   translationRate(id: Int!): TranslationRate!
-  translationRates(
-    activityId: Int
-    type: TranslationRateType
-  ): [TranslationRate!]!
+  translationRates(activityId: Int, type: TranslationRateType): [TranslationRate!]!
   user(id: Int!): User!
   users: [User!]!
 }
@@ -1205,9 +1177,11 @@ input UpdateChargeInput {
 
 input UpdateClientInput {
   address: String
+  addressLine2: String
   billingEndOfMonth: Boolean
   city: String
   clientType: ClientType
+  color: String
   company: String
   contactedAt: DateTime
   country: String
@@ -1217,12 +1191,14 @@ input UpdateClientInput {
   id: Int!
   industry: ClientIndustry
   lastName: String
+  legalForm: String
   legalName: String
   name: String
   notes: String
   paymentDelayDays: Int
   phone: String
   postalCode: String
+  state: String
   status: ClientStatus
   tagIds: [Int!]
   taxRate: Float
@@ -1245,9 +1221,11 @@ input UpdateCommentInput {
 }
 
 input UpdateCompanyContactInput {
+  color: String
   email: String
   firstName: String
   id: Int!
+  jobTitle: String
   lastName: String
   phone: String
 }

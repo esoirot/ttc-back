@@ -16,4 +16,10 @@ export class UpdateCompanyContactInput {
 
   @Field(() => String, { nullable: true })
   phone?: string;
+
+  @Field(() => String, { nullable: true })
+  jobTitle?: string;
+
+  @Field(() => String, { nullable: true })
+  color?: string;
 }

@@ -26,16 +26,28 @@ export class CreateClientInput {
   address?: string;
 
   @Field(() => String, { nullable: true })
+  addressLine2?: string;
+
+  @Field(() => String, { nullable: true })
   city?: string;
 
   @Field(() => String, { nullable: true })
   country?: string;
 
   @Field(() => String, { nullable: true })
+  state?: string;
+
+  @Field(() => String, { nullable: true })
   postalCode?: string;
 
   @Field(() => String, { nullable: true })
   vatNumber?: string;
+
+  @Field(() => String, { nullable: true })
+  legalForm?: string;
+
+  @Field(() => String, { nullable: true })
+  color?: string;
 
   @Field({ nullable: true })
   notes?: string;
