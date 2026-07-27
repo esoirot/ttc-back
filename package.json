@@ -5,8 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "packageManager": "pnpm@11.20.0",
   "scripts": {
-    "build": "nest build",
+    "build": "tsc -p tsconfig.build.json",
     "check": "pnpm run typecheck && pnpm run circular && pnpm run audit && pnpm run prune && pnpm run format:check && pnpm run lint",
     "typecheck": "tsc --noEmit",
     "circular": "madge --circular --extensions ts --exclude 'generated/' src/",
@@ -14,19 +15,19 @@
     "prune": "ts-prune -e -i 'generated|prisma.config|roles.decorator'",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "start": "nest start --env-file .env",
-    "start:dev": "nest start --env-file .env --watch",
-    "start:debug": "nest start --env-file .env --debug --watch",
+    "start": "node -r ./swc-register.cjs --env-file .env src/main.ts",
+    "start:dev": "node --watch -r ./swc-register.cjs --env-file .env src/main.ts",
+    "start:debug": "node --watch --inspect -r ./swc-register.cjs --env-file .env src/main.ts",
     "start:prod": "node dist/src/main",
-    "build:start": "nest build && node dist/src/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
+    "build:start": "tsc -p tsconfig.build.json && node dist/src/main",
+    "lint": "./.lint-tools/node_modules/.bin/eslint -c .lint-tools/eslint.config.mjs \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "CI=true jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "db:export": "node --env-file .env -r tsconfig-paths/register -r ts-node/register src/scripts/export-db.ts",
-    "db:import": "node --env-file .env -r tsconfig-paths/register -r ts-node/register src/scripts/import-db.ts",
+    "test:cov": "CI=true jest --coverage",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "test:e2e": "CI=true jest --config ./test/jest-e2e.json",
+    "db:export": "tsx --env-file .env src/scripts/export-db.ts",
+    "db:import": "tsx --env-file .env src/scripts/import-db.ts",
     "import:tholemac": "tsx src/scripts/import-tholemac.ts"
   },
   "dependencies": {
@@ -82,6 +83,8 @@
     "@nestjs/cli": "^11.0.23",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.27",
+    "@swc/core": "^1.15.43",
+    "@swc/jest": "^0.2.39",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
@@ -106,11 +109,7 @@
     "prisma": "^7.8.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.2.2",
-    "ts-jest": "^29.4.11",
-    "ts-loader": "^9.6.2",
-    "ts-node": "^10.9.2",
     "ts-prune": "^0.10.3",
-    "tsconfig-paths": "^4.2.0",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2",
     "typescript-eslint": "^8.62.0"
@@ -128,15 +127,18 @@
     ],
     "transform": {
       "^.+\\.(t|j)s$": [
-        "ts-jest",
+        "@swc/jest",
         {
-          "tsconfig": {
-            "module": "CommonJS",
-            "moduleResolution": "node",
-            "resolvePackageJsonExports": false,
-            "declaration": false,
-            "rootDir": "./src",
-            "ignoreDeprecations": "6.0"
+          "jsc": {
+            "parser": {
+              "syntax": "typescript",
+              "decorators": true
+            },
+            "transform": {
+              "legacyDecorator": true,
+              "decoratorMetadata": true
+            },
+            "target": "es2022"
           }
         }
       ]

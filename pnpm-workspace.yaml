@@ -1,0 +1,10 @@
+allowBuilds:
+  '@apollo/protobufjs': true
+  '@prisma/engines': true
+  '@scarf/scarf': true
+  '@sentry/node-cpu-profiler': true
+  '@swc/core': true
+  bcrypt: true
+  esbuild: true
+  prisma: true
+  unrs-resolver: true
