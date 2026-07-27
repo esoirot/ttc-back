@@ -78,6 +78,7 @@ model User {
   tasks                 Task[]
   taskComments          TaskComment[]
   taskActivities        TaskActivity[]
+  clientStatusHistory   ClientStatusHistory[]
   timeEntries           TimeEntry[]
   invoices              Invoice[]
   auditLogs             AuditLog[]
@@ -147,6 +148,8 @@ enum ClientIndustry {
   GOVERNMENT
   NGO
   REAL_ESTATE
+  TOURISM
+  LUXE
   OTHER
 }
 
@@ -200,6 +203,18 @@ model Client {
   rateSheets        RateSheet[]
   translationRates  TranslationRate[]
   tags              ClientTag[]
+  statusHistory     ClientStatusHistory[]
+}
+
+model ClientStatusHistory {
+  id        Int      @id @default(autoincrement())
+  clientId  Int
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  payload   String?
+  createdAt DateTime @default(now())
 }
 
 model CompanyContact {

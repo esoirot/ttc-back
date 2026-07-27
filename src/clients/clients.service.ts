@@ -4,6 +4,7 @@ import {
   ClientConnectionModel,
 } from './repositories/client.repository';
 import { AuditService } from '../audit/audit.service';
+import { ClientStatusHistoryService } from './client-status-history.service';
 import { ClientModel, CompanyContactModel } from './types/client.type';
 import { CreateClientInput } from './dto/create-client.input';
 import { UpdateClientInput } from './dto/update-client.input';
@@ -16,6 +17,7 @@ export class ClientsService {
   constructor(
     private readonly repo: ClientRepository,
     private readonly audit: AuditService,
+    private readonly statusHistory: ClientStatusHistoryService,
   ) {}
 
   findAll(
@@ -60,7 +62,34 @@ export class ClientsService {
     userId: number,
     input: UpdateClientInput,
   ): Promise<ClientModel> {
+    const before = await this.repo.findById(id, userId);
     const client = await this.repo.update(id, userId, input);
+
+    if (
+      input.status !== undefined &&
+      input.status !== (before.status as ClientStatus)
+    ) {
+      await this.statusHistory.log(id, userId, 'STATUS_CHANGED', {
+        from: before.status,
+        to: input.status,
+      });
+    }
+
+    if (input.contactedAt !== undefined) {
+      const beforeMs = before.contactedAt?.getTime() ?? null;
+      const afterMs = input.contactedAt
+        ? new Date(input.contactedAt).getTime()
+        : null;
+      if (afterMs !== beforeMs) {
+        await this.statusHistory.log(id, userId, 'CONTACTED_AT_CHANGED', {
+          from: before.contactedAt ? before.contactedAt.toISOString() : null,
+          to: input.contactedAt
+            ? new Date(input.contactedAt).toISOString()
+            : null,
+        });
+      }
+    }
+
     this.audit.log(userId, 'CLIENT_UPDATE', 'client', {
       clientId: client.id,
       name: client.name,

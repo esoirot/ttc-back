@@ -6,12 +6,18 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": [
-      "ts-jest",
+      "@swc/jest",
       {
-        "tsconfig": {
-          "module": "CommonJS",
-          "moduleResolution": "node",
-          "resolvePackageJsonExports": false
+        "jsc": {
+          "parser": {
+            "syntax": "typescript",
+            "decorators": true
+          },
+          "transform": {
+            "legacyDecorator": true,
+            "decoratorMetadata": true
+          },
+          "target": "es2022"
         }
       }
     ]

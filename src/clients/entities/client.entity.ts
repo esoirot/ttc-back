@@ -29,6 +29,8 @@ export enum ClientIndustry {
   GOVERNMENT = 'GOVERNMENT',
   NGO = 'NGO',
   REAL_ESTATE = 'REAL_ESTATE',
+  TOURISM = 'TOURISM',
+  LUXE = 'LUXE',
   OTHER = 'OTHER',
 }
 

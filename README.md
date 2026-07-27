@@ -4,6 +4,7 @@ NestJS + Fastify backend for the TranslatorAssistant platform. Exposes a GraphQL
 
 ## Stack
 
+- **TypeScript 7**
 - **NestJS 11** on **Fastify v5**
 - **GraphQL** (code-first, Apollo driver) — auto-generates `src/schema.gql`
 - **Prisma 7** + PostgreSQL (`@prisma/adapter-pg`, client generated to `src/generated/prisma/`)
@@ -92,9 +93,28 @@ pnpm run audit          # pnpm audit
 pnpm run prune          # unused exports (ts-prune)
 pnpm run format         # Prettier write
 pnpm run format:check   # Prettier check
-pnpm run lint           # ESLint with auto-fix
+pnpm run lint           # ESLint with auto-fix — see note below
 pnpm run check          # all of the above in sequence
 ```
+
+### Linting on TypeScript 7
+
+`typescript-eslint` doesn't support TypeScript 7 yet (`ts.Extension` was removed
+from TS7's public exports, which `typescript-estree` needs just to load). Lint
+runs from an isolated toolchain in `.lint-tools/` — its own `npm`-installed
+`node_modules` pinned to `typescript@5.9.3`, kept outside the pnpm workspace so
+it doesn't collide with the project's TS7 install. Everything else (build,
+tests, `tsc`) runs on TS7 as normal.
+
+**One-time setup** (not covered by `pnpm install`):
+
+```bash
+cd .lint-tools && npm install
+```
+
+After that, `pnpm run lint` / `pnpm run check` work as usual. Once
+`typescript-eslint` ships TS7 support, `.lint-tools/` can be deleted and the
+`lint` script pointed back at the root `eslint.config.mjs`.
 
 ## Tests
 

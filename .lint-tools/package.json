@@ -1,0 +1,16 @@
+{
+  "name": "the-translator-companion-lint-tools",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Isolated eslint/typescript-eslint toolchain pinned to TypeScript 5.x. typescript-eslint has no TypeScript 7 support yet, so this directory keeps its own node_modules (installed with plain npm, outside the pnpm workspace) letting lint run against TS5 while the rest of the project runs on TS7.",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "globals": "^17.7.0",
+    "prettier": "^3.8.4",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.62.0"
+  }
+}

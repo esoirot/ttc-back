@@ -124,7 +124,26 @@ export class PrismaClientRepository implements ClientRepository {
       where: { id, userId },
     });
     if (!existing) throw new NotFoundException(`Client ${id} not found`);
-    const row = await this.prisma.client.update({
+    // Workaround for prisma/prisma#29407 (open upstream bug: update()+multi-relation
+    // include triggers concurrent client.query() on the pg driver-adapter's tx client).
+    // Revert to the single call below once the upstream fix (PR #29468) ships and we
+    // upgrade prisma/@prisma/adapter-pg.
+    // const row = await this.prisma.client.update({
+    //   where: { id },
+    //   data: {
+    //     ...fields,
+    //     ...(tagIds !== undefined
+    //       ? {
+    //           tags: {
+    //             deleteMany: {},
+    //             create: tagIds.map((tid) => ({ tagId: tid })),
+    //           },
+    //         }
+    //       : {}),
+    //   },
+    //   include: INCLUDE_CONTACTS,
+    // });
+    await this.prisma.client.update({
       where: { id },
       data: {
         ...fields,
@@ -137,6 +156,9 @@ export class PrismaClientRepository implements ClientRepository {
             }
           : {}),
       },
+    });
+    const row = await this.prisma.client.findUniqueOrThrow({
+      where: { id },
       include: INCLUDE_CONTACTS,
     });
     return toModel(row);
@@ -221,12 +243,22 @@ export class PrismaClientRepository implements ClientRepository {
     }
   }
 
-  async promoteStaleFollowUps(cutoffDate: Date): Promise<number> {
-    const { count } = await this.prisma.client.updateMany({
+  async findStaleFollowUpClientIds(
+    cutoffDate: Date,
+  ): Promise<{ id: number; userId: number }[]> {
+    return this.prisma.client.findMany({
       where: {
         status: PrismaClientStatus.FOLLOW_UP_3,
         contactedAt: { lt: cutoffDate },
       },
+      select: { id: true, userId: true },
+    });
+  }
+
+  async promoteClients(ids: number[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const { count } = await this.prisma.client.updateMany({
+      where: { id: { in: ids } },
       data: { status: PrismaClientStatus.RECONTACT_LATER },
     });
     return count;

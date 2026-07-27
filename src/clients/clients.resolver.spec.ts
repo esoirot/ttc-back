@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsResolver } from './clients.resolver';
 import { ClientsService } from './clients.service';
-import { ClientStatus } from './entities/client.entity';
+import { ClientStatusHistoryService } from './client-status-history.service';
+import { ClientStatus, Client } from './entities/client.entity';
 import { mockClient } from '../__test-helpers__/mock-factories';
 
 describe('ClientsResolver', () => {
@@ -17,6 +18,7 @@ describe('ClientsResolver', () => {
     deleteContact: jest.Mock;
     findByHubspotIdGlobal: jest.Mock;
   };
+  let statusHistoryService: { findByClient: jest.Mock };
 
   const user = { id: 1, role: 'USER' };
   const adminUser = { id: 2, role: 'ADMIN' };
@@ -33,11 +35,16 @@ describe('ClientsResolver', () => {
       deleteContact: jest.fn(),
       findByHubspotIdGlobal: jest.fn(),
     };
+    statusHistoryService = { findByClient: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClientsResolver,
         { provide: ClientsService, useValue: service },
+        {
+          provide: ClientStatusHistoryService,
+          useValue: statusHistoryService,
+        },
       ],
     }).compile();
 
@@ -211,5 +218,16 @@ describe('ClientsResolver', () => {
     const result = await resolver.deleteCompanyContact(5, user);
     expect(service.deleteContact).toHaveBeenCalledWith(5, 1);
     expect(result).toBe(true);
+  });
+
+  it('statusHistory — delegates to statusHistoryService with the client id', async () => {
+    const history = [{ id: 1, clientId: 3, type: 'STATUS_CHANGED' }];
+    statusHistoryService.findByClient.mockResolvedValue(history);
+
+    const result = await resolver.statusHistory(
+      mockClient({ id: 3 }) as unknown as Client,
+    );
+    expect(statusHistoryService.findByClient).toHaveBeenCalledWith(3);
+    expect(result).toEqual(history);
   });
 });

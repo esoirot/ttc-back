@@ -143,16 +143,14 @@ export class PrismaAdminRepository implements AdminRepository {
         notes: r.notes,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
-        contacts: r.contacts.map(
-          (c): AdminContactModel => ({
-            id: c.id,
-            clientId: c.clientId,
-            firstName: c.firstName,
-            lastName: c.lastName,
-            email: c.email,
-            phone: c.phone,
-          }),
-        ),
+        contacts: r.contacts.map((c): AdminContactModel => ({
+          id: c.id,
+          clientId: c.clientId,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.email,
+          phone: c.phone,
+        })),
         owner: toOwner(r.user),
       })),
       nextCursor: hasMore ? items[items.length - 1].id : null,
@@ -370,9 +368,18 @@ export class PrismaAdminRepository implements AdminRepository {
   ): Promise<AdminClientModel> {
     try {
       const { id: _id, ...data } = input;
-      const r = await this.prisma.client.update({
+      // Workaround for prisma/prisma#29407 (open upstream bug: update()+multi-relation
+      // include triggers concurrent client.query() on the pg driver-adapter's tx client).
+      // Revert to the single call below once the upstream fix (PR #29468) ships and we
+      // upgrade prisma/@prisma/adapter-pg.
+      // const r = await this.prisma.client.update({
+      //   where: { id },
+      //   data,
+      //   include: { user: OWNER_SELECT, contacts: true },
+      // });
+      await this.prisma.client.update({ where: { id }, data });
+      const r = await this.prisma.client.findUniqueOrThrow({
         where: { id },
-        data,
         include: { user: OWNER_SELECT, contacts: true },
       });
       return {
@@ -392,16 +399,14 @@ export class PrismaAdminRepository implements AdminRepository {
         notes: r.notes,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
-        contacts: r.contacts.map(
-          (c): AdminContactModel => ({
-            id: c.id,
-            clientId: c.clientId,
-            firstName: c.firstName,
-            lastName: c.lastName,
-            email: c.email,
-            phone: c.phone,
-          }),
-        ),
+        contacts: r.contacts.map((c): AdminContactModel => ({
+          id: c.id,
+          clientId: c.clientId,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.email,
+          phone: c.phone,
+        })),
         owner: toOwner(r.user),
       };
     } catch {

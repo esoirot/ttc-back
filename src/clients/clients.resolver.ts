@@ -1,8 +1,18 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { ClientsService } from './clients.service';
+import { ClientStatusHistoryService } from './client-status-history.service';
 import { Client } from './entities/client.entity';
 import { CompanyContact } from './entities/company-contact.entity';
+import { ClientStatusHistory } from './entities/client-status-history.entity';
 import { ClientConnection } from './types/client-connection.type';
 import { CreateClientInput } from './dto/create-client.input';
 import { UpdateClientInput } from './dto/update-client.input';
@@ -17,7 +27,10 @@ type RequestUser = { id: number; role: string };
 
 @Resolver(() => Client)
 export class ClientsResolver {
-  constructor(private readonly clientsService: ClientsService) {}
+  constructor(
+    private readonly clientsService: ClientsService,
+    private readonly statusHistoryService: ClientStatusHistoryService,
+  ) {}
 
   @UseGuards(GqlAuthGuard)
   @Query(() => ClientConnection, { name: 'clients' })
@@ -104,5 +117,10 @@ export class ClientsResolver {
     @CurrentUser() user: RequestUser,
   ) {
     return this.clientsService.deleteContact(id, user.id);
+  }
+
+  @ResolveField(() => [ClientStatusHistory])
+  statusHistory(@Parent() client: Client) {
+    return this.statusHistoryService.findByClient(client.id);
   }
 }

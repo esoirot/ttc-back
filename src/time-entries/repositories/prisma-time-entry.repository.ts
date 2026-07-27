@@ -184,9 +184,21 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     if (!active) throw new NotFoundException('No active timer');
     const endTime = new Date();
     const durationSeconds = computeDuration(active.startTime, endTime);
-    const entry = await this.prisma.timeEntry.update({
+    // Workaround for prisma/prisma#29407 (open upstream bug: update()+multi-relation
+    // include triggers concurrent client.query() on the pg driver-adapter's tx client).
+    // Revert to the single call below once the upstream fix (PR #29468) ships and we
+    // upgrade prisma/@prisma/adapter-pg.
+    // const entry = await this.prisma.timeEntry.update({
+    //   where: { id: active.id },
+    //   data: { endTime, durationSeconds },
+    //   include: TAG_INCLUDE,
+    // });
+    await this.prisma.timeEntry.update({
       where: { id: active.id },
       data: { endTime, durationSeconds },
+    });
+    const entry = await this.prisma.timeEntry.findUniqueOrThrow({
+      where: { id: active.id },
       include: TAG_INCLUDE,
     });
     return toModel(entry);
@@ -208,7 +220,27 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
       endTime !== null && endTime !== undefined
         ? computeDuration(startTime, endTime)
         : entry.durationSeconds;
-    const updated = await this.prisma.timeEntry.update({
+    // Workaround for prisma/prisma#29407 (open upstream bug: update()+multi-relation
+    // include triggers concurrent client.query() on the pg driver-adapter's tx client).
+    // Revert to the single call below once the upstream fix (PR #29468) ships and we
+    // upgrade prisma/@prisma/adapter-pg.
+    // const updated = await this.prisma.timeEntry.update({
+    //   where: { id },
+    //   data: {
+    //     ...fields,
+    //     durationSeconds,
+    //     ...(tagIds !== undefined
+    //       ? {
+    //           tags: {
+    //             deleteMany: {},
+    //             create: tagIds.map((tagId) => ({ tagId })),
+    //           },
+    //         }
+    //       : {}),
+    //   },
+    //   include: TAG_INCLUDE,
+    // });
+    await this.prisma.timeEntry.update({
       where: { id },
       data: {
         ...fields,
@@ -222,6 +254,9 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
             }
           : {}),
       },
+    });
+    const updated = await this.prisma.timeEntry.findUniqueOrThrow({
+      where: { id },
       include: TAG_INCLUDE,
     });
     return toModel(updated);
@@ -236,9 +271,21 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     if (!entry) throw new NotFoundException(`TimeEntry ${id} not found`);
     const previousSecs = entry.durationSeconds ?? 0;
     const newStart = new Date(Date.now() - previousSecs * 1000);
-    const resumed = await this.prisma.timeEntry.update({
+    // Workaround for prisma/prisma#29407 (open upstream bug: update()+multi-relation
+    // include triggers concurrent client.query() on the pg driver-adapter's tx client).
+    // Revert to the single call below once the upstream fix (PR #29468) ships and we
+    // upgrade prisma/@prisma/adapter-pg.
+    // const resumed = await this.prisma.timeEntry.update({
+    //   where: { id },
+    //   data: { startTime: newStart, endTime: null, durationSeconds: null },
+    //   include: TAG_INCLUDE,
+    // });
+    await this.prisma.timeEntry.update({
       where: { id },
       data: { startTime: newStart, endTime: null, durationSeconds: null },
+    });
+    const resumed = await this.prisma.timeEntry.findUniqueOrThrow({
+      where: { id },
       include: TAG_INCLUDE,
     });
     return toModel(resumed);

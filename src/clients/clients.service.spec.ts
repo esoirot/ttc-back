@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsService } from './clients.service';
 import { ClientRepository } from './repositories/client.repository';
+import { ClientStatusHistoryService } from './client-status-history.service';
 import { ClientStatus } from './entities/client.entity';
 import { AuditService } from '../audit/audit.service';
 import { mockClient } from '../__test-helpers__/mock-factories';
@@ -20,6 +21,7 @@ describe('ClientsService', () => {
     deleteContact: jest.Mock;
   };
   let audit: { log: jest.Mock };
+  let statusHistory: { log: jest.Mock; logMany: jest.Mock };
 
   beforeEach(async () => {
     repo = {
@@ -35,16 +37,19 @@ describe('ClientsService', () => {
       deleteContact: jest.fn(),
     };
     audit = { log: jest.fn() };
+    statusHistory = { log: jest.fn(), logMany: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClientsService,
         { provide: ClientRepository, useValue: repo },
         { provide: AuditService, useValue: audit },
+        { provide: ClientStatusHistoryService, useValue: statusHistory },
       ],
     }).compile();
 
     service = module.get<ClientsService>(ClientsService);
+    repo.findById.mockResolvedValue(mockClient());
   });
 
   it('should be defined', () => {
@@ -86,6 +91,89 @@ describe('ClientsService', () => {
         name: 'Updated Corp',
       });
       expect(result).toEqual(client);
+    });
+
+    it('does not log status history when status/contactedAt are unchanged', async () => {
+      repo.findById.mockResolvedValue(
+        mockClient({ id: 3, status: 'CLIENT', contactedAt: null }),
+      );
+      repo.update.mockResolvedValue(mockClient({ id: 3 }));
+
+      await service.update(3, 1, { id: 3, name: 'Updated Corp' });
+
+      expect(statusHistory.log).not.toHaveBeenCalled();
+    });
+
+    it('logs STATUS_CHANGED when status changes', async () => {
+      repo.findById.mockResolvedValue(mockClient({ id: 3, status: 'CLIENT' }));
+      repo.update.mockResolvedValue(mockClient({ id: 3, status: 'TALKING' }));
+
+      await service.update(3, 1, { id: 3, status: ClientStatus.TALKING });
+
+      expect(statusHistory.log).toHaveBeenCalledWith(3, 1, 'STATUS_CHANGED', {
+        from: 'CLIENT',
+        to: ClientStatus.TALKING,
+      });
+    });
+
+    it('does not log STATUS_CHANGED when status is present but unchanged', async () => {
+      repo.findById.mockResolvedValue(mockClient({ id: 3, status: 'CLIENT' }));
+      repo.update.mockResolvedValue(mockClient({ id: 3, status: 'CLIENT' }));
+
+      await service.update(3, 1, { id: 3, status: ClientStatus.CLIENT });
+
+      expect(statusHistory.log).not.toHaveBeenCalled();
+    });
+
+    it('logs CONTACTED_AT_CHANGED when contactedAt changes from null to a date', async () => {
+      const newDate = new Date('2026-07-15T00:00:00.000Z');
+      repo.findById.mockResolvedValue(mockClient({ id: 3, contactedAt: null }));
+      repo.update.mockResolvedValue(
+        mockClient({ id: 3, contactedAt: newDate }),
+      );
+
+      await service.update(3, 1, { id: 3, contactedAt: newDate });
+
+      expect(statusHistory.log).toHaveBeenCalledWith(
+        3,
+        1,
+        'CONTACTED_AT_CHANGED',
+        { from: null, to: newDate.toISOString() },
+      );
+    });
+
+    it('logs CONTACTED_AT_CHANGED when contactedAt is cleared (date to null)', async () => {
+      const oldDate = new Date('2026-07-01T00:00:00.000Z');
+      repo.findById.mockResolvedValue(
+        mockClient({ id: 3, contactedAt: oldDate }),
+      );
+      repo.update.mockResolvedValue(mockClient({ id: 3, contactedAt: null }));
+
+      await service.update(3, 1, {
+        id: 3,
+        contactedAt: null as unknown as Date,
+      });
+
+      expect(statusHistory.log).toHaveBeenCalledWith(
+        3,
+        1,
+        'CONTACTED_AT_CHANGED',
+        { from: oldDate.toISOString(), to: null },
+      );
+    });
+
+    it('does not log CONTACTED_AT_CHANGED when contactedAt is present but unchanged', async () => {
+      const sameDate = new Date('2026-07-01T00:00:00.000Z');
+      repo.findById.mockResolvedValue(
+        mockClient({ id: 3, contactedAt: sameDate }),
+      );
+      repo.update.mockResolvedValue(
+        mockClient({ id: 3, contactedAt: sameDate }),
+      );
+
+      await service.update(3, 1, { id: 3, contactedAt: sameDate });
+
+      expect(statusHistory.log).not.toHaveBeenCalled();
     });
   });
 

@@ -1,17 +1,17 @@
-const mockSend = jest.fn().mockResolvedValue({});
-const MockS3Client = jest.fn().mockImplementation(() => ({ send: mockSend }));
-const MockPutObjectCommand = jest
-  .fn()
-  .mockImplementation((input: unknown) => ({ _type: 'PutObject', input }));
-const MockDeleteObjectCommand = jest
-  .fn()
-  .mockImplementation((input: unknown) => ({ _type: 'DeleteObject', input }));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: MockS3Client,
-  PutObjectCommand: MockPutObjectCommand,
-  DeleteObjectCommand: MockDeleteObjectCommand,
-}));
+jest.mock('@aws-sdk/client-s3', () => {
+  const mockSend = jest.fn().mockResolvedValue({});
+  return {
+    mockSend,
+    S3Client: jest.fn().mockImplementation(() => ({ send: mockSend })),
+    PutObjectCommand: jest
+      .fn()
+      .mockImplementation((input: unknown) => ({ _type: 'PutObject', input })),
+    DeleteObjectCommand: jest.fn().mockImplementation((input: unknown) => ({
+      _type: 'DeleteObject',
+      input,
+    })),
+  };
+});
 
 jest.mock('node:crypto', () => ({
   ...jest.requireActual<typeof import('node:crypto')>('node:crypto'),
@@ -20,6 +20,19 @@ jest.mock('node:crypto', () => ({
 
 import { ConfigService } from '@nestjs/config';
 import { S3StorageProvider } from './s3.storage.provider';
+import * as MockedS3 from '@aws-sdk/client-s3';
+
+const {
+  mockSend,
+  S3Client: MockS3Client,
+  PutObjectCommand: MockPutObjectCommand,
+  DeleteObjectCommand: MockDeleteObjectCommand,
+} = MockedS3 as unknown as {
+  mockSend: jest.Mock;
+  S3Client: jest.Mock;
+  PutObjectCommand: jest.Mock;
+  DeleteObjectCommand: jest.Mock;
+};
 
 const makeConfig = (overrides: Record<string, string> = {}) => ({
   getOrThrow: jest.fn((key: string) => {
