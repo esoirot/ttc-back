@@ -59,6 +59,9 @@ export class Project {
   @Field(() => Float, { nullable: true })
   perWordRate?: number | null;
 
+  @Field()
+  useCustomRate!: boolean;
+
   @Field(() => String)
   currency!: string;
 

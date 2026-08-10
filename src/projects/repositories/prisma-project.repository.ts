@@ -23,6 +23,7 @@ function toModel(p: {
   fixedFee: { toNumber(): number } | null;
   hourlyRate: { toNumber(): number } | null;
   perWordRate: { toNumber(): number } | null;
+  useCustomRate: boolean;
   currency: string;
   deadline: Date | null;
   startDate: Date | null;

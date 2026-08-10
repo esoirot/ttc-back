@@ -67,4 +67,7 @@ export class CreateRateSheetInput {
 
   @Field(() => MatchRatesInput)
   matchRates!: MatchRatesInput;
+
+  @Field({ nullable: true })
+  isDefault?: boolean;
 }

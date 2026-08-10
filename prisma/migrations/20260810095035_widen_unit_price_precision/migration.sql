@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Project" ALTER COLUMN "unitPrice" SET DATA TYPE DECIMAL(14,8);

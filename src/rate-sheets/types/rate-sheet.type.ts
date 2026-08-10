@@ -25,6 +25,7 @@ export interface RateSheetModel {
   currency: string;
   pricePerWord: number;
   matchRates: MatchRatesModel;
+  isDefault: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

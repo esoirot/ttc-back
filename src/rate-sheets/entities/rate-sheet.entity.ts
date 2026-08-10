@@ -75,6 +75,9 @@ export class RateSheet {
   matchRates!: MatchRates;
 
   @Field()
+  isDefault!: boolean;
+
+  @Field()
   createdAt!: Date;
 
   @Field()

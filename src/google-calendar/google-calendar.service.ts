@@ -216,8 +216,18 @@ export class GoogleCalendarService {
       body: body.toString(),
     });
     if (!res.ok) {
+      if (res.status === 400) {
+        // invalid_grant: refresh token expired/revoked — clear stored
+        // credentials so getStatus reports disconnected and the frontend
+        // prompts reconnect, instead of retrying the same dead token forever.
+        await this.usersService.updateGoogleCalendar(userId, {
+          googleCalendarAccessToken: null,
+          googleCalendarRefreshToken: null,
+          googleCalendarTokenExpiresAt: null,
+        });
+      }
       throw new HttpException(
-        'Google Calendar token refresh failed',
+        'Google Calendar refresh token invalid — reconnect',
         res.status,
       );
     }

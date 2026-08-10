@@ -37,6 +37,9 @@ export class CreateProjectInput {
   perWordRate?: number;
 
   @Field({ nullable: true })
+  useCustomRate?: boolean;
+
+  @Field({ nullable: true })
   currency?: string;
 
   @Field({ nullable: true })

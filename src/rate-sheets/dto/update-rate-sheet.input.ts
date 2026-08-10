@@ -32,4 +32,7 @@ export class UpdateRateSheetInput {
 
   @Field(() => MatchRatesInput, { nullable: true })
   matchRates?: MatchRatesInput;
+
+  @Field({ nullable: true })
+  isDefault?: boolean;
 }

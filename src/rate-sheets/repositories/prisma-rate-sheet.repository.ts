@@ -21,6 +21,7 @@ export class PrismaRateSheetRepository implements RateSheetRepository {
     currency: string;
     pricePerWord: { toNumber: () => number };
     matchRates: unknown;
+    isDefault: boolean;
     createdAt: Date;
     updatedAt: Date;
   }): RateSheetModel {
@@ -36,6 +37,7 @@ export class PrismaRateSheetRepository implements RateSheetRepository {
       currency: row.currency,
       pricePerWord: row.pricePerWord.toNumber(),
       matchRates: row.matchRates as MatchRatesModel,
+      isDefault: row.isDefault,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -61,21 +63,38 @@ export class PrismaRateSheetRepository implements RateSheetRepository {
     userId: number,
     data: CreateRateSheetInput,
   ): Promise<RateSheetModel> {
-    const row = await this.prisma.rateSheet.create({
-      data: {
-        userId,
-        activityId: data.activityId ?? null,
-        clientId: data.clientId ?? null,
-        name: data.name,
-        description: data.description,
-        sourceLanguage: data.sourceLanguage,
-        targetLanguage: data.targetLanguage,
-        currency: data.currency,
-        pricePerWord: data.pricePerWord,
-        matchRates: { ...data.matchRates },
-      },
+    const clientId = data.clientId ?? null;
+    return this.prisma.$transaction(async (tx) => {
+      let isDefault = data.isDefault ?? false;
+      if (clientId != null) {
+        const existingCount = await tx.rateSheet.count({
+          where: { clientId, userId },
+        });
+        if (existingCount === 0) isDefault = true;
+        if (isDefault) {
+          await tx.rateSheet.updateMany({
+            where: { clientId, userId },
+            data: { isDefault: false },
+          });
+        }
+      }
+      const row = await tx.rateSheet.create({
+        data: {
+          userId,
+          activityId: data.activityId ?? null,
+          clientId,
+          name: data.name,
+          description: data.description,
+          sourceLanguage: data.sourceLanguage,
+          targetLanguage: data.targetLanguage,
+          currency: data.currency,
+          pricePerWord: data.pricePerWord,
+          matchRates: { ...data.matchRates },
+          isDefault,
+        },
+      });
+      return this.toModel(row);
     });
-    return this.toModel(row);
   }
 
   async update(
@@ -83,19 +102,29 @@ export class PrismaRateSheetRepository implements RateSheetRepository {
     userId: number,
     data: UpdateRateSheetInput,
   ): Promise<RateSheetModel> {
-    const existing = await this.prisma.rateSheet.findFirst({
-      where: { id, userId },
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.rateSheet.findFirst({
+        where: { id, userId },
+      });
+      if (!existing) throw new NotFoundException(`RateSheet ${id} not found`);
+      const { id: _id, ...rest } = data;
+      const effectiveClientId =
+        rest.clientId !== undefined ? rest.clientId : existing.clientId;
+      if (rest.isDefault === true && effectiveClientId != null) {
+        await tx.rateSheet.updateMany({
+          where: { clientId: effectiveClientId, userId, id: { not: id } },
+          data: { isDefault: false },
+        });
+      }
+      const row = await tx.rateSheet.update({
+        where: { id },
+        data: {
+          ...rest,
+          matchRates: rest.matchRates ? { ...rest.matchRates } : undefined,
+        },
+      });
+      return this.toModel(row);
     });
-    if (!existing) throw new NotFoundException(`RateSheet ${id} not found`);
-    const { id: _id, ...rest } = data;
-    const row = await this.prisma.rateSheet.update({
-      where: { id },
-      data: {
-        ...rest,
-        matchRates: rest.matchRates ? { ...rest.matchRates } : undefined,
-      },
-    });
-    return this.toModel(row);
   }
 
   async delete(id: number, userId: number): Promise<void> {

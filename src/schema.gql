@@ -509,6 +509,7 @@ input CreateProjectInput {
   targetLanguage: String
   title: String!
   unitPrice: Float
+  useCustomRate: Boolean
   wordCount: Int
 }
 
@@ -517,6 +518,7 @@ input CreateRateSheetInput {
   clientId: Int
   currency: String! = "EUR"
   description: String
+  isDefault: Boolean
   matchRates: MatchRatesInput!
   name: String!
   pricePerWord: Float!
@@ -889,6 +891,7 @@ type Project {
   totalTimeSeconds: Int
   unitPrice: Float
   updatedAt: DateTime!
+  useCustomRate: Boolean!
   userId: Int
   wordCount: Int
 }
@@ -950,6 +953,7 @@ type RateSheet {
   currency: String!
   description: String
   id: Int!
+  isDefault: Boolean!
   matchRates: MatchRates!
   name: String!
   pricePerWord: Float!
@@ -1295,6 +1299,7 @@ input UpdateProjectInput {
   targetLanguage: String
   title: String
   unitPrice: Float
+  useCustomRate: Boolean
   wordCount: Int
 }
 
@@ -1304,6 +1309,7 @@ input UpdateRateSheetInput {
   currency: String
   description: String
   id: Int!
+  isDefault: Boolean
   matchRates: MatchRatesInput
   name: String
   pricePerWord: Float

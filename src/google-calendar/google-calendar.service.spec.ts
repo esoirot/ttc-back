@@ -519,7 +519,26 @@ describe('GoogleCalendarService', () => {
 
       await expect(
         service.listEvents(1, '2026-01-01T00:00:00Z', '2026-02-01T00:00:00Z'),
-      ).rejects.toThrow('Google Calendar token refresh failed');
+      ).rejects.toThrow('Google Calendar refresh token invalid — reconnect');
+    });
+
+    it('clears stored credentials on invalid_grant (400) so status reports disconnected', async () => {
+      usersService.findOne.mockResolvedValue(
+        makeUser({
+          googleCalendarTokenExpiresAt: new Date(Date.now() + 60_000),
+        }),
+      );
+      globalFetchSpy.mockResolvedValue({ ok: false, status: 400 } as any);
+
+      await expect(
+        service.listEvents(1, '2026-01-01T00:00:00Z', '2026-02-01T00:00:00Z'),
+      ).rejects.toThrow('Google Calendar refresh token invalid — reconnect');
+
+      expect(usersService.updateGoogleCalendar).toHaveBeenCalledWith(1, {
+        googleCalendarAccessToken: null,
+        googleCalendarRefreshToken: null,
+        googleCalendarTokenExpiresAt: null,
+      });
     });
 
     it('coalesces concurrent refresh calls for the same user into one request', async () => {
