@@ -62,6 +62,9 @@ export class Project {
   @Field()
   useCustomRate!: boolean;
 
+  @Field(() => Int, { nullable: true })
+  rateSheetId?: number | null;
+
   @Field(() => String)
   currency!: string;
 

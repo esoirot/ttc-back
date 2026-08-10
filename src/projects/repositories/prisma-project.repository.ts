@@ -24,6 +24,7 @@ function toModel(p: {
   hourlyRate: { toNumber(): number } | null;
   perWordRate: { toNumber(): number } | null;
   useCustomRate: boolean;
+  rateSheetId: number | null;
   currency: string;
   deadline: Date | null;
   startDate: Date | null;

@@ -1,3 +1,6 @@
+overrides:
+  fastify: ^5.11.3
+
 allowBuilds:
   '@apollo/protobufjs': true
   '@prisma/engines': true

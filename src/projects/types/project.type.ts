@@ -13,6 +13,7 @@ export type ProjectModel = {
   hourlyRate: number | null;
   perWordRate: number | null;
   useCustomRate: boolean;
+  rateSheetId: number | null;
   currency: string;
   deadline: Date | null;
   startDate: Date | null;

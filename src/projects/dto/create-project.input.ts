@@ -39,6 +39,9 @@ export class CreateProjectInput {
   @Field({ nullable: true })
   useCustomRate?: boolean;
 
+  @Field(() => Int, { nullable: true })
+  rateSheetId?: number | null;
+
   @Field({ nullable: true })
   currency?: string;
 

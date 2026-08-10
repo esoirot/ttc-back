@@ -248,6 +248,8 @@ model Project {
   hourlyRate     Decimal?      @db.Decimal(10, 4)
   perWordRate    Decimal?      @db.Decimal(10, 4)
   useCustomRate  Boolean       @default(false)
+  rateSheetId    Int?
+  rateSheet      RateSheet?    @relation(fields: [rateSheetId], references: [id], onDelete: SetNull)
   currency       String        @default("EUR")
   deadline       DateTime?
   startDate      DateTime?
@@ -560,4 +562,5 @@ model RateSheet {
   isDefault      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  projects       Project[]
 }
