@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsResolver } from './clients.resolver';
 import { ClientsService } from './clients.service';
-import { ClientStatusHistoryService } from './client-status-history.service';
 import { ClientStatus, Client } from './entities/client.entity';
 import { mockClient } from '../__test-helpers__/mock-factories';
+import type { GqlContext } from '../auth/types/gql-context.type';
 
 describe('ClientsResolver', () => {
   let resolver: ClientsResolver;
@@ -18,8 +18,6 @@ describe('ClientsResolver', () => {
     deleteContact: jest.Mock;
     findByHubspotIdGlobal: jest.Mock;
   };
-  let statusHistoryService: { findByClient: jest.Mock };
-
   const user = { id: 1, role: 'USER' };
   const adminUser = { id: 2, role: 'ADMIN' };
 
@@ -35,16 +33,11 @@ describe('ClientsResolver', () => {
       deleteContact: jest.fn(),
       findByHubspotIdGlobal: jest.fn(),
     };
-    statusHistoryService = { findByClient: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClientsResolver,
         { provide: ClientsService, useValue: service },
-        {
-          provide: ClientStatusHistoryService,
-          useValue: statusHistoryService,
-        },
       ],
     }).compile();
 
@@ -220,14 +213,18 @@ describe('ClientsResolver', () => {
     expect(result).toBe(true);
   });
 
-  it('statusHistory — delegates to statusHistoryService with the client id', async () => {
+  it('statusHistory — delegates to the statusHistoryByClient loader with the client id', async () => {
     const history = [{ id: 1, clientId: 3, type: 'STATUS_CHANGED' }];
-    statusHistoryService.findByClient.mockResolvedValue(history);
+    const load = jest.fn().mockResolvedValue(history);
+    const ctx = {
+      loaders: { statusHistoryByClient: { load } },
+    } as unknown as GqlContext;
 
     const result = await resolver.statusHistory(
       mockClient({ id: 3 }) as unknown as Client,
+      ctx,
     );
-    expect(statusHistoryService.findByClient).toHaveBeenCalledWith(3);
+    expect(load).toHaveBeenCalledWith(3);
     expect(result).toEqual(history);
   });
 });

@@ -13,8 +13,8 @@ export class LabelsService {
     private readonly taskRepo: TaskRepository,
   ) {}
 
-  findByTask(taskId: number): Promise<TaskLabelModel[]> {
-    return this.repo.findByTask(taskId);
+  findByTaskIds(taskIds: number[], userId: number): Promise<TaskLabelModel[]> {
+    return this.repo.findByTaskIds(taskIds, userId);
   }
 
   async create(

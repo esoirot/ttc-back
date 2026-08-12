@@ -6,7 +6,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { MODEL_ORDER, toClientProperty } from './db-sync.util';
+import { MODEL_ORDER, orderByFor, toClientProperty } from './db-sync.util';
 
 const DUMP_DIR = join(process.cwd(), 'db_dump');
 const MAX_BACKUPS = 5;
@@ -58,7 +58,7 @@ export async function runExport(
 
   for (const model of MODEL_ORDER) {
     const rows = await prisma[toClientProperty(model)].findMany({
-      orderBy: { id: 'asc' },
+      orderBy: orderByFor(model),
     });
     data[model] = rows;
     counts[model] = rows.length;

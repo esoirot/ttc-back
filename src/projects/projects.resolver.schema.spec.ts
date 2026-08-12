@@ -12,7 +12,6 @@ import {
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { ProjectsResolver } from './projects.resolver';
 import { ProjectsService } from './projects.service';
-import { PrismaService } from '../prisma.service';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 
 // Exercises the GraphQL type thunks (`() => Foo`, `type: () => Int`) that
@@ -30,6 +29,11 @@ describe('ProjectsResolver GraphQL schema', () => {
           context: (request: FastifyRequest, reply: FastifyReply) => ({
             req: request,
             res: reply,
+            loaders: {
+              totalSecondsByProject: {
+                load: jest.fn().mockResolvedValue(60),
+              },
+            },
           }),
         }),
       ],
@@ -50,16 +54,6 @@ describe('ProjectsResolver GraphQL schema', () => {
             }),
             update: jest.fn(),
             delete: jest.fn(),
-          },
-        },
-        {
-          provide: PrismaService,
-          useValue: {
-            timeEntry: {
-              aggregate: jest
-                .fn()
-                .mockResolvedValue({ _sum: { durationSeconds: 60 } }),
-            },
           },
         },
       ],

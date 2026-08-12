@@ -152,9 +152,8 @@ async function bootstrap() {
         tags: ['graphql'],
         summary: 'GraphQL endpoint — see src/schema.gql for the full schema',
         description:
-          'Core domain (clients, projects, tasks, time entries, invoices, rates, admin) is GraphQL-only. ' +
-          'Full auto-generated SDL: src/schema.gql. For live introspection and query testing, open /graphql ' +
-          'directly in a browser (Apollo Sandbox).',
+          'GraphQL API is documented by the generated schema (src/schema.gql) and explorable via Apollo ' +
+          'Sandbox by opening /graphql directly in a browser.',
         requestBody: {
           content: {
             'application/json': {

@@ -8,9 +8,12 @@ import { UpdateSubtaskInput } from '../dto/update-subtask.input';
 export class PrismaSubtaskRepository implements SubtaskRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findByTask(taskId: number): Promise<SubtaskModel[]> {
+  findByTaskIds(taskIds: number[], userId: number): Promise<SubtaskModel[]> {
     return this.prisma.subtask.findMany({
-      where: { taskId },
+      where: {
+        taskId: { in: taskIds },
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
       orderBy: { createdAt: 'asc' },
     });
   }

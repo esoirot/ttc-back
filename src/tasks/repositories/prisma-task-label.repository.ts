@@ -7,9 +7,12 @@ import { CreateTaskLabelInput } from '../dto/create-task-label.input';
 export class PrismaTaskLabelRepository implements TaskLabelRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findByTask(taskId: number): Promise<TaskLabelModel[]> {
+  findByTaskIds(taskIds: number[], userId: number): Promise<TaskLabelModel[]> {
     return this.prisma.taskLabel.findMany({
-      where: { taskId },
+      where: {
+        taskId: { in: taskIds },
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
       orderBy: { createdAt: 'asc' },
     });
   }

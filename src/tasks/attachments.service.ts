@@ -16,8 +16,11 @@ export class AttachmentsService {
     private readonly storageRegistry: StorageRegistry,
   ) {}
 
-  findByTask(taskId: number): Promise<TaskAttachmentModel[]> {
-    return this.repo.findByTask(taskId);
+  findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskAttachmentModel[]> {
+    return this.repo.findByTaskIds(taskIds, userId);
   }
 
   async createFileAttachment(

@@ -303,11 +303,44 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     return toModel(deleted);
   }
 
-  async sumDurationForTask(taskId: number): Promise<number | null> {
-    const result = await this.prisma.timeEntry.aggregate({
-      where: { taskId },
+  async sumDurationByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    // Sums every contributor's time on the task (owner + assignee may both log
+    // time against it) — the userId filter only gates *access* to the task
+    // (owner-or-assignee, same as prisma-task.repository.ts's findById), it
+    // must not also restrict which entries get summed.
+    const rows = await this.prisma.timeEntry.groupBy({
+      by: ['taskId'],
+      where: {
+        taskId: { in: taskIds },
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
       _sum: { durationSeconds: true },
     });
-    return result._sum.durationSeconds;
+    return new Map(
+      rows
+        .filter((r) => r.taskId !== null)
+        .map((r) => [r.taskId as number, r._sum.durationSeconds ?? 0]),
+    );
+  }
+
+  async sumDurationByProjectIds(
+    projectIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    // Sums every contributor's time on the project — userId only gates access
+    // (project owner), it must not also restrict which entries get summed.
+    const rows = await this.prisma.timeEntry.groupBy({
+      by: ['projectId'],
+      where: { projectId: { in: projectIds }, project: { userId } },
+      _sum: { durationSeconds: true },
+    });
+    return new Map(
+      rows
+        .filter((r) => r.projectId !== null)
+        .map((r) => [r.projectId as number, r._sum.durationSeconds ?? 0]),
+    );
   }
 }

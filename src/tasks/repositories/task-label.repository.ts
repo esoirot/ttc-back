@@ -9,7 +9,10 @@ export type TaskLabelModel = {
 };
 
 export abstract class TaskLabelRepository {
-  abstract findByTask(taskId: number): Promise<TaskLabelModel[]>;
+  abstract findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskLabelModel[]>;
   abstract create(data: CreateTaskLabelInput): Promise<TaskLabelModel>;
   abstract delete(id: number, userId: number): Promise<TaskLabelModel>;
 }

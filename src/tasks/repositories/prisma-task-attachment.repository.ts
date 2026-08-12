@@ -19,9 +19,15 @@ type CreateInput = {
 export class PrismaTaskAttachmentRepository implements TaskAttachmentRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findByTask(taskId: number): Promise<TaskAttachmentModel[]> {
+  findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskAttachmentModel[]> {
     return this.prisma.taskAttachment.findMany({
-      where: { taskId },
+      where: {
+        taskId: { in: taskIds },
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
       orderBy: { createdAt: 'asc' },
     });
   }

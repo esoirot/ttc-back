@@ -31,7 +31,7 @@ const makeStorageProvider = () => ({
 describe('AttachmentsService', () => {
   let service: AttachmentsService;
   let repo: {
-    findByTask: jest.Mock;
+    findByTaskIds: jest.Mock;
     findById: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
@@ -44,7 +44,7 @@ describe('AttachmentsService', () => {
 
   beforeEach(async () => {
     repo = {
-      findByTask: jest.fn(),
+      findByTaskIds: jest.fn(),
       findById: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -74,11 +74,11 @@ describe('AttachmentsService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('findByTask', () => {
+  describe('findByTaskIds', () => {
     it('delegates to repo', async () => {
-      repo.findByTask.mockResolvedValue([]);
-      const result = await service.findByTask(10);
-      expect(repo.findByTask).toHaveBeenCalledWith(10);
+      repo.findByTaskIds.mockResolvedValue([]);
+      const result = await service.findByTaskIds([10], 7);
+      expect(repo.findByTaskIds).toHaveBeenCalledWith([10], 7);
       expect(result).toEqual([]);
     });
   });

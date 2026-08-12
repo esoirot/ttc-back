@@ -8,12 +8,18 @@ import {
 export class ActivitiesService {
   constructor(private readonly repo: TaskActivityRepository) {}
 
-  findByTask(taskId: number): Promise<TaskActivityModel[]> {
-    return this.repo.findByTask(taskId);
+  findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskActivityModel[]> {
+    return this.repo.findByTaskIds(taskIds, userId);
   }
 
-  findByTimeEntry(timeEntryId: number): Promise<TaskActivityModel[]> {
-    return this.repo.findByTimeEntry(timeEntryId);
+  findByTimeEntryIds(
+    timeEntryIds: number[],
+    userId: number,
+  ): Promise<TaskActivityModel[]> {
+    return this.repo.findByTimeEntryIds(timeEntryIds, userId);
   }
 
   log(

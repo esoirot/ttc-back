@@ -10,9 +10,12 @@ import {
 export class PrismaClientStatusHistoryRepository implements ClientStatusHistoryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findByClient(clientId: number): Promise<ClientStatusHistoryModel[]> {
+  findByClientIds(
+    clientIds: number[],
+    userId: number,
+  ): Promise<ClientStatusHistoryModel[]> {
     return this.prisma.clientStatusHistory.findMany({
-      where: { clientId },
+      where: { clientId: { in: clientIds }, client: { userId } },
       orderBy: { createdAt: 'asc' },
       include: { user: { select: { id: true, name: true } } },
     });

@@ -37,8 +37,18 @@ export class TimeEntriesService {
     return this.repo.findActive(userId);
   }
 
-  getTotalDuration(taskId: number): Promise<number | null> {
-    return this.repo.sumDurationForTask(taskId);
+  getTotalDurationByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    return this.repo.sumDurationByTaskIds(taskIds, userId);
+  }
+
+  getTotalDurationByProjectIds(
+    projectIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    return this.repo.sumDurationByProjectIds(projectIds, userId);
   }
 
   async create(

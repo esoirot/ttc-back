@@ -50,6 +50,12 @@ import { PrismaService } from '../prisma.service';
       useClass: PrismaTaskAttachmentRepository,
     },
   ],
-  exports: [ActivitiesService],
+  exports: [
+    ActivitiesService,
+    SubtasksService,
+    CommentsService,
+    LabelsService,
+    AttachmentsService,
+  ],
 })
 export class TasksModule {}

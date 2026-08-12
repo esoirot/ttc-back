@@ -10,17 +10,26 @@ import {
 export class PrismaTaskActivityRepository implements TaskActivityRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findByTask(taskId: number): Promise<TaskActivityModel[]> {
+  findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskActivityModel[]> {
     return this.prisma.taskActivity.findMany({
-      where: { taskId },
+      where: {
+        taskId: { in: taskIds },
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
       orderBy: { createdAt: 'asc' },
       include: { user: { select: { id: true, name: true } } },
     });
   }
 
-  findByTimeEntry(timeEntryId: number): Promise<TaskActivityModel[]> {
+  findByTimeEntryIds(
+    timeEntryIds: number[],
+    userId: number,
+  ): Promise<TaskActivityModel[]> {
     return this.prisma.taskActivity.findMany({
-      where: { timeEntryId },
+      where: { timeEntryId: { in: timeEntryIds }, timeEntry: { userId } },
       orderBy: { createdAt: 'asc' },
       include: { user: { select: { id: true, name: true } } },
     });

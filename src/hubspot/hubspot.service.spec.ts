@@ -6,6 +6,7 @@ import { HubspotService } from './hubspot.service';
 import { UsersService } from '../users/users.service';
 import { AuditService } from '../audit/audit.service';
 import { ClientsService } from '../clients/clients.service';
+import { OAuthTokenRefreshService } from '../common/oauth-token/oauth-token-refresh.service';
 import type { HubspotWebhookEvent } from './types/hubspot-webhook.type';
 
 const makeWebhookEvent = (
@@ -107,6 +108,7 @@ describe('HubspotService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         HubspotService,
+        OAuthTokenRefreshService,
         { provide: UsersService, useValue: usersService },
         { provide: AuditService, useValue: auditService },
         { provide: ClientsService, useValue: clientsService },
@@ -1107,6 +1109,7 @@ describe('HubspotService', () => {
       const module2 = await Test.createTestingModule({
         providers: [
           HubspotService,
+          OAuthTokenRefreshService,
           { provide: UsersService, useValue: usersService },
           { provide: AuditService, useValue: auditService },
           { provide: ClientsService, useValue: clientsService },
@@ -1166,6 +1169,7 @@ describe('HubspotService', () => {
       const module2 = await Test.createTestingModule({
         providers: [
           HubspotService,
+          OAuthTokenRefreshService,
           { provide: UsersService, useValue: usersService },
           { provide: AuditService, useValue: auditService },
           { provide: ClientsService, useValue: clientsService },

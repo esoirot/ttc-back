@@ -5,14 +5,14 @@ import { ClientStatusHistoryRepository } from './repositories/client-status-hist
 describe('ClientStatusHistoryService', () => {
   let service: ClientStatusHistoryService;
   let repo: {
-    findByClient: jest.Mock;
+    findByClientIds: jest.Mock;
     log: jest.Mock;
     logMany: jest.Mock;
   };
 
   beforeEach(async () => {
     repo = {
-      findByClient: jest.fn(),
+      findByClientIds: jest.fn(),
       log: jest.fn(),
       logMany: jest.fn(),
     };
@@ -31,13 +31,13 @@ describe('ClientStatusHistoryService', () => {
     expect(service).toBeDefined();
   });
 
-  it('findByClient — delegates to repo', async () => {
+  it('findByClientIds — delegates to repo', async () => {
     const history = [{ id: 1, clientId: 1, type: 'STATUS_CHANGED' }];
-    repo.findByClient.mockResolvedValue(history);
+    repo.findByClientIds.mockResolvedValue(history);
 
-    const result = await service.findByClient(1);
+    const result = await service.findByClientIds([1], 7);
 
-    expect(repo.findByClient).toHaveBeenCalledWith(1);
+    expect(repo.findByClientIds).toHaveBeenCalledWith([1], 7);
     expect(result).toEqual(history);
   });
 

@@ -11,7 +11,10 @@ export type TaskCommentModel = {
 };
 
 export abstract class CommentRepository {
-  abstract findByTask(taskId: number): Promise<TaskCommentModel[]>;
+  abstract findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskCommentModel[]>;
   abstract create(
     data: CreateCommentInput,
     authorId: number,

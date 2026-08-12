@@ -20,7 +20,7 @@ const makeSubtask = (overrides = {}) => ({
 describe('SubtasksService', () => {
   let service: SubtasksService;
   let repo: {
-    findByTask: jest.Mock;
+    findByTaskIds: jest.Mock;
     findById: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
@@ -38,7 +38,7 @@ describe('SubtasksService', () => {
 
   beforeEach(async () => {
     repo = {
-      findByTask: jest.fn(),
+      findByTaskIds: jest.fn(),
       findById: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -296,12 +296,12 @@ describe('SubtasksService', () => {
     });
   });
 
-  describe('findByTask', () => {
+  describe('findByTaskIds', () => {
     it('delegates to repository', async () => {
-      repo.findByTask.mockResolvedValue([]);
+      repo.findByTaskIds.mockResolvedValue([]);
 
-      const result = await service.findByTask(1);
-      expect(repo.findByTask).toHaveBeenCalledWith(1);
+      const result = await service.findByTaskIds([1], 7);
+      expect(repo.findByTaskIds).toHaveBeenCalledWith([1], 7);
       expect(result).toEqual([]);
     });
   });

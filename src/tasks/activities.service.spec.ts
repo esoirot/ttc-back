@@ -5,15 +5,15 @@ import { TaskActivityRepository } from './repositories/task-activity.repository'
 describe('ActivitiesService (tasks)', () => {
   let service: ActivitiesService;
   let repo: {
-    findByTask: jest.Mock;
-    findByTimeEntry: jest.Mock;
+    findByTaskIds: jest.Mock;
+    findByTimeEntryIds: jest.Mock;
     log: jest.Mock;
   };
 
   beforeEach(async () => {
     repo = {
-      findByTask: jest.fn(),
-      findByTimeEntry: jest.fn(),
+      findByTaskIds: jest.fn(),
+      findByTimeEntryIds: jest.fn(),
       log: jest.fn(),
     };
 
@@ -31,13 +31,13 @@ describe('ActivitiesService (tasks)', () => {
     expect(service).toBeDefined();
   });
 
-  it('findByTask — delegates to repo', async () => {
+  it('findByTaskIds — delegates to repo', async () => {
     const activities = [{ id: 1, taskId: 1, type: 'CREATED' }];
-    repo.findByTask.mockResolvedValue(activities);
+    repo.findByTaskIds.mockResolvedValue(activities);
 
-    const result = await service.findByTask(1);
+    const result = await service.findByTaskIds([1], 7);
 
-    expect(repo.findByTask).toHaveBeenCalledWith(1);
+    expect(repo.findByTaskIds).toHaveBeenCalledWith([1], 7);
     expect(result).toEqual(activities);
   });
 
@@ -75,13 +75,13 @@ describe('ActivitiesService (tasks)', () => {
     });
   });
 
-  it('findByTimeEntry — delegates to repo', async () => {
+  it('findByTimeEntryIds — delegates to repo', async () => {
     const activities = [{ id: 5, timeEntryId: 3, type: 'STARTED' }];
-    repo.findByTimeEntry.mockResolvedValue(activities);
+    repo.findByTimeEntryIds.mockResolvedValue(activities);
 
-    const result = await service.findByTimeEntry(3);
+    const result = await service.findByTimeEntryIds([3], 7);
 
-    expect(repo.findByTimeEntry).toHaveBeenCalledWith(3);
+    expect(repo.findByTimeEntryIds).toHaveBeenCalledWith([3], 7);
     expect(result).toEqual(activities);
   });
 

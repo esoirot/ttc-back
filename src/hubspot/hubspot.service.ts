@@ -13,6 +13,10 @@ import { ClientsService } from '../clients/clients.service.js';
 import type { ClientModel } from '../clients/types/client.type.js';
 import { fetchWithRetry } from '../common/retry.util.js';
 import {
+  OAuthTokenRefreshService,
+  OAUTH_REFRESH_MARGIN_MS,
+} from '../common/oauth-token/oauth-token-refresh.service.js';
+import {
   signOAuthState,
   verifyOAuthState,
 } from '../common/oauth-state.util.js';
@@ -32,7 +36,6 @@ import type { UpdateCompanyDto } from './dto/update-company.dto.js';
 
 const HUBSPOT_BASE = 'https://api.hubapi.com';
 const TOKEN_URL = `${HUBSPOT_BASE}/oauth/v1/token`;
-const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 type HubspotTokenResponse = {
@@ -64,13 +67,13 @@ export class HubspotService {
   private readonly jwtSecret: string;
   private readonly appId: string;
   private readonly privateAppToken: string;
-  private readonly refreshLocks = new Map<number, Promise<string>>();
 
   constructor(
     private readonly usersService: UsersService,
     private readonly auditService: AuditService,
     private readonly config: ConfigService,
     private readonly clientsService: ClientsService,
+    private readonly oauthTokenRefreshService: OAuthTokenRefreshService,
   ) {
     this.clientId = this.config.get<string>('HUBSPOT_CLIENT_ID') ?? '';
     this.clientSecret = this.config.get<string>('HUBSPOT_CLIENT_SECRET') ?? '';
@@ -217,54 +220,46 @@ export class HubspotService {
       throw new BadRequestException('HubSpot not connected');
     }
     const expiresAt = user.hubspotTokenExpiresAt;
-    if (!expiresAt || expiresAt.getTime() - Date.now() < REFRESH_MARGIN_MS) {
+    if (
+      !expiresAt ||
+      expiresAt.getTime() - Date.now() < OAUTH_REFRESH_MARGIN_MS
+    ) {
       if (!user.hubspotRefreshToken) {
         throw new BadRequestException(
           'HubSpot refresh token missing — reconnect',
         );
       }
-      // #11 — coalesce concurrent refresh calls for the same user
-      const existing = this.refreshLocks.get(userId);
-      if (existing) return existing;
-      const p = this.refreshAccessToken(
-        userId,
+      return this.oauthTokenRefreshService.refresh(
+        `hubspot:${userId}`,
         user.hubspotRefreshToken,
-      ).finally(() => {
-        this.refreshLocks.delete(userId);
-      });
-      this.refreshLocks.set(userId, p);
-      return p;
+        {
+          tokenUrl: TOKEN_URL,
+          buildBody: (refreshToken) =>
+            new URLSearchParams({
+              grant_type: 'refresh_token',
+              client_id: this.clientId,
+              client_secret: this.clientSecret,
+              redirect_uri: this.redirectUri,
+              refresh_token: refreshToken,
+            }),
+          onFailure: (res) => {
+            throw new HttpException('HubSpot token refresh failed', res.status);
+          },
+          onSuccess: async (tokens) => {
+            const newExpiresAt = new Date(
+              Date.now() + tokens.expires_in * 1000,
+            );
+            await this.usersService.updateHubspot(userId, {
+              hubspotAccessToken: tokens.access_token,
+              hubspotRefreshToken: tokens.refresh_token,
+              hubspotTokenExpiresAt: newExpiresAt,
+            });
+            return tokens.access_token;
+          },
+        },
+      );
     }
     return user.hubspotAccessToken;
-  }
-
-  private async refreshAccessToken(
-    userId: number,
-    refreshToken: string,
-  ): Promise<string> {
-    const body = new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: this.clientId,
-      client_secret: this.clientSecret,
-      redirect_uri: this.redirectUri,
-      refresh_token: refreshToken,
-    });
-    const res = await fetch(TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    });
-    if (!res.ok) {
-      throw new HttpException('HubSpot token refresh failed', res.status);
-    }
-    const tokens = (await res.json()) as HubspotTokenResponse;
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-    await this.usersService.updateHubspot(userId, {
-      hubspotAccessToken: tokens.access_token,
-      hubspotRefreshToken: tokens.refresh_token,
-      hubspotTokenExpiresAt: expiresAt,
-    });
-    return tokens.access_token;
   }
 
   // ─── Core request helper (#10) ────────────────────────────────────────────

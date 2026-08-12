@@ -5,50 +5,42 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Redis, { type RedisOptions } from 'ioredis';
-import { Observable, Subject } from 'rxjs';
+import type Redis from 'ioredis';
+import { Observable } from 'rxjs';
+import { createRedisClientPair } from '../common/realtime/redis-pubsub.util';
+import { RealtimeChannelRegistry } from '../common/realtime/realtime-channel-registry';
 
 type AuthEvent = { type: 'session_revoked' };
 
-const REDIS_OPTIONS: RedisOptions = {
-  autoResubscribe: true,
-  enableReadyCheck: true,
-  retryStrategy: (times: number) => Math.min(times * 200, 5_000),
-};
-
-interface ChannelEntry {
-  readonly subject: Subject<AuthEvent>;
-  refCount: number;
-}
+const CHANNEL_PREFIX = 'auth:';
 
 @Injectable()
 export class AuthEventsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(AuthEventsService.name);
   private readonly publisher: Redis;
   private readonly subscriber: Redis;
-  private readonly channels = new Map<string, ChannelEntry>();
+  private readonly registry: RealtimeChannelRegistry<AuthEvent>;
 
   constructor(private readonly configService: ConfigService) {
-    const url = this.configService.get<string>(
-      'REDIS_URL',
-      'redis://localhost:6379',
-    );
-    this.publisher = new Redis(url, REDIS_OPTIONS);
-    this.subscriber = new Redis(url, REDIS_OPTIONS);
+    const { publisher, subscriber } = createRedisClientPair(this.configService);
+    this.publisher = publisher;
+    this.subscriber = subscriber;
+    this.registry = new RealtimeChannelRegistry<AuthEvent>({
+      subscriber: this.subscriber,
+      logger: this.logger,
+      redisChannelPrefix: CHANNEL_PREFIX,
+      gated: false,
+      parseMessage: (message) => JSON.parse(message) as AuthEvent,
+      onBadPayload: (key) =>
+        this.logger.warn(`Bad auth event payload user=${key}`),
+      onSubscribeFailed: (key, err) =>
+        this.logger.error(`Redis auth subscribe failed user=${key}`, err),
+      onUnsubscribeFailed: (key, err) =>
+        this.logger.warn(`Redis auth unsubscribe failed user=${key}`, err),
+    });
   }
 
   onModuleInit(): void {
-    this.subscriber.on('message', (channel: string, message: string) => {
-      const key = channel.replace('auth:', '');
-      const entry = this.channels.get(key);
-      if (!entry) return;
-      try {
-        entry.subject.next(JSON.parse(message) as AuthEvent);
-      } catch {
-        this.logger.warn(`Bad auth event payload user=${key}`);
-      }
-    });
-
     this.subscriber.on('error', (err: unknown) =>
       this.logger.error('Redis auth subscriber error', err),
     );
@@ -59,55 +51,21 @@ export class AuthEventsService implements OnModuleInit, OnModuleDestroy {
 
   async publish(userId: number, event: AuthEvent): Promise<void> {
     try {
-      await this.publisher.publish(`auth:${userId}`, JSON.stringify(event));
+      await this.publisher.publish(
+        `${CHANNEL_PREFIX}${userId}`,
+        JSON.stringify(event),
+      );
     } catch (err) {
       this.logger.error('Auth event publish failed', err);
     }
   }
 
   subscribe(userId: number): Observable<AuthEvent> {
-    const key = String(userId);
-
-    return new Observable<AuthEvent>((observer) => {
-      let entry = this.channels.get(key);
-      if (!entry) {
-        entry = { subject: new Subject<AuthEvent>(), refCount: 0 };
-        this.channels.set(key, entry);
-        this.subscriber
-          .subscribe(`auth:${key}`)
-          .catch((err: unknown) =>
-            this.logger.error(`Redis auth subscribe failed user=${key}`, err),
-          );
-      }
-
-      entry.refCount++;
-      const capturedEntry = entry;
-      const sub = capturedEntry.subject.subscribe(observer);
-
-      return () => {
-        sub.unsubscribe();
-        capturedEntry.refCount--;
-        if (capturedEntry.refCount <= 0) {
-          capturedEntry.subject.complete();
-          this.channels.delete(key);
-          this.subscriber
-            .unsubscribe(`auth:${key}`)
-            .catch((err: unknown) =>
-              this.logger.warn(
-                `Redis auth unsubscribe failed user=${key}`,
-                err,
-              ),
-            );
-        }
-      };
-    });
+    return this.registry.subscribe(String(userId));
   }
 
   async onModuleDestroy(): Promise<void> {
-    for (const [, entry] of this.channels) {
-      entry.subject.complete();
-    }
-    this.channels.clear();
+    this.registry.destroy();
     await Promise.allSettled([this.publisher.quit(), this.subscriber.quit()]);
   }
 }

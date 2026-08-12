@@ -8,6 +8,11 @@ import { ActivitiesService } from './activities.service';
 import { AttachmentsService } from './attachments.service';
 import type { Task } from './entities/task.entity';
 import { mockTask } from '../__test-helpers__/mock-factories';
+import type { GqlContext } from '../auth/types/gql-context.type';
+
+function makeLoaderCtx(load: jest.Mock, loaderName: string): GqlContext {
+  return { loaders: { [loaderName]: { load } } } as unknown as GqlContext;
+}
 
 const makeParentTask = (overrides: Parameters<typeof mockTask>[0] = {}) =>
   mockTask(overrides) as unknown as Task;
@@ -23,7 +28,6 @@ describe('TasksResolver', () => {
     delete: jest.Mock;
   };
   let subtasksService: {
-    findByTask: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -32,18 +36,16 @@ describe('TasksResolver', () => {
     renameChecklist: jest.Mock;
   };
   let commentsService: {
-    findByTask: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
   };
   let labelsService: {
-    findByTask: jest.Mock;
     create: jest.Mock;
     delete: jest.Mock;
   };
-  let activitiesService: { findByTask: jest.Mock; log: jest.Mock };
-  let attachmentsService: { findByTask: jest.Mock };
+  let activitiesService: { log: jest.Mock };
+  let attachmentsService: object;
 
   const user = { id: 7 };
 
@@ -57,7 +59,6 @@ describe('TasksResolver', () => {
       delete: jest.fn(),
     };
     subtasksService = {
-      findByTask: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -66,18 +67,16 @@ describe('TasksResolver', () => {
       renameChecklist: jest.fn(),
     };
     commentsService = {
-      findByTask: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     };
     labelsService = {
-      findByTask: jest.fn(),
       create: jest.fn(),
       delete: jest.fn(),
     };
-    activitiesService = { findByTask: jest.fn(), log: jest.fn() };
-    attachmentsService = { findByTask: jest.fn() };
+    activitiesService = { log: jest.fn() };
+    attachmentsService = {};
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -166,39 +165,49 @@ describe('TasksResolver', () => {
     expect(result).toBe(true);
   });
 
-  it('subtasks field resolver — delegates to subtasksService', async () => {
-    subtasksService.findByTask.mockResolvedValue([]);
-
-    await resolver.subtasks(makeParentTask({ id: 1 }));
-    expect(subtasksService.findByTask).toHaveBeenCalledWith(1);
+  it('subtasks field resolver — delegates to the subtasksByTask loader', async () => {
+    const load = jest.fn().mockResolvedValue([]);
+    await resolver.subtasks(
+      makeParentTask({ id: 1 }),
+      makeLoaderCtx(load, 'subtasksByTask'),
+    );
+    expect(load).toHaveBeenCalledWith(1);
   });
 
-  it('comments field resolver — delegates to commentsService', async () => {
-    commentsService.findByTask.mockResolvedValue([]);
-
-    await resolver.comments(makeParentTask({ id: 1 }));
-    expect(commentsService.findByTask).toHaveBeenCalledWith(1);
+  it('comments field resolver — delegates to the commentsByTask loader', async () => {
+    const load = jest.fn().mockResolvedValue([]);
+    await resolver.comments(
+      makeParentTask({ id: 1 }),
+      makeLoaderCtx(load, 'commentsByTask'),
+    );
+    expect(load).toHaveBeenCalledWith(1);
   });
 
-  it('labels field resolver — delegates to labelsService', async () => {
-    labelsService.findByTask.mockResolvedValue([]);
-
-    await resolver.labels(makeParentTask({ id: 1 }));
-    expect(labelsService.findByTask).toHaveBeenCalledWith(1);
+  it('labels field resolver — delegates to the labelsByTask loader', async () => {
+    const load = jest.fn().mockResolvedValue([]);
+    await resolver.labels(
+      makeParentTask({ id: 1 }),
+      makeLoaderCtx(load, 'labelsByTask'),
+    );
+    expect(load).toHaveBeenCalledWith(1);
   });
 
-  it('activities field resolver — delegates to activitiesService', async () => {
-    activitiesService.findByTask.mockResolvedValue([]);
-
-    await resolver.activities(makeParentTask({ id: 1 }));
-    expect(activitiesService.findByTask).toHaveBeenCalledWith(1);
+  it('activities field resolver — delegates to the activitiesByTask loader', async () => {
+    const load = jest.fn().mockResolvedValue([]);
+    await resolver.activities(
+      makeParentTask({ id: 1 }),
+      makeLoaderCtx(load, 'activitiesByTask'),
+    );
+    expect(load).toHaveBeenCalledWith(1);
   });
 
-  it('attachments field resolver — delegates to attachmentsService', async () => {
-    attachmentsService.findByTask.mockResolvedValue([]);
-
-    await resolver.attachments(makeParentTask({ id: 1 }));
-    expect(attachmentsService.findByTask).toHaveBeenCalledWith(1);
+  it('attachments field resolver — delegates to the attachmentsByTask loader', async () => {
+    const load = jest.fn().mockResolvedValue([]);
+    await resolver.attachments(
+      makeParentTask({ id: 1 }),
+      makeLoaderCtx(load, 'attachmentsByTask'),
+    );
+    expect(load).toHaveBeenCalledWith(1);
   });
 
   it('updateSubtask — delegates with id, input, user id', async () => {

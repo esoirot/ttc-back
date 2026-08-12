@@ -1,4 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { GqlLoaders } from '../../common/graphql/loaders.service';
 
 export type RequestUser = {
   id: number;
@@ -10,4 +11,5 @@ export type RequestUser = {
 export interface GqlContext {
   req: FastifyRequest & { user?: RequestUser };
   res: FastifyReply;
+  loaders: GqlLoaders;
 }

@@ -26,6 +26,6 @@ import { AuditModule } from '../audit/audit.module';
       useClass: PrismaClientStatusHistoryRepository,
     },
   ],
-  exports: [ClientsService],
+  exports: [ClientsService, ClientStatusHistoryService],
 })
 export class ClientsModule {}

@@ -6,6 +6,7 @@ import {
   Int,
   ResolveField,
   Parent,
+  Context,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service';
@@ -15,6 +16,7 @@ import { LabelsService } from './labels.service';
 import { ActivitiesService } from './activities.service';
 import { AttachmentsService } from './attachments.service';
 import { Task } from './entities/task.entity';
+import type { GqlContext } from '../auth/types/gql-context.type';
 import { Subtask } from './entities/subtask.entity';
 import { TaskComment } from './entities/task-comment.entity';
 import { TaskLabel } from './entities/task-label.entity';
@@ -101,28 +103,28 @@ export class TasksResolver {
   }
 
   @ResolveField(() => [Subtask])
-  subtasks(@Parent() task: Task) {
-    return this.subtasksService.findByTask(task.id);
+  subtasks(@Parent() task: Task, @Context() ctx: GqlContext) {
+    return ctx.loaders.subtasksByTask.load(task.id);
   }
 
   @ResolveField(() => [TaskComment])
-  comments(@Parent() task: Task) {
-    return this.commentsService.findByTask(task.id);
+  comments(@Parent() task: Task, @Context() ctx: GqlContext) {
+    return ctx.loaders.commentsByTask.load(task.id);
   }
 
   @ResolveField(() => [TaskLabel])
-  labels(@Parent() task: Task) {
-    return this.labelsService.findByTask(task.id);
+  labels(@Parent() task: Task, @Context() ctx: GqlContext) {
+    return ctx.loaders.labelsByTask.load(task.id);
   }
 
   @ResolveField(() => [TaskActivity])
-  activities(@Parent() task: Task) {
-    return this.activitiesService.findByTask(task.id);
+  activities(@Parent() task: Task, @Context() ctx: GqlContext) {
+    return ctx.loaders.activitiesByTask.load(task.id);
   }
 
   @ResolveField(() => [TaskAttachment])
-  attachments(@Parent() task: Task) {
-    return this.attachmentsService.findByTask(task.id);
+  attachments(@Parent() task: Task, @Context() ctx: GqlContext) {
+    return ctx.loaders.attachmentsByTask.load(task.id);
   }
 
   @UseGuards(GqlAuthGuard)

@@ -6,10 +6,10 @@ import {
   Int,
   ResolveField,
   Parent,
+  Context,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { ClientsService } from './clients.service';
-import { ClientStatusHistoryService } from './client-status-history.service';
 import { Client } from './entities/client.entity';
 import { CompanyContact } from './entities/company-contact.entity';
 import { ClientStatusHistory } from './entities/client-status-history.entity';
@@ -22,15 +22,13 @@ import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
 import { ClientType, ClientStatus } from './entities/client.entity';
+import type { GqlContext } from '../auth/types/gql-context.type';
 
 type RequestUser = { id: number; role: string };
 
 @Resolver(() => Client)
 export class ClientsResolver {
-  constructor(
-    private readonly clientsService: ClientsService,
-    private readonly statusHistoryService: ClientStatusHistoryService,
-  ) {}
+  constructor(private readonly clientsService: ClientsService) {}
 
   @UseGuards(GqlAuthGuard)
   @Query(() => ClientConnection, { name: 'clients' })
@@ -120,7 +118,7 @@ export class ClientsResolver {
   }
 
   @ResolveField(() => [ClientStatusHistory])
-  statusHistory(@Parent() client: Client) {
-    return this.statusHistoryService.findByClient(client.id);
+  statusHistory(@Parent() client: Client, @Context() ctx: GqlContext) {
+    return ctx.loaders.statusHistoryByClient.load(client.id);
   }
 }

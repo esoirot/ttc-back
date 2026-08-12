@@ -12,9 +12,15 @@ import { UpdateCommentInput } from '../dto/update-comment.input';
 export class PrismaCommentRepository implements CommentRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findByTask(taskId: number): Promise<TaskCommentModel[]> {
+  findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskCommentModel[]> {
     return this.prisma.taskComment.findMany({
-      where: { taskId },
+      where: {
+        taskId: { in: taskIds },
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
       orderBy: { createdAt: 'asc' },
     });
   }

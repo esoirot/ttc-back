@@ -6,12 +6,13 @@ import {
   Int,
   ResolveField,
   Parent,
+  Context,
 } from '@nestjs/graphql';
 import { Logger, UseGuards } from '@nestjs/common';
 import { TimeEntriesService } from './time-entries.service';
 import { TimerEventsService } from '../timer-events/timer-events.service';
-import { ActivitiesService } from '../tasks/activities.service';
 import { TimeEntry } from './entities/time-entry.entity';
+import type { GqlContext } from '../auth/types/gql-context.type';
 import { TaskActivity } from '../tasks/entities/task-activity.entity';
 import { TimeEntryConnection } from './types/time-entry-connection.type';
 import { CreateTimeEntryInput } from './dto/create-time-entry.input';
@@ -30,7 +31,6 @@ export class TimeEntriesResolver {
   constructor(
     private readonly timeEntriesService: TimeEntriesService,
     private readonly timerEventsService: TimerEventsService,
-    private readonly activitiesService: ActivitiesService,
   ) {}
 
   @UseGuards(GqlAuthGuard)
@@ -129,7 +129,7 @@ export class TimeEntriesResolver {
   }
 
   @ResolveField(() => [TaskActivity])
-  activities(@Parent() entry: TimeEntry) {
-    return this.activitiesService.findByTimeEntry(entry.id);
+  activities(@Parent() entry: TimeEntry, @Context() ctx: GqlContext) {
+    return ctx.loaders.activitiesByTimeEntry.load(entry.id);
   }
 }

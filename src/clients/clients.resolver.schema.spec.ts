@@ -12,7 +12,6 @@ import {
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { ClientsResolver } from './clients.resolver';
 import { ClientsService } from './clients.service';
-import { ClientStatusHistoryService } from './client-status-history.service';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 
 // Exercises the GraphQL type thunks (`() => Foo`, `type: () => Int`) that
@@ -30,6 +29,9 @@ describe('ClientsResolver GraphQL schema', () => {
           context: (request: FastifyRequest, reply: FastifyReply) => ({
             req: request,
             res: reply,
+            loaders: {
+              statusHistoryByClient: { load: jest.fn().mockResolvedValue([]) },
+            },
           }),
         }),
       ],
@@ -51,10 +53,6 @@ describe('ClientsResolver GraphQL schema', () => {
               updatedAt: new Date(),
             }),
           },
-        },
-        {
-          provide: ClientStatusHistoryService,
-          useValue: { findByClient: jest.fn().mockResolvedValue([]) },
         },
       ],
     })

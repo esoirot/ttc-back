@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectsResolver } from './projects.resolver';
 import { ProjectsService } from './projects.service';
 import { ProjectStatus } from './entities/project.entity';
-import { PrismaService } from '../prisma.service';
 import { mockProject } from '../__test-helpers__/mock-factories';
+import type { GqlContext } from '../auth/types/gql-context.type';
 
 describe('ProjectsResolver', () => {
   let resolver: ProjectsResolver;
@@ -14,8 +14,6 @@ describe('ProjectsResolver', () => {
     update: jest.Mock;
     delete: jest.Mock;
   };
-
-  let prisma: { timeEntry: { aggregate: jest.Mock } };
 
   const user = { id: 1, role: 'USER' };
   const adminUser = { id: 2, role: 'ADMIN' };
@@ -28,13 +26,11 @@ describe('ProjectsResolver', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
-    prisma = { timeEntry: { aggregate: jest.fn() } };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProjectsResolver,
         { provide: ProjectsService, useValue: service },
-        { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
 
@@ -138,26 +134,25 @@ describe('ProjectsResolver', () => {
   });
 
   describe('totalTimeSeconds field resolver', () => {
-    it('sums durationSeconds for the project from Prisma', async () => {
-      prisma.timeEntry.aggregate.mockResolvedValue({
-        _sum: { durationSeconds: 7200 },
-      });
+    it('delegates to the totalSecondsByProject loader', async () => {
+      const load = jest.fn().mockResolvedValue(7200);
+      const ctx = {
+        loaders: { totalSecondsByProject: { load } },
+      } as unknown as GqlContext;
 
-      const result = await resolver.totalTimeSeconds({ id: 4 });
+      const result = await resolver.totalTimeSeconds({ id: 4 }, ctx);
 
-      expect(prisma.timeEntry.aggregate).toHaveBeenCalledWith({
-        where: { projectId: 4 },
-        _sum: { durationSeconds: true },
-      });
+      expect(load).toHaveBeenCalledWith(4);
       expect(result).toBe(7200);
     });
 
-    it('returns null when the project has no time entries', async () => {
-      prisma.timeEntry.aggregate.mockResolvedValue({
-        _sum: { durationSeconds: null },
-      });
+    it('returns null when the loader resolves null', async () => {
+      const load = jest.fn().mockResolvedValue(null);
+      const ctx = {
+        loaders: { totalSecondsByProject: { load } },
+      } as unknown as GqlContext;
 
-      const result = await resolver.totalTimeSeconds({ id: 5 });
+      const result = await resolver.totalTimeSeconds({ id: 5 }, ctx);
 
       expect(result).toBeNull();
     });

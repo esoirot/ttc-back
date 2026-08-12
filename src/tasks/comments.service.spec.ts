@@ -18,7 +18,7 @@ const makeComment = (overrides = {}) => ({
 describe('CommentsService', () => {
   let service: CommentsService;
   let repo: {
-    findByTask: jest.Mock;
+    findByTaskIds: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -28,7 +28,7 @@ describe('CommentsService', () => {
 
   beforeEach(async () => {
     repo = {
-      findByTask: jest.fn(),
+      findByTaskIds: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -118,13 +118,13 @@ describe('CommentsService', () => {
     });
   });
 
-  describe('findByTask', () => {
+  describe('findByTaskIds', () => {
     it('delegates to repository', async () => {
       const comments = [makeComment()];
-      repo.findByTask.mockResolvedValue(comments);
+      repo.findByTaskIds.mockResolvedValue(comments);
 
-      const result = await service.findByTask(1);
-      expect(repo.findByTask).toHaveBeenCalledWith(1);
+      const result = await service.findByTaskIds([1], 7);
+      expect(repo.findByTaskIds).toHaveBeenCalledWith([1], 7);
       expect(result).toEqual(comments);
     });
   });

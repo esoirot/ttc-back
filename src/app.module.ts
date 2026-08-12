@@ -7,6 +7,7 @@ import Joi from 'joi';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import depthLimit from 'graphql-depth-limit';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -39,6 +40,9 @@ import {
   TranslatorActivity,
 } from './activities/entities/activity.entity';
 import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
+import { GraphqlLoadersModule } from './common/graphql/loaders.module';
+import { LoadersService } from './common/graphql/loaders.service';
+import type { RequestUser } from './auth/types/gql-context.type';
 
 @Module({
   imports: [
@@ -87,6 +91,7 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
           .valid('local', 's3', 'azure')
           .default('local'),
         GRAPHQL_SANDBOX: Joi.boolean().default(true),
+        GRAPHQL_MAX_DEPTH: Joi.number().default(10),
         AWS_REGION: Joi.when('STORAGE_DRIVER', {
           is: 's3',
           then: Joi.string().required(),
@@ -121,8 +126,9 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
     }),
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
+      imports: [GraphqlLoadersModule],
+      inject: [ConfigService, LoadersService],
+      useFactory: (config: ConfigService, loadersService: LoadersService) => ({
         driver: ApolloDriver,
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
         sortSchema: true,
@@ -144,11 +150,21 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
         plugins: config.get('GRAPHQL_SANDBOX', true)
           ? [ApolloServerPluginLandingPageLocalDefault({ embed: true })]
           : [],
+        // Caps query nesting so a client can't build an unbounded-cost query
+        // over the Client -> Project -> Task -> {Subtask,Comment,...} graph.
+        validationRules: [depthLimit(config.get('GRAPHQL_MAX_DEPTH', 10))],
         // @as-integrations/fastify@3 calls context(request, reply) as two
         // positional args, not as a single { request, reply } object.
-        context: (request: FastifyRequest, reply: FastifyReply) => ({
+        context: (
+          request: FastifyRequest & { user?: RequestUser },
+          reply: FastifyReply,
+        ) => ({
           req: request,
           res: reply,
+          // GqlAuthGuard runs after this factory and populates request.user
+          // via Passport — read it lazily inside the loaders so it's only
+          // evaluated once a field resolver actually calls .load().
+          loaders: loadersService.createLoaders(() => request.user?.id),
         }),
       }),
     }),

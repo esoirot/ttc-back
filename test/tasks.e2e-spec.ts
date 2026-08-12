@@ -61,7 +61,6 @@ describe('TasksResolver (e2e)', () => {
     delete: jest.Mock;
   };
   let subtasksService: {
-    findByTask: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -70,18 +69,16 @@ describe('TasksResolver (e2e)', () => {
     renameChecklist: jest.Mock;
   };
   let commentsService: {
-    findByTask: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
   };
   let labelsService: {
-    findByTask: jest.Mock;
     create: jest.Mock;
     delete: jest.Mock;
   };
-  let activitiesService: { findByTask: jest.Mock; log: jest.Mock };
-  let attachmentsService: { findByTask: jest.Mock };
+  let activitiesService: { log: jest.Mock };
+  let attachmentsService: object;
 
   beforeAll(async () => {
     tasksService = {
@@ -93,7 +90,6 @@ describe('TasksResolver (e2e)', () => {
       delete: jest.fn().mockResolvedValue(true),
     };
     subtasksService = {
-      findByTask: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockResolvedValue({
         id: 1,
         taskId: 1,
@@ -120,7 +116,6 @@ describe('TasksResolver (e2e)', () => {
       renameChecklist: jest.fn().mockResolvedValue(true),
     };
     commentsService = {
-      findByTask: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockResolvedValue({
         id: 1,
         taskId: 1,
@@ -140,7 +135,6 @@ describe('TasksResolver (e2e)', () => {
       delete: jest.fn().mockResolvedValue(true),
     };
     labelsService = {
-      findByTask: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockResolvedValue({
         id: 1,
         taskId: 1,
@@ -150,11 +144,8 @@ describe('TasksResolver (e2e)', () => {
       }),
       delete: jest.fn().mockResolvedValue(true),
     };
-    activitiesService = {
-      findByTask: jest.fn().mockResolvedValue([]),
-      log: jest.fn(),
-    };
-    attachmentsService = { findByTask: jest.fn().mockResolvedValue([]) };
+    activitiesService = { log: jest.fn() };
+    attachmentsService = {};
 
     const module = await Test.createTestingModule({
       imports: [
@@ -164,6 +155,14 @@ describe('TasksResolver (e2e)', () => {
           context: (request: FastifyRequest, reply: FastifyReply) => ({
             req: request,
             res: reply,
+            loaders: {
+              subtasksByTask: { load: jest.fn().mockResolvedValue([]) },
+              commentsByTask: { load: jest.fn().mockResolvedValue([]) },
+              labelsByTask: { load: jest.fn().mockResolvedValue([]) },
+              activitiesByTask: { load: jest.fn().mockResolvedValue([]) },
+              attachmentsByTask: { load: jest.fn().mockResolvedValue([]) },
+              totalSecondsByTask: { load: jest.fn().mockResolvedValue(null) },
+            },
           }),
         }),
       ],

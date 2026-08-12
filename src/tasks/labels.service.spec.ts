@@ -15,11 +15,11 @@ const makeLabel = (overrides = {}) => ({
 
 describe('LabelsService', () => {
   let service: LabelsService;
-  let repo: { findByTask: jest.Mock; create: jest.Mock; delete: jest.Mock };
+  let repo: { findByTaskIds: jest.Mock; create: jest.Mock; delete: jest.Mock };
   let taskRepo: { findById: jest.Mock };
 
   beforeEach(async () => {
-    repo = { findByTask: jest.fn(), create: jest.fn(), delete: jest.fn() };
+    repo = { findByTaskIds: jest.fn(), create: jest.fn(), delete: jest.fn() };
     taskRepo = { findById: jest.fn().mockResolvedValue({ id: 1 }) };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -37,12 +37,12 @@ describe('LabelsService', () => {
     expect(service).toBeDefined();
   });
 
-  it('findByTask — delegates to repository', async () => {
+  it('findByTaskIds — delegates to repository', async () => {
     const labels = [makeLabel()];
-    repo.findByTask.mockResolvedValue(labels);
+    repo.findByTaskIds.mockResolvedValue(labels);
 
-    const result = await service.findByTask(1);
-    expect(repo.findByTask).toHaveBeenCalledWith(1);
+    const result = await service.findByTaskIds([1], 7);
+    expect(repo.findByTaskIds).toHaveBeenCalledWith([1], 7);
     expect(result).toEqual(labels);
   });
 

@@ -6,6 +6,7 @@ import {
   Int,
   ResolveField,
   Parent,
+  Context,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
@@ -16,16 +17,13 @@ import { UpdateProjectInput } from './dto/update-project.input';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
-import { PrismaService } from '../prisma.service';
+import type { GqlContext } from '../auth/types/gql-context.type';
 
 type RequestUser = { id: number; role: string };
 
 @Resolver(() => Project)
 export class ProjectsResolver {
-  constructor(
-    private readonly projectsService: ProjectsService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly projectsService: ProjectsService) {}
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Project)
@@ -85,13 +83,10 @@ export class ProjectsResolver {
   }
 
   @ResolveField(() => Int, { nullable: true })
-  async totalTimeSeconds(
+  totalTimeSeconds(
     @Parent() project: { id: number },
+    @Context() ctx: GqlContext,
   ): Promise<number | null> {
-    const result = await this.prisma.timeEntry.aggregate({
-      where: { projectId: project.id },
-      _sum: { durationSeconds: true },
-    });
-    return result._sum.durationSeconds;
+    return ctx.loaders.totalSecondsByProject.load(project.id);
   }
 }

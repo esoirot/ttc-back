@@ -18,8 +18,23 @@ import { LabelsService } from './labels.service';
 import { ActivitiesService } from './activities.service';
 import { AttachmentsService } from './attachments.service';
 import { TaskTimeResolver } from '../time-entries/task-time.resolver';
-import { TimeEntriesService } from '../time-entries/time-entries.service';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
+import type { GqlLoaders } from '../common/graphql/loaders.service';
+
+function makeTestLoaders(): GqlLoaders {
+  const listLoader = () => ({ load: jest.fn().mockResolvedValue([]) });
+  return {
+    subtasksByTask: listLoader(),
+    commentsByTask: listLoader(),
+    labelsByTask: listLoader(),
+    activitiesByTask: listLoader(),
+    attachmentsByTask: listLoader(),
+    activitiesByTimeEntry: listLoader(),
+    statusHistoryByClient: listLoader(),
+    totalSecondsByTask: { load: jest.fn().mockResolvedValue(120) },
+    totalSecondsByProject: { load: jest.fn().mockResolvedValue(null) },
+  } as unknown as GqlLoaders;
+}
 
 // Exercises the GraphQL type thunks (`() => Foo`, `type: () => Int`) that
 // only run when the schema is actually built — a plain Test.createTestingModule
@@ -36,6 +51,7 @@ describe('TasksResolver GraphQL schema', () => {
           context: (request: FastifyRequest, reply: FastifyReply) => ({
             req: request,
             res: reply,
+            loaders: makeTestLoaders(),
           }),
         }),
       ],
@@ -55,32 +71,11 @@ describe('TasksResolver GraphQL schema', () => {
             }),
           },
         },
-        {
-          provide: SubtasksService,
-          useValue: { findByTask: jest.fn().mockResolvedValue([]) },
-        },
-        {
-          provide: CommentsService,
-          useValue: { findByTask: jest.fn().mockResolvedValue([]) },
-        },
-        {
-          provide: LabelsService,
-          useValue: { findByTask: jest.fn().mockResolvedValue([]) },
-        },
-        {
-          provide: ActivitiesService,
-          useValue: { findByTask: jest.fn().mockResolvedValue([]) },
-        },
-        {
-          provide: AttachmentsService,
-          useValue: { findByTask: jest.fn().mockResolvedValue([]) },
-        },
-        {
-          provide: TimeEntriesService,
-          useValue: {
-            getTotalDuration: jest.fn().mockResolvedValue(120),
-          },
-        },
+        { provide: SubtasksService, useValue: {} },
+        { provide: CommentsService, useValue: {} },
+        { provide: LabelsService, useValue: {} },
+        { provide: ActivitiesService, useValue: {} },
+        { provide: AttachmentsService, useValue: {} },
       ],
     })
       .overrideGuard(GqlAuthGuard)

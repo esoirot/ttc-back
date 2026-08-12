@@ -13,7 +13,10 @@ export type SubtaskModel = {
 };
 
 export abstract class SubtaskRepository {
-  abstract findByTask(taskId: number): Promise<SubtaskModel[]>;
+  abstract findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<SubtaskModel[]>;
   abstract findById(id: number, userId: number): Promise<SubtaskModel>;
   abstract create(data: CreateSubtaskInput): Promise<SubtaskModel>;
   abstract update(

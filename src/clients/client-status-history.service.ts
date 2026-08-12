@@ -9,8 +9,11 @@ import {
 export class ClientStatusHistoryService {
   constructor(private readonly repo: ClientStatusHistoryRepository) {}
 
-  findByClient(clientId: number): Promise<ClientStatusHistoryModel[]> {
-    return this.repo.findByClient(clientId);
+  findByClientIds(
+    clientIds: number[],
+    userId: number,
+  ): Promise<ClientStatusHistoryModel[]> {
+    return this.repo.findByClientIds(clientIds, userId);
   }
 
   log(

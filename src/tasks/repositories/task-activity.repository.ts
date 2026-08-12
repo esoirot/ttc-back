@@ -18,7 +18,13 @@ export type LogActivityInput = {
 };
 
 export abstract class TaskActivityRepository {
-  abstract findByTask(taskId: number): Promise<TaskActivityModel[]>;
-  abstract findByTimeEntry(timeEntryId: number): Promise<TaskActivityModel[]>;
+  abstract findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskActivityModel[]>;
+  abstract findByTimeEntryIds(
+    timeEntryIds: number[],
+    userId: number,
+  ): Promise<TaskActivityModel[]>;
   abstract log(data: LogActivityInput): Promise<TaskActivityModel>;
 }

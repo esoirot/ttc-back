@@ -16,8 +16,8 @@ export class SubtasksService {
     private readonly activitiesService: ActivitiesService,
   ) {}
 
-  findByTask(taskId: number): Promise<SubtaskModel[]> {
-    return this.repo.findByTask(taskId);
+  findByTaskIds(taskIds: number[], userId: number): Promise<SubtaskModel[]> {
+    return this.repo.findByTaskIds(taskIds, userId);
   }
 
   async create(

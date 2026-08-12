@@ -36,3 +36,13 @@ export const MODEL_ORDER = [
 export function toClientProperty(modelName: string): string {
   return modelName.charAt(0).toLowerCase() + modelName.slice(1);
 }
+
+/** Composite-key models with no `id` field — export order must use their PK fields instead. */
+const MODEL_ORDER_BY: Record<string, Record<string, 'asc'>> = {
+  TimeEntryTag: { timeEntryId: 'asc', tagId: 'asc' },
+  ClientTag: { clientId: 'asc', tagId: 'asc' },
+};
+
+export function orderByFor(modelName: string): Record<string, 'asc'> {
+  return MODEL_ORDER_BY[modelName] ?? { id: 'asc' };
+}

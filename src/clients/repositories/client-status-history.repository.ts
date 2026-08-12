@@ -16,7 +16,10 @@ export type LogClientStatusHistoryInput = {
 };
 
 export abstract class ClientStatusHistoryRepository {
-  abstract findByClient(clientId: number): Promise<ClientStatusHistoryModel[]>;
+  abstract findByClientIds(
+    clientIds: number[],
+    userId: number,
+  ): Promise<ClientStatusHistoryModel[]>;
   abstract log(
     data: LogClientStatusHistoryInput,
   ): Promise<ClientStatusHistoryModel>;

@@ -9,7 +9,6 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import { TimeEntriesResolver } from './time-entries.resolver';
 import { TimeEntriesService } from './time-entries.service';
 import { TimerEventsService } from '../timer-events/timer-events.service';
-import { ActivitiesService } from '../tasks/activities.service';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 
 // Exercises the GraphQL type thunks (`() => Foo`, `type: () => Int`) that
@@ -34,7 +33,6 @@ describe('TimeEntriesResolver GraphQL schema', () => {
         TimeEntriesResolver,
         { provide: TimeEntriesService, useValue: {} },
         { provide: TimerEventsService, useValue: {} },
-        { provide: ActivitiesService, useValue: {} },
       ],
     })
       .overrideGuard(GqlAuthGuard)

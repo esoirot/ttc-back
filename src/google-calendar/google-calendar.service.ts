@@ -9,6 +9,10 @@ import { UsersService } from '../users/users.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { fetchWithRetry } from '../common/retry.util.js';
 import {
+  OAuthTokenRefreshService,
+  OAUTH_REFRESH_MARGIN_MS,
+} from '../common/oauth-token/oauth-token-refresh.service.js';
+import {
   signOAuthState,
   verifyOAuthState,
 } from '../common/oauth-state.util.js';
@@ -22,7 +26,6 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
 const USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 const CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3';
-const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 type GoogleTokenResponse = {
@@ -45,12 +48,12 @@ export class GoogleCalendarService {
   private readonly redirectUri: string;
   private readonly frontendUrl: string;
   private readonly jwtSecret: string;
-  private readonly refreshLocks = new Map<number, Promise<string>>();
 
   constructor(
     private readonly usersService: UsersService,
     private readonly auditService: AuditService,
     private readonly config: ConfigService,
+    private readonly oauthTokenRefreshService: OAuthTokenRefreshService,
   ) {
     this.clientId = this.config.get<string>('GOOGLE_CLIENT_ID') ?? '';
     this.clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET') ?? '';
@@ -180,70 +183,63 @@ export class GoogleCalendarService {
       throw new BadRequestException('Google Calendar not connected');
     }
     const expiresAt = user.googleCalendarTokenExpiresAt;
-    if (!expiresAt || expiresAt.getTime() - Date.now() < REFRESH_MARGIN_MS) {
+    if (
+      !expiresAt ||
+      expiresAt.getTime() - Date.now() < OAUTH_REFRESH_MARGIN_MS
+    ) {
       if (!user.googleCalendarRefreshToken) {
         throw new BadRequestException(
           'Google Calendar refresh token missing — reconnect',
         );
       }
-      const existing = this.refreshLocks.get(userId);
-      if (existing) return existing;
-      const p = this.refreshAccessToken(
-        userId,
+      return this.oauthTokenRefreshService.refresh(
+        `google-calendar:${userId}`,
         user.googleCalendarRefreshToken,
-      ).finally(() => {
-        this.refreshLocks.delete(userId);
-      });
-      this.refreshLocks.set(userId, p);
-      return p;
-    }
-    return user.googleCalendarAccessToken;
-  }
-
-  private async refreshAccessToken(
-    userId: number,
-    refreshToken: string,
-  ): Promise<string> {
-    const body = new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: this.clientId,
-      client_secret: this.clientSecret,
-      refresh_token: refreshToken,
-    });
-    const res = await fetch(TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    });
-    if (!res.ok) {
-      if (res.status === 400) {
-        // invalid_grant: refresh token expired/revoked — clear stored
-        // credentials so getStatus reports disconnected and the frontend
-        // prompts reconnect, instead of retrying the same dead token forever.
-        await this.usersService.updateGoogleCalendar(userId, {
-          googleCalendarAccessToken: null,
-          googleCalendarRefreshToken: null,
-          googleCalendarTokenExpiresAt: null,
-        });
-      }
-      throw new HttpException(
-        'Google Calendar refresh token invalid — reconnect',
-        res.status,
+        {
+          tokenUrl: TOKEN_URL,
+          buildBody: (refreshToken) =>
+            new URLSearchParams({
+              grant_type: 'refresh_token',
+              client_id: this.clientId,
+              client_secret: this.clientSecret,
+              refresh_token: refreshToken,
+            }),
+          onFailure: async (res) => {
+            if (res.status === 400) {
+              // invalid_grant: refresh token expired/revoked — clear stored
+              // credentials so getStatus reports disconnected and the frontend
+              // prompts reconnect, instead of retrying the same dead token forever.
+              await this.usersService.updateGoogleCalendar(userId, {
+                googleCalendarAccessToken: null,
+                googleCalendarRefreshToken: null,
+                googleCalendarTokenExpiresAt: null,
+              });
+            }
+            throw new HttpException(
+              'Google Calendar refresh token invalid — reconnect',
+              res.status,
+            );
+          },
+          onSuccess: async (tokens) => {
+            const newExpiresAt = new Date(
+              Date.now() + tokens.expires_in * 1000,
+            );
+            // Google does not always return a new refresh_token on refresh —
+            // only overwrite the stored one when a new one is actually issued,
+            // otherwise the still-valid existing refresh token would be wiped.
+            await this.usersService.updateGoogleCalendar(userId, {
+              googleCalendarAccessToken: tokens.access_token,
+              googleCalendarTokenExpiresAt: newExpiresAt,
+              ...(tokens.refresh_token
+                ? { googleCalendarRefreshToken: tokens.refresh_token }
+                : {}),
+            });
+            return tokens.access_token;
+          },
+        },
       );
     }
-    const tokens = (await res.json()) as GoogleTokenResponse;
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-    // Google does not always return a new refresh_token on refresh — only
-    // overwrite the stored one when a new one is actually issued, otherwise
-    // the still-valid existing refresh token would be wiped with undefined.
-    await this.usersService.updateGoogleCalendar(userId, {
-      googleCalendarAccessToken: tokens.access_token,
-      googleCalendarTokenExpiresAt: expiresAt,
-      ...(tokens.refresh_token
-        ? { googleCalendarRefreshToken: tokens.refresh_token }
-        : {}),
-    });
-    return tokens.access_token;
+    return user.googleCalendarAccessToken;
   }
 
   // ─── Core request helper ────────────────────────────────────────────────────

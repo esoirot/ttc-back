@@ -16,8 +16,11 @@ export class CommentsService {
     private readonly activitiesService: ActivitiesService,
   ) {}
 
-  findByTask(taskId: number): Promise<TaskCommentModel[]> {
-    return this.repo.findByTask(taskId);
+  findByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<TaskCommentModel[]> {
+    return this.repo.findByTaskIds(taskIds, userId);
   }
 
   async create(

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleCalendarService } from './google-calendar.service';
 import { UsersService } from '../users/users.service';
 import { AuditService } from '../audit/audit.service';
+import { OAuthTokenRefreshService } from '../common/oauth-token/oauth-token-refresh.service';
 
 jest.mock('../common/retry.util');
 import { fetchWithRetry } from '../common/retry.util';
@@ -73,6 +74,7 @@ describe('GoogleCalendarService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GoogleCalendarService,
+        OAuthTokenRefreshService,
         { provide: UsersService, useValue: usersService },
         { provide: AuditService, useValue: auditService },
         {
@@ -100,6 +102,7 @@ describe('GoogleCalendarService', () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           GoogleCalendarService,
+          OAuthTokenRefreshService,
           { provide: UsersService, useValue: usersService },
           { provide: AuditService, useValue: auditService },
           {

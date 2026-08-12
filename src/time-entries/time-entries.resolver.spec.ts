@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TimeEntriesResolver } from './time-entries.resolver';
 import { TimeEntriesService } from './time-entries.service';
 import { TimerEventsService } from '../timer-events/timer-events.service';
-import { ActivitiesService } from '../tasks/activities.service';
 import type { TimeEntry } from './entities/time-entry.entity';
 import { mockTimeEntry } from '../__test-helpers__/mock-factories';
+import type { GqlContext } from '../auth/types/gql-context.type';
 
 describe('TimeEntriesResolver', () => {
   let resolver: TimeEntriesResolver;
@@ -19,7 +19,6 @@ describe('TimeEntriesResolver', () => {
     delete: jest.Mock;
   };
   let timerEvents: { publish: jest.Mock };
-  let activitiesService: { findByTimeEntry: jest.Mock };
 
   const user = { id: 1 };
 
@@ -35,14 +34,12 @@ describe('TimeEntriesResolver', () => {
       delete: jest.fn(),
     };
     timerEvents = { publish: jest.fn().mockResolvedValue(undefined) };
-    activitiesService = { findByTimeEntry: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TimeEntriesResolver,
         { provide: TimeEntriesService, useValue: service },
         { provide: TimerEventsService, useValue: timerEvents },
-        { provide: ActivitiesService, useValue: activitiesService },
       ],
     }).compile();
 
@@ -191,11 +188,14 @@ describe('TimeEntriesResolver', () => {
     expect(result).toBe(true);
   });
 
-  it('activities field resolver — delegates to activitiesService', async () => {
-    activitiesService.findByTimeEntry.mockResolvedValue([]);
+  it('activities field resolver — delegates to the activitiesByTimeEntry loader', async () => {
+    const load = jest.fn().mockResolvedValue([]);
+    const ctx = {
+      loaders: { activitiesByTimeEntry: { load } },
+    } as unknown as GqlContext;
     const entry = mockTimeEntry({ id: 9 }) as unknown as TimeEntry;
 
-    await resolver.activities(entry);
-    expect(activitiesService.findByTimeEntry).toHaveBeenCalledWith(9);
+    await resolver.activities(entry, ctx);
+    expect(load).toHaveBeenCalledWith(9);
   });
 });
