@@ -5,7 +5,7 @@ const FK_DEPENDENCIES: [string, string[]][] = [
   ['Client', ['User']],
   ['Activity', ['User']],
   ['CompanyContact', ['Client']],
-  ['Project', ['User', 'Client']],
+  ['Project', ['User', 'Client', 'RateSheet']],
   ['Tag', ['User']],
   ['Task', ['Project', 'User']],
   ['Subtask', ['Task']],

@@ -6,6 +6,7 @@ export const MODEL_ORDER = [
   'User',
   'Client',
   'Activity',
+  'RateSheet',
   'CompanyContact',
   'Project',
   'Tag',
@@ -30,7 +31,6 @@ export const MODEL_ORDER = [
   'Charge',
   'LanguagePair',
   'CustomField',
-  'RateSheet',
 ] as const;
 
 export function toClientProperty(modelName: string): string {
