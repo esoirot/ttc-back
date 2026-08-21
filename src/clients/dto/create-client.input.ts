@@ -87,4 +87,7 @@ export class CreateClientInput {
 
   @Field(() => [Int], { nullable: true })
   tagIds?: number[];
+
+  @Field(() => [Int], { nullable: true })
+  activityIds?: number[];
 }

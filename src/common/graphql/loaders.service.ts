@@ -28,6 +28,7 @@ export interface GqlLoaders {
   statusHistoryByClient: DataLoader<number, ClientStatusHistoryModel[]>;
   totalSecondsByTask: DataLoader<number, number | null>;
   totalSecondsByProject: DataLoader<number, number | null>;
+  totalWordsProcessedByProject: DataLoader<number, number | null>;
 }
 
 /**
@@ -126,6 +127,14 @@ export class LoadersService {
       totalSecondsByProject: createMappedValueLoader(
         (projectIds) =>
           this.timeEntriesService.getTotalDurationByProjectIds(
+            [...projectIds],
+            requireUserId(getUserId),
+          ),
+        null,
+      ),
+      totalWordsProcessedByProject: createMappedValueLoader(
+        (projectIds) =>
+          this.timeEntriesService.getTotalWordsProcessedByProjectIds(
             [...projectIds],
             requireUserId(getUserId),
           ),

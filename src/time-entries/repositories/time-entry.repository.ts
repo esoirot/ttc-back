@@ -54,4 +54,8 @@ export abstract class TimeEntryRepository {
     projectIds: number[],
     userId: number,
   ): Promise<Map<number, number>>;
+  abstract sumWordsProcessedByProjectIds(
+    projectIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>>;
 }

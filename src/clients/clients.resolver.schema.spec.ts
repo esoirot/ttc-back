@@ -49,6 +49,7 @@ describe('ClientsResolver GraphQL schema', () => {
               billingEndOfMonth: false,
               contacts: [],
               tags: [],
+              activities: [],
               createdAt: new Date(),
               updatedAt: new Date(),
             }),
@@ -87,6 +88,12 @@ describe('ClientsResolver GraphQL schema', () => {
     };
     const clientFields = clientType.getFields();
     expect(clientFields).toHaveProperty('statusHistory');
+    expect(clientFields).toHaveProperty('activities');
+
+    const createInputType = schema.getType('CreateClientInput') as unknown as {
+      getFields: () => Record<string, unknown>;
+    };
+    expect(createInputType.getFields()).toHaveProperty('activityIds');
   });
 
   // Field-level `@ResolveField(() => Foo)` return-type thunks are resolved

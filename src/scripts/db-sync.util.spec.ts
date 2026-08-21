@@ -1,4 +1,4 @@
-import { MODEL_ORDER, toClientProperty } from './db-sync.util';
+import { MODEL_ORDER, orderByFor, toClientProperty } from './db-sync.util';
 
 // [model, ...modelsItDependsOn] per FK fields in prisma/schema.prisma
 const FK_DEPENDENCIES: [string, string[]][] = [
@@ -62,5 +62,24 @@ describe('toClientProperty', () => {
     expect(toClientProperty('User')).toBe('user');
     expect(toClientProperty('TimeEntryTag')).toBe('timeEntryTag');
     expect(toClientProperty('OAuthAccount')).toBe('oAuthAccount');
+  });
+});
+
+describe('orderByFor', () => {
+  it('orders single-PK models by id', () => {
+    expect(orderByFor('User')).toEqual({ id: 'asc' });
+  });
+
+  // Prisma rejects a single multi-key object for composite-key orderBy —
+  // it must be an array of single-key objects.
+  it('orders composite-key models as an array of single-key objects', () => {
+    expect(orderByFor('TimeEntryTag')).toEqual([
+      { timeEntryId: 'asc' },
+      { tagId: 'asc' },
+    ]);
+    expect(orderByFor('ClientTag')).toEqual([
+      { clientId: 'asc' },
+      { tagId: 'asc' },
+    ]);
   });
 });

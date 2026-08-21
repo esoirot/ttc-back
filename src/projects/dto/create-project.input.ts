@@ -50,4 +50,7 @@ export class CreateProjectInput {
 
   @Field({ nullable: true })
   startDate?: Date;
+
+  @Field(() => [Int], { nullable: true })
+  activityIds?: number[];
 }

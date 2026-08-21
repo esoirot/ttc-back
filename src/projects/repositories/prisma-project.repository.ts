@@ -8,6 +8,11 @@ import { ProjectModel } from '../types/project.type';
 import { CreateProjectInput } from '../dto/create-project.input';
 import { UpdateProjectInput } from '../dto/update-project.input';
 import { ProjectStatus } from '../../generated/prisma/client';
+import type { Activity as PrismaActivity } from '../../generated/prisma/client';
+
+const INCLUDE_ACTIVITIES = {
+  activities: { include: { activity: true } },
+} as const;
 
 function toModel(p: {
   id: number;
@@ -30,13 +35,16 @@ function toModel(p: {
   startDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  activities: { activity: PrismaActivity }[];
 }): ProjectModel {
+  const { activities, ...rest } = p;
   return {
-    ...p,
+    ...rest,
     unitPrice: p.unitPrice?.toNumber() ?? null,
     fixedFee: p.fixedFee?.toNumber() ?? null,
     hourlyRate: p.hourlyRate?.toNumber() ?? null,
     perWordRate: p.perWordRate?.toNumber() ?? null,
+    activities: activities.map((a) => a.activity),
   };
 }
 
@@ -46,7 +54,10 @@ export class PrismaProjectRepository implements ProjectRepository {
 
   async findById(id: number, userId: number | null): Promise<ProjectModel> {
     const where = userId !== null ? { id, userId } : { id };
-    const project = await this.prisma.project.findFirst({ where });
+    const project = await this.prisma.project.findFirst({
+      where,
+      include: INCLUDE_ACTIVITIES,
+    });
     if (!project) throw new NotFoundException(`Project ${id} not found`);
     return toModel(project);
   }
@@ -75,6 +86,7 @@ export class PrismaProjectRepository implements ProjectRepository {
       where,
       orderBy: { id: 'asc' },
       take: limit + 1,
+      include: INCLUDE_ACTIVITIES,
     });
     const total = await this.prisma.project.count({ where: baseWhere });
     const hasMore = rows.length > limit;
@@ -87,7 +99,17 @@ export class PrismaProjectRepository implements ProjectRepository {
     userId: number,
     data: CreateProjectInput,
   ): Promise<ProjectModel> {
-    const { unitPrice, fixedFee, hourlyRate, perWordRate, ...rest } = data;
+    const {
+      unitPrice,
+      fixedFee,
+      hourlyRate,
+      perWordRate,
+      activityIds,
+      ...rest
+    } = data;
+    // Inheriting a linked client's activities (when activityIds is omitted)
+    // is resolved by the caller (ProjectsService.create) before this is
+    // reached — this method only ever writes whatever ids it's given.
     const project = await this.prisma.project.create({
       data: {
         ...rest,
@@ -98,7 +120,11 @@ export class PrismaProjectRepository implements ProjectRepository {
         ...(perWordRate != null ? { perWordRate } : {}),
         currency: data.currency ?? 'EUR',
         status: (data.status as ProjectStatus | undefined) ?? 'DRAFT',
+        activities: {
+          create: (activityIds ?? []).map((id) => ({ activityId: id })),
+        },
       },
+      include: INCLUDE_ACTIVITIES,
     });
     return toModel(project);
   }
@@ -114,13 +140,18 @@ export class PrismaProjectRepository implements ProjectRepository {
       fixedFee,
       hourlyRate,
       perWordRate,
+      activityIds,
       ...rest
     } = data;
     const existing = await this.prisma.project.findFirst({
       where: { id, userId },
     });
     if (!existing) throw new NotFoundException(`Project ${id} not found`);
-    const project = await this.prisma.project.update({
+    // Workaround for prisma/prisma#29407 (open upstream bug: update()+multi-relation
+    // include triggers concurrent client.query() on the pg driver-adapter's tx client).
+    // Revert to a single update()+include call once the upstream fix (PR #29468) ships
+    // and we upgrade prisma/@prisma/adapter-pg.
+    await this.prisma.project.update({
       where: { id },
       data: {
         ...rest,
@@ -129,7 +160,19 @@ export class PrismaProjectRepository implements ProjectRepository {
         ...(hourlyRate !== undefined ? { hourlyRate } : {}),
         ...(perWordRate !== undefined ? { perWordRate } : {}),
         ...(rest.status ? { status: rest.status } : {}),
+        ...(activityIds !== undefined
+          ? {
+              activities: {
+                deleteMany: {},
+                create: activityIds.map((aid) => ({ activityId: aid })),
+              },
+            }
+          : {}),
       },
+    });
+    const project = await this.prisma.project.findUniqueOrThrow({
+      where: { id },
+      include: INCLUDE_ACTIVITIES,
     });
     return toModel(project);
   }
@@ -139,7 +182,10 @@ export class PrismaProjectRepository implements ProjectRepository {
       where: { id, userId },
     });
     if (!existing) throw new NotFoundException(`Project ${id} not found`);
-    const project = await this.prisma.project.delete({ where: { id } });
+    const project = await this.prisma.project.delete({
+      where: { id },
+      include: INCLUDE_ACTIVITIES,
+    });
     return toModel(project);
   }
 }

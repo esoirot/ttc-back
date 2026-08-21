@@ -16,7 +16,10 @@ import {
 } from '../dto/create-invoice.input';
 import { UpdateInvoiceInput } from '../dto/update-invoice.input';
 import { GenerateInvoiceInput } from '../dto/generate-invoice.input';
-import { InvoiceStatus as PrismaInvoiceStatus } from '../../generated/prisma/client';
+import {
+  InvoiceStatus as PrismaInvoiceStatus,
+  InvoicingStatus,
+} from '../../generated/prisma/client';
 import { InvoiceStatus } from '../entities/invoice.entity';
 
 function decimalToNumber(d: { toNumber(): number } | null): number {
@@ -197,13 +200,15 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       });
     }
 
+    let consumedEntryIds: number[] = [];
+
     if (hourlyRate != null) {
       const entries = await this.prisma.timeEntry.findMany({
         where: {
           userId,
           projectId: data.projectId,
           billable: true,
-          endTime: { not: null },
+          invoicingStatus: InvoicingStatus.NO,
         },
       });
       for (const e of entries) {
@@ -217,6 +222,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
           total: qty * hourlyRate,
         });
       }
+      consumedEntryIds = entries.map((e) => e.id);
     }
 
     if (perWordRate != null && perWordRate > 0 && wordCount > 0) {
@@ -229,16 +235,25 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       });
     }
 
-    const inv = await this.prisma.invoice.create({
-      data: {
-        userId,
-        number,
-        clientId: data.clientId,
-        currency: data.currency ?? 'EUR',
-        dueDate: data.dueDate,
-        items: { create: lineItems },
-      },
-      include: { items: true },
+    const inv = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.invoice.create({
+        data: {
+          userId,
+          number,
+          clientId: data.clientId,
+          currency: data.currency ?? 'EUR',
+          dueDate: data.dueDate,
+          items: { create: lineItems },
+        },
+        include: { items: true },
+      });
+      if (consumedEntryIds.length > 0) {
+        await tx.timeEntry.updateMany({
+          where: { id: { in: consumedEntryIds } },
+          data: { invoicingStatus: InvoicingStatus.INVOICED },
+        });
+      }
+      return created;
     });
     return invoiceToModel(inv);
   }
@@ -307,16 +322,38 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       throw new NotFoundException(`Invoice ${data.invoiceId} not found`);
     }
     const total = data.quantity * data.unitPrice;
-    const item = await this.prisma.invoiceItem.create({
-      data: {
-        invoiceId: data.invoiceId,
-        projectId: data.projectId,
-        timeEntryId: data.timeEntryId,
-        description: data.description ?? '',
-        quantity: data.quantity,
-        unitPrice: data.unitPrice,
-        total,
-      },
+
+    const item = await this.prisma.$transaction(async (tx) => {
+      if (data.timeEntryId != null) {
+        const entry = await tx.timeEntry.findFirst({
+          where: { id: data.timeEntryId, userId },
+        });
+        if (!entry) {
+          throw new NotFoundException(
+            `TimeEntry ${data.timeEntryId} not found`,
+          );
+        }
+        if (!entry.billable || entry.invoicingStatus !== InvoicingStatus.NO) {
+          throw new BadRequestException(
+            `TimeEntry ${data.timeEntryId} is not invoiceable`,
+          );
+        }
+        await tx.timeEntry.update({
+          where: { id: entry.id },
+          data: { invoicingStatus: InvoicingStatus.INVOICED },
+        });
+      }
+      return tx.invoiceItem.create({
+        data: {
+          invoiceId: data.invoiceId,
+          projectId: data.projectId,
+          timeEntryId: data.timeEntryId,
+          description: data.description ?? '',
+          quantity: data.quantity,
+          unitPrice: data.unitPrice,
+          total,
+        },
+      });
     });
     return itemToModel(item);
   }

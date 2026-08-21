@@ -1,3 +1,5 @@
+import type { Activity as PrismaActivity } from '../../generated/prisma/client';
+
 export type CompanyContactModel = {
   id: number;
   clientId: number;
@@ -52,4 +54,5 @@ export type ClientModel = {
   createdAt: Date;
   updatedAt: Date;
   contacts: CompanyContactModel[];
+  activities: PrismaActivity[];
 };

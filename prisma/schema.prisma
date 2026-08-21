@@ -33,6 +33,11 @@ enum TaskStatus {
   DONE
 }
 
+enum InvoicingStatus {
+  NO
+  INVOICED
+}
+
 enum InvoiceStatus {
   DRAFT
   SENT
@@ -49,55 +54,55 @@ enum RateType {
 }
 
 model User {
-  id                    Int            @id @default(autoincrement())
-  email                 String         @unique
-  name                  String?
-  password              String?
-  role                  Role           @default(USER)
-  twoFactorSecret       String?
-  twoFactorEnabled      Boolean        @default(false)
-  clockifyApiKey        String?
-  clockifyUserId        String?
-  clockifyWorkspaceId   String?
-  hubspotAccessToken    String?
-  hubspotRefreshToken   String?
-  hubspotTokenExpiresAt DateTime?
-  hubspotPortalId       String?
+  id                           Int                   @id @default(autoincrement())
+  email                        String                @unique
+  name                         String?
+  password                     String?
+  role                         Role                  @default(USER)
+  twoFactorSecret              String?
+  twoFactorEnabled             Boolean               @default(false)
+  clockifyApiKey               String?
+  clockifyUserId               String?
+  clockifyWorkspaceId          String?
+  hubspotAccessToken           String?
+  hubspotRefreshToken          String?
+  hubspotTokenExpiresAt        DateTime?
+  hubspotPortalId              String?
   googleCalendarAccessToken    String?
   googleCalendarRefreshToken   String?
   googleCalendarTokenExpiresAt DateTime?
   googleCalendarEmail          String?
-  logoUrl               String?
-  adminPermissions      String[]       @default([])
-  refreshTokens         RefreshToken[]
-  oauthAccounts         OAuthAccount[]
-  passwordResetTokens   PasswordResetToken[]
-  twoFactorBackupCodes  TwoFactorBackupCode[]
-  projects              Project[]
-  clients               Client[]
-  tasks                 Task[]
-  taskComments          TaskComment[]
-  taskActivities        TaskActivity[]
-  clientStatusHistory   ClientStatusHistory[]
-  timeEntries           TimeEntry[]
-  invoices              Invoice[]
-  auditLogs             AuditLog[]
-  translationRates      TranslationRate[]
-  clientRates           ClientRate[]
-  rateSheets            RateSheet[]
-  tags                  Tag[]
-  activities            Activity[]
-  defaultCurrency       String         @default("EUR")
-  firstName             String?
-  lastName              String?
-  mobilePhone           String?
-  jobTitle              String?
-  interfaceLanguage     String?        @default("en")
-  dateFormat            String?        @default("DD/MM/YYYY")
-  hourFormat            String?        @default("24h")
-  numberFormat          String?        @default("1,234.56")
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  logoUrl                      String?
+  adminPermissions             String[]              @default([])
+  refreshTokens                RefreshToken[]
+  oauthAccounts                OAuthAccount[]
+  passwordResetTokens          PasswordResetToken[]
+  twoFactorBackupCodes         TwoFactorBackupCode[]
+  projects                     Project[]
+  clients                      Client[]
+  tasks                        Task[]
+  taskComments                 TaskComment[]
+  taskActivities               TaskActivity[]
+  clientStatusHistory          ClientStatusHistory[]
+  timeEntries                  TimeEntry[]
+  invoices                     Invoice[]
+  auditLogs                    AuditLog[]
+  translationRates             TranslationRate[]
+  clientRates                  ClientRate[]
+  rateSheets                   RateSheet[]
+  tags                         Tag[]
+  activities                   Activity[]
+  defaultCurrency              String                @default("EUR")
+  firstName                    String?
+  lastName                     String?
+  mobilePhone                  String?
+  jobTitle                     String?
+  interfaceLanguage            String?               @default("en")
+  dateFormat                   String?               @default("DD/MM/YYYY")
+  hourFormat                   String?               @default("24h")
+  numberFormat                 String?               @default("1,234.56")
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @updatedAt
 }
 
 model RefreshToken {
@@ -165,9 +170,9 @@ enum ClientStatus {
 }
 
 model Client {
-  id                Int              @id @default(autoincrement())
+  id                Int                   @id @default(autoincrement())
   userId            Int
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   name              String
   legalName         String?
   email             String?
@@ -184,18 +189,18 @@ model Client {
   color             String?
   notes             String?
   hubspotId         String?
-  clientType        ClientType       @default(COMPANY)
+  clientType        ClientType            @default(COMPANY)
   firstName         String?
   lastName          String?
   paymentDelayDays  Int?
-  taxRate           Decimal?         @db.Decimal(5, 2)
-  billingEndOfMonth Boolean          @default(false)
+  taxRate           Decimal?              @db.Decimal(5, 2)
+  billingEndOfMonth Boolean               @default(false)
   website           String?
   industry          ClientIndustry?
-  status            ClientStatus     @default(CLIENT)
+  status            ClientStatus          @default(CLIENT)
   contactedAt       DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
   projects          Project[]
   invoices          Invoice[]
   contacts          CompanyContact[]
@@ -204,6 +209,7 @@ model Client {
   translationRates  TranslationRate[]
   tags              ClientTag[]
   statusHistory     ClientStatusHistory[]
+  activities        ClientActivity[]
 }
 
 model ClientStatusHistory {
@@ -232,57 +238,58 @@ model CompanyContact {
 }
 
 model Project {
-  id             Int           @id @default(autoincrement())
+  id             Int               @id @default(autoincrement())
   userId         Int?
-  user           User?         @relation(fields: [userId], references: [id])
+  user           User?             @relation(fields: [userId], references: [id])
   clientId       Int?
-  client         Client?       @relation(fields: [clientId], references: [id])
+  client         Client?           @relation(fields: [clientId], references: [id])
   title          String
   description    String?
-  status         ProjectStatus @default(DRAFT)
+  status         ProjectStatus     @default(DRAFT)
   sourceLanguage String?
   targetLanguage String?
   wordCount      Int?
-  unitPrice      Decimal?      @db.Decimal(14, 8)
-  fixedFee       Decimal?      @db.Decimal(10, 4)
-  hourlyRate     Decimal?      @db.Decimal(10, 4)
-  perWordRate    Decimal?      @db.Decimal(10, 4)
-  useCustomRate  Boolean       @default(false)
+  unitPrice      Decimal?          @db.Decimal(14, 8)
+  fixedFee       Decimal?          @db.Decimal(10, 4)
+  hourlyRate     Decimal?          @db.Decimal(10, 4)
+  perWordRate    Decimal?          @db.Decimal(10, 4)
+  useCustomRate  Boolean           @default(false)
   rateSheetId    Int?
-  rateSheet      RateSheet?    @relation(fields: [rateSheetId], references: [id], onDelete: SetNull)
-  currency       String        @default("EUR")
+  rateSheet      RateSheet?        @relation(fields: [rateSheetId], references: [id], onDelete: SetNull)
+  currency       String            @default("EUR")
   deadline       DateTime?
   startDate      DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   tasks          Task[]
   timeEntries    TimeEntry[]
   invoiceItems   InvoiceItem[]
+  activities     ProjectActivity[]
 }
 
 model Task {
-  id          Int           @id @default(autoincrement())
-  projectId   Int
-  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assigneeId  Int?
-  assignee    User?         @relation(fields: [assigneeId], references: [id])
-  title       String
-  description String?
-  status      TaskStatus    @default(TODO)
-  dueDate        DateTime?
-  startDate      DateTime?
-  recurring      String?
-  reminderOffset String?
-  sortOrder        Int           @default(0)
-  checklistTitles  String[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  subtasks         Subtask[]
-  comments    TaskComment[]
-  labels      TaskLabel[]
-  activities  TaskActivity[]
-  attachments TaskAttachment[]
-  timeEntries TimeEntry[]
+  id              Int              @id @default(autoincrement())
+  projectId       Int
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId      Int?
+  assignee        User?            @relation(fields: [assigneeId], references: [id])
+  title           String
+  description     String?
+  status          TaskStatus       @default(TODO)
+  dueDate         DateTime?
+  startDate       DateTime?
+  recurring       String?
+  reminderOffset  String?
+  sortOrder       Int              @default(0)
+  checklistTitles String[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  subtasks        Subtask[]
+  comments        TaskComment[]
+  labels          TaskLabel[]
+  activities      TaskActivity[]
+  attachments     TaskAttachment[]
+  timeEntries     TimeEntry[]
 }
 
 model TaskAttachment {
@@ -345,23 +352,27 @@ model TaskActivity {
 }
 
 model TimeEntry {
-  id              Int              @id @default(autoincrement())
+  id              Int             @id @default(autoincrement())
   userId          Int
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   projectId       Int?
-  project         Project?         @relation(fields: [projectId], references: [id])
+  project         Project?        @relation(fields: [projectId], references: [id])
   taskId          Int?
-  task            Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  task            Task?           @relation(fields: [taskId], references: [id], onDelete: SetNull)
   subtaskId       Int?
-  subtask         Subtask?         @relation(fields: [subtaskId], references: [id], onDelete: SetNull)
+  subtask         Subtask?        @relation(fields: [subtaskId], references: [id], onDelete: SetNull)
   description     String?
   startTime       DateTime
   endTime         DateTime?
   durationSeconds Int?
-  billable        Boolean          @default(true)
+  billable        Boolean         @default(true)
   clockifyEntryId String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  activityId      Int?
+  activity        Activity?       @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  wordsProcessed  Int?
+  invoicingStatus InvoicingStatus @default(NO)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   invoiceItems    InvoiceItem[]
   tags            TimeEntryTag[]
   activities      TaskActivity[]
@@ -450,22 +461,22 @@ model TwoFactorBackupCode {
 }
 
 model TranslationRate {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   userId         Int
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   activityId     Int?
   activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
   clientId       Int?
-  client         Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   type           RateType
   name           String
   amount         Float
-  currency       String   @default("EUR")
+  currency       String    @default("EUR")
   description    String?
-  sourceLanguage String?  @db.VarChar(2)
-  targetLanguage String?  @db.VarChar(2)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  sourceLanguage String?   @db.VarChar(2)
+  targetLanguage String?   @db.VarChar(2)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model ClientRate {
@@ -495,9 +506,9 @@ enum ActivityType {
 }
 
 model Activity {
-  id                Int            @id @default(autoincrement())
+  id                Int               @id @default(autoincrement())
   userId            Int
-  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   name              String
   companyName       String?
   legalForm         String?
@@ -515,8 +526,29 @@ model Activity {
   rateSheets        RateSheet[]
   languagePairs     LanguagePair[]
   customFields      CustomField[]
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  clients           ClientActivity[]
+  projects          ProjectActivity[]
+  timeEntries       TimeEntry[]
+}
+
+model ClientActivity {
+  clientId   Int
+  activityId Int
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, activityId])
+}
+
+model ProjectActivity {
+  projectId  Int
+  activityId Int
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, activityId])
 }
 
 model Charge {
@@ -554,13 +586,13 @@ model RateSheet {
   client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   name           String
   description    String?
-  sourceLanguage String   @db.VarChar(2)
-  targetLanguage String   @db.VarChar(2)
-  currency       String   @default("EUR")
-  pricePerWord   Decimal  @db.Decimal(10, 6)
+  sourceLanguage String    @db.VarChar(2)
+  targetLanguage String    @db.VarChar(2)
+  currency       String    @default("EUR")
+  pricePerWord   Decimal   @db.Decimal(10, 6)
   matchRates     Json
-  isDefault      Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isDefault      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
   projects       Project[]
 }

@@ -5,9 +5,10 @@ import { ProjectRepository } from './repositories/projects.repository';
 import { PrismaProjectRepository } from './repositories/prisma-project.repository';
 import { PrismaService } from '../prisma.service';
 import { AuditModule } from '../audit/audit.module';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, ClientsModule],
   providers: [
     ProjectsResolver,
     ProjectsService,

@@ -1,3 +1,5 @@
+import type { Activity as PrismaActivity } from '../../generated/prisma/client';
+
 export type ProjectModel = {
   id: number;
   userId: number | null;
@@ -19,4 +21,5 @@ export type ProjectModel = {
   startDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  activities: PrismaActivity[];
 };

@@ -51,6 +51,27 @@ export class TimeEntriesService {
     return this.repo.sumDurationByProjectIds(projectIds, userId);
   }
 
+  getTotalWordsProcessedByProjectIds(
+    projectIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    return this.repo.sumWordsProcessedByProjectIds(projectIds, userId);
+  }
+
+  // Defaults a new entry's activityId to its project's lowest-id activity
+  // when the caller didn't explicitly pass one and a project is linked.
+  private async resolveDefaultActivityId(
+    projectId: number | undefined,
+  ): Promise<number | null> {
+    if (!projectId) return null;
+    const first = await this.prisma.projectActivity.findFirst({
+      where: { projectId },
+      orderBy: { activityId: 'asc' },
+      select: { activityId: true },
+    });
+    return first?.activityId ?? null;
+  }
+
   async create(
     userId: number,
     input: CreateTimeEntryInput,
@@ -60,6 +81,9 @@ export class TimeEntriesService {
         where: { id: input.subtaskId },
       });
       if (sub) input.taskId = sub.taskId;
+    }
+    if (input.activityId === undefined) {
+      input.activityId = await this.resolveDefaultActivityId(input.projectId);
     }
     return this.repo.create(userId, input);
   }
@@ -73,6 +97,9 @@ export class TimeEntriesService {
         where: { id: input.subtaskId },
       });
       if (sub) input.taskId = sub.taskId;
+    }
+    if (input.activityId === undefined) {
+      input.activityId = await this.resolveDefaultActivityId(input.projectId);
     }
     const entry = await this.repo.startTimer(userId, input);
     await this.activitiesService.logForTimeEntry(

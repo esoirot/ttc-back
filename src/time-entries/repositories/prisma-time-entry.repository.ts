@@ -9,6 +9,10 @@ import {
   TimeEntryConnectionModel,
 } from './time-entry.repository';
 import { TimeEntryModel } from '../types/time-entry.type';
+import type {
+  Activity as PrismaActivity,
+  InvoicingStatus,
+} from '../../generated/prisma/client';
 import { CreateTimeEntryInput } from '../dto/create-time-entry.input';
 import { StartTimerInput } from '../dto/start-timer.input';
 import { UpdateTimeEntryInput } from '../dto/update-time-entry.input';
@@ -17,6 +21,7 @@ const TAG_INCLUDE = {
   tags: { include: { tag: { select: { id: true, name: true } } } },
   task: { select: { id: true, title: true } },
   subtask: { select: { id: true, title: true, checklistTitle: true } },
+  activity: true,
 } as const;
 
 type PrismaEntryWithTags = {
@@ -31,11 +36,15 @@ type PrismaEntryWithTags = {
   durationSeconds: number | null;
   billable: boolean;
   clockifyEntryId: string | null;
+  activityId: number | null;
+  wordsProcessed: number | null;
+  invoicingStatus: InvoicingStatus;
   createdAt: Date;
   updatedAt: Date;
   tags: { tag: { id: number; name: string } }[];
   task: { id: number; title: string } | null;
   subtask: { id: number; title: string; checklistTitle: string | null } | null;
+  activity: PrismaActivity | null;
 };
 
 function toModel(row: PrismaEntryWithTags): TimeEntryModel {
@@ -146,6 +155,8 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
         durationSeconds: duration,
         billable: data.billable ?? true,
         clockifyEntryId: data.clockifyEntryId,
+        activityId: data.activityId,
+        wordsProcessed: data.wordsProcessed,
         ...(data.tagIds?.length
           ? { tags: { create: data.tagIds.map((tagId) => ({ tagId })) } }
           : {}),
@@ -170,6 +181,8 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
         description: data.description,
         startTime: new Date(),
         billable: data.billable ?? true,
+        activityId: data.activityId,
+        wordsProcessed: data.wordsProcessed,
         ...(data.tagIds?.length
           ? { tags: { create: data.tagIds.map((tagId) => ({ tagId })) } }
           : {}),
@@ -341,6 +354,25 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
       rows
         .filter((r) => r.projectId !== null)
         .map((r) => [r.projectId as number, r._sum.durationSeconds ?? 0]),
+    );
+  }
+
+  async sumWordsProcessedByProjectIds(
+    projectIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    // Sums every contributor's wordsProcessed on the project — userId only
+    // gates access (project owner), it must not also restrict which entries
+    // get summed. Mirrors sumDurationByProjectIds above.
+    const rows = await this.prisma.timeEntry.groupBy({
+      by: ['projectId'],
+      where: { projectId: { in: projectIds }, project: { userId } },
+      _sum: { wordsProcessed: true },
+    });
+    return new Map(
+      rows
+        .filter((r) => r.projectId !== null)
+        .map((r) => [r.projectId as number, r._sum.wordsProcessed ?? 0]),
     );
   }
 }

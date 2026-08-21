@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectsService } from './projects.service';
 import { ProjectRepository } from './repositories/projects.repository';
 import { AuditService } from '../audit/audit.service';
-import { mockProject } from '../__test-helpers__/mock-factories';
+import { ClientsService } from '../clients/clients.service';
+import { mockProject, mockClient } from '../__test-helpers__/mock-factories';
 
 describe('ProjectsService', () => {
   let service: ProjectsService;
@@ -14,6 +15,7 @@ describe('ProjectsService', () => {
     delete: jest.Mock;
   };
   let audit: { log: jest.Mock };
+  let clientsService: { findOne: jest.Mock };
 
   beforeEach(async () => {
     repo = {
@@ -24,12 +26,14 @@ describe('ProjectsService', () => {
       delete: jest.fn(),
     };
     audit = { log: jest.fn() };
+    clientsService = { findOne: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProjectsService,
         { provide: ProjectRepository, useValue: repo },
         { provide: AuditService, useValue: audit },
+        { provide: ClientsService, useValue: clientsService },
       ],
     }).compile();
 
@@ -58,6 +62,55 @@ describe('ProjectsService', () => {
         status: 'DRAFT',
       });
       expect(result).toEqual(project);
+    });
+
+    it('inherits the client activities when activityIds is omitted and clientId is set', async () => {
+      const client = mockClient({
+        id: 5,
+        activities: [
+          { id: 1, activityType: 'TRANSLATOR' } as never,
+          { id: 2, activityType: 'CORRECTOR' } as never,
+        ],
+      });
+      clientsService.findOne.mockResolvedValue(client);
+      repo.create.mockResolvedValue(mockProject({ id: 10, clientId: 5 }));
+
+      await service.create(1, { title: 'My Project', clientId: 5 });
+
+      expect(clientsService.findOne).toHaveBeenCalledWith(5, 1);
+      expect(repo.create).toHaveBeenCalledWith(1, {
+        title: 'My Project',
+        clientId: 5,
+        activityIds: [1, 2],
+      });
+    });
+
+    it('does not inherit and skips the client lookup when activityIds is explicitly provided', async () => {
+      repo.create.mockResolvedValue(
+        mockProject({ id: 10, clientId: 5, activities: [] }),
+      );
+
+      await service.create(1, {
+        title: 'My Project',
+        clientId: 5,
+        activityIds: [],
+      });
+
+      expect(clientsService.findOne).not.toHaveBeenCalled();
+      expect(repo.create).toHaveBeenCalledWith(1, {
+        title: 'My Project',
+        clientId: 5,
+        activityIds: [],
+      });
+    });
+
+    it('skips the client lookup when clientId is not set', async () => {
+      repo.create.mockResolvedValue(mockProject({ id: 10 }));
+
+      await service.create(1, { title: 'My Project' });
+
+      expect(clientsService.findOne).not.toHaveBeenCalled();
+      expect(repo.create).toHaveBeenCalledWith(1, { title: 'My Project' });
     });
   });
 

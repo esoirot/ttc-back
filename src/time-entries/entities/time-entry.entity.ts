@@ -1,6 +1,14 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
 import { EntryTag } from './entry-tag.entity';
 import { TaskActivity } from '../../tasks/entities/task-activity.entity';
+import { Activity } from '../../activities/entities/activity.entity';
+
+enum InvoicingStatus {
+  NO = 'NO',
+  INVOICED = 'INVOICED',
+}
+
+registerEnumType(InvoicingStatus, { name: 'InvoicingStatus' });
 
 @ObjectType()
 class TimeEntryTaskRef {
@@ -63,6 +71,18 @@ export class TimeEntry {
 
   @Field(() => String, { nullable: true })
   clockifyEntryId?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  activityId?: number | null;
+
+  @Field(() => Activity, { nullable: true })
+  activity?: Activity | null;
+
+  @Field(() => Int, { nullable: true })
+  wordsProcessed?: number | null;
+
+  @Field(() => InvoicingStatus)
+  invoicingStatus!: InvoicingStatus;
 
   @Field(() => [EntryTag])
   tags!: EntryTag[];

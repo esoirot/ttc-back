@@ -49,6 +49,7 @@ export function mockProject(
     startDate: null,
     createdAt: now,
     updatedAt: now,
+    activities: [],
     ...overrides,
   };
 }
@@ -108,6 +109,10 @@ export function mockTimeEntry(
     durationSeconds: null,
     billable: false,
     clockifyEntryId: null,
+    activityId: null,
+    activity: null,
+    wordsProcessed: null,
+    invoicingStatus: 'NO',
     tags: [],
     createdAt: now,
     updatedAt: now,
@@ -147,6 +152,7 @@ export function mockClient(overrides: Partial<ClientModel> = {}): ClientModel {
     contactedAt: null,
     tags: [],
     contacts: [],
+    activities: [],
     createdAt: now,
     updatedAt: now,
     ...overrides,

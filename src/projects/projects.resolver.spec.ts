@@ -157,4 +157,29 @@ describe('ProjectsResolver', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('totalWordsProcessed field resolver', () => {
+    it('delegates to the totalWordsProcessedByProject loader', async () => {
+      const load = jest.fn().mockResolvedValue(1200);
+      const ctx = {
+        loaders: { totalWordsProcessedByProject: { load } },
+      } as unknown as GqlContext;
+
+      const result = await resolver.totalWordsProcessed({ id: 4 }, ctx);
+
+      expect(load).toHaveBeenCalledWith(4);
+      expect(result).toBe(1200);
+    });
+
+    it('returns null when the loader resolves null', async () => {
+      const load = jest.fn().mockResolvedValue(null);
+      const ctx = {
+        loaders: { totalWordsProcessedByProject: { load } },
+      } as unknown as GqlContext;
+
+      const result = await resolver.totalWordsProcessed({ id: 5 }, ctx);
+
+      expect(result).toBeNull();
+    });
+  });
 });

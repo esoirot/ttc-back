@@ -5,6 +5,7 @@ import {
   Float,
   registerEnumType,
 } from '@nestjs/graphql';
+import { Activity } from '../../activities/entities/activity.entity';
 
 export enum ProjectStatus {
   DRAFT = 'DRAFT',
@@ -76,6 +77,12 @@ export class Project {
 
   @Field(() => Int, { nullable: true })
   totalTimeSeconds?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  totalWordsProcessed?: number | null;
+
+  @Field(() => [Activity])
+  activities!: Activity[];
 
   @Field(() => Date)
   createdAt!: Date;

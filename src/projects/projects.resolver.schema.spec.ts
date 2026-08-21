@@ -33,6 +33,9 @@ describe('ProjectsResolver GraphQL schema', () => {
               totalSecondsByProject: {
                 load: jest.fn().mockResolvedValue(60),
               },
+              totalWordsProcessedByProject: {
+                load: jest.fn().mockResolvedValue(1200),
+              },
             },
           }),
         }),
@@ -49,6 +52,7 @@ describe('ProjectsResolver GraphQL schema', () => {
               title: 'Project',
               status: 'ACTIVE',
               currency: 'EUR',
+              activities: [],
               createdAt: new Date(),
               updatedAt: new Date(),
             }),
@@ -92,6 +96,18 @@ describe('ProjectsResolver GraphQL schema', () => {
     expect(mutations).toHaveProperty('createProject');
     expect(mutations).toHaveProperty('updateProject');
     expect(mutations).toHaveProperty('deleteProject');
+
+    const projectType = schema.getType('Project') as unknown as {
+      getFields: () => Record<string, unknown>;
+    };
+    const projectFields = projectType.getFields();
+    expect(projectFields).toHaveProperty('activities');
+    expect(projectFields).toHaveProperty('totalWordsProcessed');
+
+    const createInputType = schema.getType('CreateProjectInput') as unknown as {
+      getFields: () => Record<string, unknown>;
+    };
+    expect(createInputType.getFields()).toHaveProperty('activityIds');
   });
 
   // @ResolveField return-type thunks resolve lazily on first real query
@@ -110,5 +126,20 @@ describe('ProjectsResolver GraphQL schema', () => {
     };
     expect(body.errors).toBeUndefined();
     expect(body.data?.project?.totalTimeSeconds).toBe(60);
+  });
+
+  it('resolves totalWordsProcessed through a live query', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: { query: '{ project(id: 1) { id totalWordsProcessed } }' },
+    });
+
+    const body = JSON.parse(res.payload) as {
+      data?: { project?: { totalWordsProcessed: number | null } };
+      errors?: { message: string }[];
+    };
+    expect(body.errors).toBeUndefined();
+    expect(body.data?.project?.totalWordsProcessed).toBe(1200);
   });
 });

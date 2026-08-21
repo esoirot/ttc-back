@@ -9,7 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
 import { Observable } from 'rxjs';
-import type { TimeEntry } from '../time-entries/entities/time-entry.entity';
+import type { TimeEntryModel as TimeEntry } from '../time-entries/types/time-entry.type';
 import { createRedisClientPair } from '../common/realtime/redis-pubsub.util';
 import { RealtimeChannelRegistry } from '../common/realtime/realtime-channel-registry';
 

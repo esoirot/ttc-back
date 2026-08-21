@@ -26,6 +26,7 @@
     "test:cov": "CI=true jest --coverage",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "test:e2e": "CI=true jest --config ./test/jest-e2e.json",
+    "prisma:miggen": "prisma migrate deploy && prisma generate",
     "db:export": "tsx --env-file .env src/scripts/export-db.ts",
     "db:import": "tsx --env-file .env src/scripts/import-db.ts",
     "import:tholemac": "tsx src/scripts/import-tholemac.ts"
