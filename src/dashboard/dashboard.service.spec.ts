@@ -29,6 +29,7 @@ describe('DashboardService', () => {
       unpaidInvoiceCount: 1,
       monthToDateSeconds: 28800,
       monthToDateRevenue: 1200,
+      yearToDateWords: 5000,
       upcomingDeadlines: [],
       recentTimeEntries: [],
       prospectsToContact: [],

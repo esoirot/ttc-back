@@ -24,6 +24,7 @@ export interface DashboardModel {
   unpaidInvoiceCount: number;
   monthToDateSeconds: number;
   monthToDateRevenue: number;
+  yearToDateWords: number;
   upcomingDeadlines: DashboardDeadlineModel[];
   recentTimeEntries: DashboardEntryModel[];
   prospectsToContact: DashboardProspectModel[];

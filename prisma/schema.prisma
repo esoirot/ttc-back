@@ -31,6 +31,7 @@ enum TaskStatus {
   TODO
   IN_PROGRESS
   DONE
+  PAID
 }
 
 enum InvoicingStatus {

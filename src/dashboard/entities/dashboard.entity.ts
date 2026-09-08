@@ -31,6 +31,7 @@ export class DashboardData {
   @Field(() => Int) unpaidInvoiceCount!: number;
   @Field(() => Int) monthToDateSeconds!: number;
   @Field(() => Float) monthToDateRevenue!: number;
+  @Field(() => Int) yearToDateWords!: number;
   @Field(() => [DashboardDeadline]) upcomingDeadlines!: DashboardDeadline[];
   @Field(() => [DashboardTimeEntry]) recentTimeEntries!: DashboardTimeEntry[];
   @Field(() => [DashboardProspect]) prospectsToContact!: DashboardProspect[];

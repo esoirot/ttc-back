@@ -632,6 +632,7 @@ type DashboardData {
   recentTimeEntries: [DashboardTimeEntry!]!
   unpaidInvoiceCount: Int!
   upcomingDeadlines: [DashboardDeadline!]!
+  yearToDateWords: Int!
 }
 
 type DashboardDeadline {
@@ -1145,6 +1146,7 @@ type TaskLabel {
 enum TaskStatus {
   DONE
   IN_PROGRESS
+  PAID
   TODO
 }
 

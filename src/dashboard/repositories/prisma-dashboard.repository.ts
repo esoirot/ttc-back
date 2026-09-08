@@ -26,6 +26,8 @@ export class PrismaDashboardRepository implements DashboardRepository {
   async getDashboard(userId: number): Promise<DashboardModel> {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
     const weekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     const [
@@ -36,6 +38,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       deadlineProjects,
       recentEntries,
       prospectCandidates,
+      yearWordsAgg,
     ] = await Promise.all([
       this.prisma.project.count({ where: { userId, status: 'ACTIVE' } }),
       this.prisma.invoice.count({
@@ -77,7 +80,13 @@ export class PrismaDashboardRepository implements DashboardRepository {
         where: { userId, status: { in: PROSPECT_CANDIDATE_STATUSES } },
         select: { id: true, name: true, status: true, contactedAt: true },
       }),
+      this.prisma.timeEntry.aggregate({
+        where: { userId, startTime: { gte: yearStart, lt: yearEnd } },
+        _sum: { wordsProcessed: true },
+      }),
     ]);
+
+    const yearToDateWords = yearWordsAgg._sum.wordsProcessed ?? 0;
 
     const monthToDateSeconds = monthTimeEntries.reduce(
       (sum, e) => sum + (e.durationSeconds ?? 0),
@@ -129,6 +138,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       unpaidInvoiceCount,
       monthToDateSeconds,
       monthToDateRevenue,
+      yearToDateWords,
       upcomingDeadlines,
       recentTimeEntries,
       prospectsToContact,
