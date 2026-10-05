@@ -105,6 +105,16 @@ export class PrismaActivitiesRepository implements ActivitiesRepository {
               },
             }
           : {}),
+        ...(data.customFields !== undefined
+          ? {
+              customFields: {
+                deleteMany: {},
+                ...(data.customFields?.length
+                  ? { createMany: { data: data.customFields } }
+                  : {}),
+              },
+            }
+          : {}),
       },
       include: ACTIVITY_INCLUDE,
     });

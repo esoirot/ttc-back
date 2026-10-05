@@ -970,6 +970,49 @@ describe('HubspotService', () => {
       expect(String(url as string)).toContain('after=cursor-2');
     });
 
+    it('listDeals — requests the deal currency alongside the amount', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      );
+
+      await service.listDeals(1);
+
+      const [url] = fetchSpy.mock.calls[0];
+      expect(decodeURIComponent(String(url as string))).toContain(
+        'deal_currency_code',
+      );
+    });
+
+    it('getDeal — requests the deal currency alongside the amount', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ id: 'd-1', properties: {} }), {
+          status: 200,
+        }),
+      );
+
+      await service.getDeal(1, 'd-1');
+
+      const [url] = fetchSpy.mock.calls[0];
+      expect(String(url as string)).toContain('deal_currency_code');
+    });
+
+    it('searchDeals — requests the deal currency by default', async () => {
+      const fetchSpy = invokeRealFetch();
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      );
+
+      await service.searchDeals(1, {});
+
+      const [, init] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(init?.body as string) as {
+        properties: string[];
+      };
+      expect(body.properties).toContain('deal_currency_code');
+    });
+
     it('createDeal — posts and logs audit', async () => {
       const deal = { id: 'd-new', properties: {} };
       mockFetch.mockResolvedValue(makeOkResponse(deal));

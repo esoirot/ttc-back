@@ -1,5 +1,6 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
 import { LanguagePairInput } from './language-pair.input';
+import { CustomFieldInput } from './custom-field.input';
 
 @InputType()
 export class UpdateActivityInput {
@@ -41,4 +42,7 @@ export class UpdateActivityInput {
 
   @Field(() => [LanguagePairInput], { nullable: true })
   languagePairs?: LanguagePairInput[] | null;
+
+  @Field(() => [CustomFieldInput], { nullable: true })
+  customFields?: CustomFieldInput[] | null;
 }

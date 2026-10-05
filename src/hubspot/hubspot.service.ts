@@ -521,7 +521,8 @@ export class HubspotService {
   ): Promise<HubspotListResponse<HubspotDeal>> {
     const params = new URLSearchParams({
       limit: String(limit),
-      properties: 'dealname,amount,dealstage,pipeline,closedate',
+      properties:
+        'dealname,amount,deal_currency_code,dealstage,pipeline,closedate',
     });
     if (after) params.set('after', after);
     return this.request<HubspotListResponse<HubspotDeal>>(
@@ -535,7 +536,7 @@ export class HubspotService {
     return this.request<HubspotDeal>(
       userId,
       'GET',
-      `/crm/v3/objects/deals/${dealId}?properties=dealname,amount,dealstage,pipeline,closedate`,
+      `/crm/v3/objects/deals/${dealId}?properties=dealname,amount,deal_currency_code,dealstage,pipeline,closedate`,
     );
   }
 
@@ -596,6 +597,7 @@ export class HubspotService {
         properties: dto.properties ?? [
           'dealname',
           'amount',
+          'deal_currency_code',
           'dealstage',
           'pipeline',
           'closedate',

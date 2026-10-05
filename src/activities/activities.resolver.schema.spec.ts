@@ -101,5 +101,10 @@ describe('ActivitiesResolver GraphQL schema', () => {
     expect(mutations).toHaveProperty('createCharge');
     expect(mutations).toHaveProperty('updateCharge');
     expect(mutations).toHaveProperty('deleteCharge');
+
+    const updateInput = schema.getType('UpdateActivityInput');
+    const updateFields =
+      updateInput && 'getFields' in updateInput ? updateInput.getFields() : {};
+    expect(updateFields).toHaveProperty('customFields');
   });
 });
