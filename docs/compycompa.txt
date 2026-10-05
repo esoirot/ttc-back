@@ -1,0 +1,134 @@
+# Backend architecture: GraphQL + REST + SSE (refined)
+
+Status: descriptive, reflects codebase as of 2026-08-12. Refines `docs/architecture/backend-architecture.md` after external review (`docs/architecture/gepetto.txt`) — that review's corrections are incorporated below rather than listed separately; where verified against the code, verification is noted inline.
+
+## 1. Why the backend uses three transport semantics, not two protocols
+
+The backend is NestJS 11 + Fastify, exposing:
+
+- **GraphQL** (`POST /graphql`, code-first) for the domain API
+- **REST** (`@nestjs/swagger`-documented, under `/api`) for HTTP-native operations
+- **SSE** (two dedicated controllers) for server→client push
+
+Framing this as "GraphQL vs REST" undersells it. The real principle is: **pick the simplest transport semantics for each class of interaction**, not minimize protocol count.
+
+```
+                    TTC backend
+                        │
+          ┌─────────────┼──────────────┐
+          │             │              │
+       GraphQL         REST           SSE
+          │             │              │
+     domain API     HTTP-native     realtime
+          │             │              │
+      CRUD/reads    OAuth/files     server events
+      aggregates    webhooks        timer/auth
+```
+
+### Why GraphQL
+
+The weaker version of this argument is "the domain is a graph" — true, but almost any sufficiently connected business app can be described that way, so it doesn't by itself justify GraphQL. The argument that actually holds up: **the frontend has materially different read shapes over the same connected domain, and GraphQL lets each screen specify its own projection without multiplying server endpoints.**
+
+```graphql
+query TaskList {
+  tasks { id title subtasks { id } }
+}
+
+query TaskDetail {
+  task {
+    id title
+    subtasks { ... }
+    comments { ... }
+    attachments { ... }
+    activities { ... }
+  }
+}
+```
+
+Same underlying type, two very different shapes, one endpoint. `@ResolveField()` (e.g. `Project.totalTimeSeconds`, `Client.statusHistory`, `Task.subtasks/comments/labels/activities/attachments`) computes derived/relational data lazily, only when a query asks for it.
+
+**Caveat that belongs in this document, not left implicit:** GraphQL's flexibility doesn't prevent N+1 by itself — that's a resolver-implementation property, not a protocol guarantee. Verified in this codebase: `ProjectsResolver.totalTimeSeconds` runs one `prisma.timeEntry.aggregate()` per parent `Project`, and `TasksResolver`'s five field resolvers (`subtasks`, `comments`, `labels`, `activities`, `attachments`) each call their own `findByTask(task.id)` per parent `Task`, with no batching layer (no `DataLoader` or equivalent anywhere in `src/`). A `tasks { subtasks { id } comments { id } }` query over N tasks issues 1 query for the list plus up to 5×N queries for fields. This is the sharpest architectural risk in the current GraphQL layer — sharper than any REST/GraphQL split question — and should be fixed with batching before the task list or dashboard views grow in cardinality.
+
+### Why REST
+
+The weaker version of this argument is "these operations don't belong in a query language built for typed JSON reads" — GraphQL servers coexist with arbitrary HTTP routes just fine (this codebase itself proves that), so the query language isn't actually incapable of it. The argument that holds up: **these operations don't gain meaningful value from GraphQL's query/mutation model, and HTTP-native semantics are simpler and more interoperable for them.**
+
+| Operation | HTTP-native shape |
+|---|---|
+| OAuth callback | `GET →` 302 redirect |
+| Webhook | `POST` + provider signature header, HMAC-verified, no JWT/cookie |
+| PDF download | `GET →` `application/pdf` binary |
+| File upload | `POST` multipart |
+| Live push | `GET →` `text/event-stream` |
+
+REST is used for: cookie/OAuth auth handshakes (`/auth/google`, `/google-calendar/auth`, `/hubspot/auth` + their `/callback` targets), inbound webhooks (HubSpot, HMAC-verified), binary responses (invoice PDF), file uploads (task attachments), and — see §1's SSE column — realtime push.
+
+Clockify and HubSpot controllers are REST for a related but distinct reason: they're proxying **another service's own REST API** on the user's behalf (stored, encrypted credentials), not querying TTC's own graph. GraphQL's field-selection value doesn't apply to data TTC doesn't own the shape of.
+
+### Why SSE is its own category, not "REST"
+
+Timer state (`TimerEventsController`) and session events (`AuthEventsController`) are one-way server→browser push. SSE is a good fit for exactly that: no client-to-server messages needed over the channel, works over plain HTTP, no extra transport to stand up. Treating this as "REST" undersells why it was chosen — it wasn't chosen because it's not GraphQL, it was chosen because request/response (REST or GraphQL) doesn't model unsolicited server pushes, and full-duplex WebSocket transport (which GraphQL subscriptions require) isn't needed when the browser never talks back over that channel. The codebase already tried WebSockets for this (session events) and replaced it with SSE+Redis — that's a signal to weigh, not ignore.
+
+## 2. Where each is used
+
+| Concern | Protocol | Why |
+|---|---|---|
+| Domain CRUD & reads (clients, projects, tasks, time entries, invoices, rates, tags, users, admin) | GraphQL | Client-selected field/relation projections over one connected domain |
+| Dashboard aggregates | GraphQL | Single query composing data across domains |
+| Auth session lifecycle (login, register, 2FA, password reset, token refresh) | GraphQL | Typed mutation responses, no redirect concern |
+| OAuth login/connect flows (Google login, Google Calendar, HubSpot) | REST | Real 302 redirects, provider callback URLs |
+| Third-party API pass-through (Clockify, HubSpot contacts/companies/deals) | REST | Proxies another REST API; not TTC's own graph shape |
+| Inbound webhooks (HubSpot) | REST | HMAC-verified, not JWT/cookie-authenticated |
+| Invoice PDF | REST | Binary stream response |
+| Task attachment upload | REST | Multipart file upload |
+| Timer state / auth events | SSE | One-way server push; no client-to-server messages needed on the channel |
+| Audit log read | REST | Historical artifact, not a functional requirement — see §4 |
+| Health check | REST | Infra liveness probe convention |
+
+## 3. Accessible routes
+
+*(unchanged from `backend-architecture.md` §3 — full REST route list and full GraphQL query/mutation list by module; not reproduced twice in this refinement, see that file for the complete table.)*
+
+## 4. What should actually change, in priority order
+
+Ranked by what determines whether this architecture stays safe and performant as the graph grows — not by how visible or easy the fix is.
+
+### P0 — verify before anything else
+
+**GraphQL authorization at the field/nested-relation level.** REST gives a natural per-endpoint authorization boundary (`GET /clients/:id` is one decision point). GraphQL puts many capabilities behind one `POST /graphql`, so authorization has to be correct at every resolver and field resolver, including nested relations:
+
+```graphql
+query {
+  client(id: "123") {
+    projects { tasks { timeEntries { ... } } }
+  }
+}
+```
+
+Even if `client(123)` is correctly ownership-checked, every nested field resolver (`projects`, `tasks`, `timeEntries`) needs to independently respect tenant/ownership rules rather than assuming the parent's authorization covers it. This applies with extra weight to the `admin*` queries/mutations sitting alongside ordinary user-scoped ones in the same schema — worth an explicit audit of every `@ResolveField()` and admin resolver method for whether it re-checks scope or silently trusts the parent.
+
+**GraphQL N+1 behavior.** Confirmed present today (see §1) in `ProjectsResolver.totalTimeSeconds` and all five `TasksResolver` field resolvers. Audit every `@ResolveField()` that touches the database; add batching (`DataLoader` or equivalent) where cardinality makes it possible for a single query to fan out into dozens of DB round-trips.
+
+**GraphQL query complexity / depth / pagination.** The schema exposes a genuinely deep, connected graph (`Client → Project → Task → {Subtask, Comment, Activity, Attachment, TimeEntry}` and more). Nothing in the current architecture prevents a client from constructing an expensive nested query. Worth adding some combination of max query depth, complexity/cost analysis, pagination on high-cardinality relations, and resolver-level or DB-level query limits.
+
+### P1 — improve
+
+**Move `GET /admin/audit` into GraphQL** as `adminAuditLog(userId, limit, cursor)` alongside `admin.resolver.ts`'s other admin queries. This is a consistency cleanup, not evidence the architecture is flawed — audit fits GraphQL's shape (plain paginated read, admin-gated, no binary/webhook/transport reason to stay REST). One caveat worth keeping in mind before migrating: if audit logs are ever meant to be consumed by external SIEM tooling, exported, or polled independently of the app's own admin UI, REST becomes defensible again for that specific reason — migrate on the assumption that no such external consumer exists today.
+
+**Extract shared credential/OAuth infrastructure for Clockify and HubSpot — not a generic proxy.** These controllers repeat a real pattern (JWT guard → credential lookup → decrypt → call provider client → return), but they are not interchangeable proxies: `POST /hubspot/contacts/:id/import-client` and `POST /clockify/workspaces/:workspaceId/entries/import` are TTC domain operations (HubSpot Contact → TTC Client; Clockify entries → deduplicated TTC time entries), not passthroughs. A generic `proxy(provider, method, path, credentials)` abstraction would hide that and make the code harder to read. What's actually worth extracting is the repeated *context acquisition* — a `ProviderCredentialService` / `OAuthTokenService` shared by `ClockifyService`/`ClockifyClient` and `HubSpotService`/`HubSpotClient` — while keeping each controller's endpoint semantics distinct.
+
+**Share the SSE realtime infrastructure.** Verified in code: `TimerEventsService` and `AuthEventsService` each independently instantiate their own `ioredis` publisher/subscriber pair, own channel-lifecycle state machine, and own reconnect/error handling — two full implementations of the same Redis pub/sub pattern, not one shared implementation exposed through two controllers. That duplication is worth fixing. The fix is a shared realtime module (Redis event bus + connection lifecycle + SSE serialization helpers) underneath both controllers — **not** replacing SSE with GraphQL subscriptions. Subscriptions would trade a working one-way SSE setup for a WebSocket transport, connection auth, subscription-level authorization, and reconnect/scaling concerns the app doesn't currently need, since neither timer nor auth events require the browser to send anything back over the channel.
+
+### P2 — low priority
+
+**Swagger `/graphql` stub.** `src/main.ts` manually stubs a `/graphql` entry in the Swagger doc (since `@nestjs/swagger` can't introspect resolvers behind one POST route) and that stub has to be kept in sync by hand when a new top-level GraphQL module ships. This is real but minor — the authoritative contract (`schema.gql`) is already auto-generated from resolver/entity code; the stub is navigation glue, not a source of truth. Cheapest fix: make the stub description generic ("GraphQL API is documented by the generated schema and available through Apollo Sandbox") instead of enumerating modules, so it never needs updating again. Not worth more engineering effort than that.
+
+### Explicitly not recommended
+
+**Do not migrate timer/auth SSE to GraphQL subscriptions "for architectural purity."** See P1 above — the real problem is duplicated Redis infrastructure, not the choice of SSE. "Could this be a GraphQL subscription?" is the wrong question; "does a subscription materially improve this over SSE?" is the right one, and for one-way server events it doesn't.
+
+**Do not conclude REST "can't represent" this domain, or that GraphQL "can't do" OAuth/webhooks/files.** Both are overstated versions of correct instincts. A well-designed REST API can absolutely serve a connected domain via composable endpoints (`GET /projects/:id`, `GET /projects/:id/tasks`, ...) or purposeful aggregate endpoints — the real claim is that GraphQL is the more *economical* fit given how many variable projections this specific frontend needs. And GraphQL servers routinely coexist with OAuth/webhooks/files/SSE on plain HTTP routes, as this codebase itself demonstrates — the real claim is that those operations don't *gain* anything from GraphQL's model, not that GraphQL structurally can't host them.
+
+## 5. Bottom line
+
+Keep the three-transport architecture — it's the right shape for a connected domain with variable per-screen read projections plus a set of operations (OAuth, webhooks, binaries, uploads, push events) that are naturally HTTP-native. Don't spend effort chasing protocol-count purity (Swagger stub, SSE→subscriptions). Do spend effort on GraphQL-specific correctness and safety risks that scale with the size of the graph: field/nested authorization, N+1 resolver behavior, and query complexity/depth/pagination limits — those, not the REST/GraphQL boundary, are what determine whether this stays a sound architecture as the schema grows.

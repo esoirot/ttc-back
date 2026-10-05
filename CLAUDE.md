@@ -2,308 +2,150 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Stack
+
+NestJS 11 + Fastify v5, GraphQL (code-first, Apollo), Prisma 7 + PostgreSQL, Redis (throttler + pub/sub), JWT via HTTP-only cookies.
+
+## Working rules
+
+- Never start or stop the dev server (`pnpm run start:dev`) yourself. The operator runs it. Do not run/verify against it unless the operator explicitly asks — rely on `pnpm run test`/`pnpm run check` instead.
+- **Swagger docs are mandatory for every REST change** — see below. Not optional, not a follow-up task. A PR touching a `*.controller.ts` or its DTOs is incomplete without it.
+
 ## Commands
 
-Always use **pnpm** — never npm or yarn.
-
 ```bash
-pnpm install          # Install dependencies
-pnpm run start:dev    # Start in watch mode (loads .env)
-pnpm run build        # Compile TypeScript
-pnpm run lint         # Lint and auto-fix
-pnpm run test         # Run unit tests (Jest, rootDir: src)
-pnpm run test:e2e     # Run e2e tests
-pnpm run test:cov     # Coverage report
-pnpm run typecheck    # tsc --noEmit
-pnpm run circular     # Detect circular dependencies (madge)
-pnpm run audit        # pnpm audit
-pnpm run prune        # Find unused exports (ts-prune)
-pnpm run format       # Prettier write
-pnpm run format:check # Prettier check
-pnpm run check        # Run all checks in sequence
+# Dev
+pnpm run start:dev          # watch mode (requires .env + docker compose up -d)
+docker compose up -d        # start postgres + redis
+
+# DB
+pnpm prisma migrate dev --name <name>   # apply schema + regenerate client
+pnpm prisma generate                    # regenerate client only (src/generated/prisma/)
+
+# Quality (run all at once)
+pnpm run check              # typecheck + circular + audit + prune + format:check + lint
+
+# Individual checks
+pnpm run typecheck          # tsc --noEmit
+pnpm run circular           # madge circular dep detection
+pnpm run prune              # ts-prune unused exports
+pnpm run lint               # ESLint --fix
+
+# Tests
+pnpm run test               # unit (Jest, files: src/**/*.spec.ts)
+pnpm run test:watch
+pnpm run test:e2e           # config: test/jest-e2e.json
 ```
 
-Run a single test file:
+## Working process
 
-```bash
-pnpm run test -- src/users/users.service.spec.ts
-```
+Test-first, always. Red → green → refactor:
 
-## Database
+1. Write failing spec first (unit test for services/resolvers; e2e for endpoints). Confirm it fails for right reason.
+2. Write minimal code to pass it.
+3. Refactor under green tests.
 
-Local Postgres runs via Docker Compose (port **51214**, db: `ttc-postgres-db`):
+No prod code without a preceding failing test. Applies to bug fixes too — reproduce as failing test before patching.
 
-```bash
-docker compose up -d
-pnpm prisma migrate dev --name <migration-name>   # Apply schema changes
-pnpm prisma db pull --print                       # Introspect DB into schema
-```
+### Principles
 
-Prisma generates the client to `src/generated/prisma/` (not `node_modules`). After schema changes, regenerate with:
-
-```bash
-pnpm prisma generate
-```
-
-Required `.env` keys: `DATABASE_URL`, `SENTRY_DSN`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `COOKIE_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `FRONTEND_URL`.
-
-Optional `.env` keys:
-
-- `CLOCKIFY_API_URL` (defaults to `https://api.clockify.me/api/v1`)
-- `HUBSPOT_CLIENT_ID`, `HUBSPOT_CLIENT_SECRET`, `HUBSPOT_REDIRECT_URI` (defaults to `http://localhost:3000/hubspot/auth/callback`), `HUBSPOT_WEBHOOK_SECRET`
-- `HUBSPOT_APP_ID` — HubSpot developer app ID; required for `POST /hubspot/webhooks/subscribe`
-- `HUBSPOT_PRIVATE_APP_TOKEN` — HubSpot private app access token (developer portal); required for webhook subscription management
-- `APP_ENCRYPTION_KEY` — 32-byte hex string for AES-256-GCM at-rest encryption of `clockifyApiKey`, `hubspotAccessToken`, `hubspotRefreshToken`. If absent, credentials are stored plaintext. Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. If adding to an existing DB, the repository's decrypt path falls back to plaintext on parse failure — existing rows remain readable.
+- **KISS** — simplest thing that works. No speculative abstraction.
+- **DRY** — extract shared logic once duplication appears twice, not before.
+- **Hexagonal (ports & adapters)** — domain/service logic depends on abstractions, not Prisma/HTTP/Redis directly. Existing `repositories/<name>.repository.ts` (abstract) + `repositories/prisma-<name>.repository.ts` (adapter) pattern is the port/adapter boundary — extend it for new external deps rather than reaching for Prisma client in services directly.
+- **SOLID** — one reason to change per class (S); extend via new providers/strategies not edits to existing ones where feasible (O); mocks/impls substitutable behind repository abstractions (L); slim focused interfaces not fat ones (I); depend on `XRepository` abstraction, inject concrete via module `useClass` (D).
+- **ACID** — multi-step DB writes that must be atomic go in a Prisma `$transaction`. Never leave related writes (e.g. entity + audit trail that must be consistent) split across unguarded awaits.
+- **TDD** — see test-first workflow above; drives design, not just verification.
+- **BDD** — spec `describe`/`it` blocks read as behavior ("delegates to service with user id", not "test1"). Favor given/when/then structuring in complex specs.
+- **DDD** — module boundaries in `src/<feature>/` mirror domain boundaries (Projects, Tasks, Invoices, Rates...). Entities carry domain rules, not just data shape; keep cross-module reach-through to a minimum (go through the other module's service, not its repository).
 
 ## Architecture
 
-**Stack**: NestJS 11 + Fastify, GraphQL (code-first, Apollo driver), Prisma 7 + `@prisma/adapter-pg`, Passport.js, Sentry, Swagger at `/api`.
+### Module structure
 
-**Module layout** — each domain module (`users`, `projects`, `auth`, `clockify`, `hubspot`) follows this layering:
+Each feature lives in `src/<feature>/` with: `*.module.ts`, `*.resolver.ts` (GraphQL), `*.service.ts`, `*.controller.ts` (REST if any), `entities/`, `dto/`, `repositories/`.
 
-- `*.resolver.ts` — GraphQL resolver (mutations/queries), delegates to service
-- `*.controller.ts` — REST controller (used by `clockify` and `auth`), delegates to service
-- `*.service.ts` — business logic, calls repository interface
-- `repositories/*.repository.ts` — abstract class defining the data contract
-- `repositories/prisma-*.repository.ts` — Prisma implementation of the abstract repo
-- `entities/*.entity.ts` — GraphQL `@ObjectType` (used by resolver return types)
-- `dto/*.input.ts` — GraphQL `@InputType` for mutations; plain class for REST body DTOs
-- `types/*.type.ts` — plain TypeScript interface for internal model (not GraphQL)
+Repository pattern used throughout: abstract class in `repositories/<name>.repository.ts`, Prisma impl in `repositories/prisma-<name>.repository.ts`. Modules bind via `{ provide: XRepository, useClass: PrismaXRepository }`.
 
-**Dependency injection**: The abstract repository class is used as the DI token, bound to the Prisma implementation in the module's providers array:
+### Auth flow
 
-```ts
-{ provide: UserRepository, useClass: PrismaUserRepository }
-```
+- JWT access token (15m) + refresh token stored as HTTP-only cookies
+- Passport strategies: `local`, `jwt`, `google-oauth20`
+- Guards: `GqlAuthGuard` (resolvers), `JwtAuthGuard` (REST), `RolesGuard` (RBAC via `@Roles()` decorator)
+- 2FA: TOTP (speakeasy) + backup codes; both stored hashed
+- Session events (login/logout/token-refresh broadcasts) via SSE through `AuthEventsService` backed by Redis pub/sub — replaces previous WebSocket approach
+- Auth repository pattern: `AuthRepository` → `PrismaAuthRepository` for testability
 
-**PrismaService** (`src/prisma.service.ts`) — extends `PrismaClient` directly, uses `PrismaPg` adapter for connection pooling. Inject it into repository implementations only, never into services or resolvers.
+### REST API documentation (Swagger) — mandatory on every change
 
-**Sentry** is initialized in `src/instrument.ts` which must be imported at the very top of `main.ts` (before any other NestJS bootstrapping) to instrument the runtime correctly.
+Swagger UI lives at `/api`, built from `DocumentBuilder` config in `src/main.ts` plus decorators on controllers/DTOs. GraphQL resolvers can't be introspected by `@nestjs/swagger` (single `POST /graphql` endpoint, not a REST resource tree) — `src/main.ts`'s `documentFactory` manually stubs one `/graphql` path pointing at `src/schema.gql` and the Apollo Sandbox, so `/api` doesn't silently omit the core domain API. Don't try to expand that stub into per-query/mutation entries — `src/schema.gql` + Sandbox introspection is the real GraphQL doc surface. The stub's description is deliberately generic (no module names) so it never needs updating when a new top-level GraphQL module ships — don't reintroduce a per-module enumeration there.
 
-## GraphQL
+The `@nestjs/swagger` CLI plugin is enabled in `nest-cli.json` (`introspectComments: true`) — it auto-infers each DTO field's `type`/`required` from the TS AST, so raw field shape always shows up even with zero decorators. That covers _shape_, not _meaning_ — decorators below are still required by hand:
 
-`GraphQLModule` is configured in `app.module.ts` with `ApolloDriver`. The context function exposes `{ req, res }` from Fastify so guards and resolvers can read/write cookies:
+Any commit that adds/changes a REST endpoint or its DTO **must** also add/update:
 
-```ts
-context: ({ request, reply }) => ({ req: request, res: reply });
-```
+- **Controller** (one-time per controller, not per endpoint):
+  - `@ApiTags('<feature>')` on the class
+  - `@ApiCookieAuth('access_token')` on the class if every route needs auth, or per-method if mixed (auth is an HTTP-only JWT cookie — **not** Bearer, don't add `@ApiBearerAuth`)
+- **Every endpoint method:**
+  - `@ApiOperation({ summary: '...' })` — one line, states what it does and any access restriction (e.g. "ADMIN only", "owner only")
+  - `@ApiParam(...)` for each path param, `@ApiQuery(...)` for each query param
+  - `@ApiExcludeEndpoint()` for routes not meant to be called directly by API clients (OAuth provider callbacks, webhook receivers verified by HMAC not JWT, debug routes) — exclude with a one-line comment explaining why, don't just leave undocumented
+  - `@ApiConsumes`/`@ApiBody` with an explicit schema for multipart/file uploads or inline (non-DTO-class) request bodies
+- **Every DTO field:** `@ApiProperty({ description, example })` (or `@ApiPropertyOptional`-equivalent via `required: false`) — the plugin gives the type, but description + example are never inferred and must be written. `nullable: true` for fields typed `X | null`.
+- **Nested request shapes:** if a DTO field's type is a plain inline object/union (not a class), promote it to its own exported class with its own `@ApiProperty`s — plain TS types don't generate schema refs, only classes do. String-literal unions become `enum: [...]` on the property, not a bare `string`.
 
-The generated schema is written to `src/schema.gql` on startup.
+Rationale: this is the only REST surface documentation that exists in the repo — no separate API reference doc, no Postman collection. If it's not in the decorators, it's not documented anywhere.
 
-## Auth Module (`src/auth/`)
+### GraphQL schema
 
-Full auth system implemented with Passport.js. Layout:
+`src/schema.gql` is **auto-generated** — never edit it directly. Edit the TypeScript entity/resolver files, then restart the server to regenerate.
 
-```
-src/auth/
-├── auth.module.ts
-├── auth.resolver.ts          — GraphQL: me, updateMe, login, register, logout, refreshToken, setupTwoFactor, enableTwoFactor, disableTwoFactor, verifyTwoFactor
-├── auth.controller.ts        — REST: GET /auth/google, GET /auth/google/callback
-├── auth.service.ts
-├── strategies/
-│   ├── local.strategy.ts     — passport-local (email + bcrypt password)
-│   ├── jwt.strategy.ts       — passport-jwt, reads from HTTP-only cookie 'access_token'
-│   └── google.strategy.ts    — passport-google-oauth20
-├── guards/
-│   ├── gql-auth.guard.ts     — extends AuthGuard('jwt'), overrides getRequest() for GraphQL context
-│   ├── local-auth.guard.ts
-│   └── roles.guard.ts
-├── decorators/
-│   ├── current-user.decorator.ts   — @CurrentUser() param decorator
-│   └── roles.decorator.ts          — @Roles('ADMIN') decorator
-├── repositories/
-│   ├── auth.repository.ts          — abstract (DI token)
-│   └── prisma-auth.repository.ts   — Prisma implementation
-├── dto/
-│   ├── login.input.ts
-│   ├── register.input.ts
-│   ├── verify-2fa.input.ts
-│   └── update-me.input.ts      — UpdateMeInput { name?, email? } for updateMe mutation
-└── types/
-```
+Orphaned union types (`TranslatorActivity`, `CorrectorActivity`, `CustomActivity`) registered explicitly in `AppModule.buildSchemaOptions.orphanedTypes` — required because NestJS code-first won't include types not reachable from root resolvers.
 
-**TypeScript rules:**
+Query depth capped via `graphql-depth-limit` (`validationRules` in `GraphQLModule.forRootAsync`, `src/app.module.ts`) — `GRAPHQL_MAX_DEPTH` env var, default 10. Prevents an unbounded nested query over the Client → Project → Task → {Subtask, Comment, Activity, Attachment, TimeEntry} graph.
 
-- **No `any` type** — zero `any` in type annotations or casts. Use `unknown`, narrowed unions, or typed generics instead. The ESLint rules `no-unsafe-assignment`, `no-unsafe-return`, `no-unsafe-member-access`, `no-unsafe-argument`, and `no-unsafe-call` are all enabled and must pass.
-- Where a third-party type is wider than needed (e.g. `configService.get()` returns `any` without a generic), always supply the generic: `configService.get<string>('KEY')`.
-- Where a cast is unavoidable (e.g. cross-module structural mismatch), prefer `as unknown as TargetType` over `as any`.
-- `catch (error)` blocks that ignore the error must use bare `catch {}` — never bind `error` unless you actually use it.
-- `async` functions must contain at least one `await`; if there is none, remove `async` and return the value directly.
-- Use `GqlContext` (from `src/auth/types/gql-context.type.ts`) when typing the GQL execution context in guards and decorators.
-- Fastify request cookies are accessed via `(req.cookies as Record<string, string | undefined>)['key']`, not `req.cookies.key`, because the `cookies` property is added by `@fastify/cookie` module augmentation but individual keys are not typed.
+### GraphQL field resolvers — ownership + DataLoader (mandatory pattern)
 
-**Key rules:**
+Every `@ResolveField()` must independently re-derive scope from the current user, the same as top-level queries — never trust that the parent query already filtered correctly. Nested relations that don't carry their own `userId` (`Subtask`, `TaskComment`, `TaskLabel`, `TaskAttachment`, `TaskActivity`) scope through the parent `Task`'s ownership check (`task: { OR: [{ project: { userId } }, { assigneeId: userId } ] } }`, mirroring `prisma-task.repository.ts`'s `findById`); relations with their own direct owner (`ClientStatusHistory` via `client.userId`, `TimeEntry`-linked `TaskActivity` via `timeEntry.userId`) scope through that instead. Aggregates (`Project.totalTimeSeconds`, `Task.totalTimeSeconds`) sum **all** contributors' data, not just the requesting user's own rows — the `userId` only gates _access_ to the parent resource, it must never also restrict which rows get aggregated.
 
-- `LocalAuthGuard` cannot guard GraphQL mutations (passport-local reads `req.body`, not GQL args). Call `authService.validateUser()` directly in the login resolver.
-- Always use `@UseGuards(GqlAuthGuard)` on protected queries/mutations. For role-restricted operations, chain `@UseGuards(GqlAuthGuard, RolesGuard)` + `@Roles('ADMIN')`.
-- Never expose `password` or `twoFactorSecret` fields in GraphQL types.
-- The `me` resolver must do a DB lookup (`authService.getUser(user.id)`) rather than returning `req.user` directly. The JWT payload only contains `{ id, email, role }` — returning it as `User` leaves `twoFactorEnabled` (non-nullable in the schema) as `undefined`, which propagates `null` up to the parent field and makes `data.me` null for every authenticated request.
-- Cookie `path: '/'` must be set explicitly in `setCookie` and `clearCookie` calls. Without it, the browser scopes the cookie to the URL path that set it (e.g. `/auth/google/callback`), so subsequent requests to `/graphql` never include the cookie.
-- `clearCookie` must pass `{ path: '/' }` to match the cookie that was set; omitting it clears a phantom cookie scoped to the request path instead.
-- `FastifyReply` parameters in decorated controller methods must use `import type` to satisfy `isolatedModules` + `emitDecoratorMetadata`.
-- Google OAuth uses REST endpoints (not GraphQL) because OAuth requires HTTP redirects.
-- Passport.js calls Express-style `res.setHeader()` and `res.end()` during OAuth redirects, which Fastify's reply wrapper doesn't have. A Fastify `onRequest` hook in `main.ts` shims these methods onto every reply so Passport can operate.
-- `PassportModule` must be registered with `{ session: false }` — otherwise Passport tries to call `req.logIn()` after the callback, which doesn't exist on Fastify requests.
-- The Google callback controller must use `@Redirect()` + `@Res({ passthrough: true })`. Using `@Res()` without `passthrough: true` hands response control entirely to the handler, but in Fastify v5 the reply is not flushed before NestJS sends a 200. `passthrough: true` lets you set cookies on the reply while NestJS handles the actual redirect send.
+Field resolvers must go through the per-request `GqlLoaders` (`@Context() ctx: GqlContext`, `ctx.loaders.<name>.load(id)`) rather than calling a service directly — calling a service per-row reintroduces N+1. Loaders are built in `LoadersService.createLoaders()` (`src/common/graphql/loaders.service.ts`), wired into the GraphQL context in `app.module.ts`'s `GraphQLModule.forRootAsync`. Adding a new field resolver that fetches by parent id: add a batch method (`findByXIds(ids, userId)`) to the relevant repository (scoped per the ownership rules above), wire a loader for it in `LoadersService` using `createGroupedListLoader`/`createMappedValueLoader` (`src/common/graphql/batch-loader.util.ts`), then call `ctx.loaders.<name>.load(id)` from the resolver — don't call the service/repository directly from a field resolver.
 
-**Token strategy:**
+### Real-time (SSE)
 
-- Access token: 15 min JWT, HTTP-only cookie
-- Refresh token: 7-day JWT, HTTP-only cookie; SHA-256 hash stored in `RefreshToken` table for server-side revocation and rotation
+`TimerEventsService` and `AuthEventsService` both build on shared infra in `src/common/realtime/`: `createRedisClientPair()` (each service still constructs its own publisher/subscriber pair — not a shared singleton) and `RealtimeChannelRegistry<T>` (ref-counted Redis pub/sub channel registry with a `gated` option — `true` for timer's staged subscribing/active/cleaning lifecycle with a delivery gate, `false` for auth's simpler immediate-delivery/immediate-cleanup behavior; don't unify these two modes, they're intentionally different). Controllers write the SSE HTTP response via the shared `writeSseStream()` helper (`src/common/realtime/sse-stream.util.ts`). Timer state/auth events published through Redis so multiple server instances stay in sync. Not migrated to GraphQL subscriptions — one-way server push with no client-to-server messages needed, SSE is the right transport for both (see `docs/final-arch.txt`).
 
-## Prisma Schema — Key Models
+### Encryption
 
-```
-User           — id, email, name, password?, role (ADMIN/MANAGER/USER), twoFactorSecret?, twoFactorEnabled,
-                 clockifyApiKey?, clockifyUserId?, clockifyWorkspaceId?,
-                 hubspotAccessToken?, hubspotRefreshToken?, hubspotTokenExpiresAt?, hubspotPortalId?,
-                 timestamps
-RefreshToken   — tokenHash (SHA-256), userId, expiresAt
-OAuthAccount   — provider, providerId, userId  (unique on [provider, providerId])
-Project        — id, title, description, userId?
-```
+Third-party credentials (Clockify API key, HubSpot/Google Calendar OAuth tokens) encrypted at rest using `APP_ENCRYPTION_KEY` (32-byte hex → 64 char string) via `src/common/crypto.util.ts`. HubSpot's and Google Calendar's OAuth access-token refresh (expiry check, concurrent-refresh coalescing, token-endpoint exchange) shares `OAuthTokenRefreshService` (`src/common/oauth-token/`) — each provider still owns its own failure/success handling (Google clears credentials on `invalid_grant` and conditionally preserves the refresh token if not reissued; HubSpot always overwrites both tokens) via callbacks passed into `refresh()`, so provider-specific behavior stays provider-specific. Clockify uses a static API key, no refresh logic needed.
 
-`UserRepository` exposes `updateHubspot(id, HubspotUpdate)` alongside `updateClockify` — both follow the same partial-update pattern and are the only way to write HubSpot token fields.
+### Audit log
 
-## Credential Encryption (`src/common/crypto.util.ts`)
+Fire-and-forget `AuditLog` writes in HubSpot, Clockify, Clients, Projects, and Invoices services. Never `await` these — they must not block requests. Retention cleaned by scheduled job in `CleanupModule` (`AUDIT_RETENTION_DAYS`, default 90).
 
-`clockifyApiKey`, `hubspotAccessToken`, and `hubspotRefreshToken` are encrypted at rest with AES-256-GCM.
+`GET /admin/audit` (`src/audit/audit.controller.ts`) — **UNUSED**. No active consumer. It's the one REST endpoint left over from before the GraphQL admin surface existed (see `docs/final-arch.txt` §4); migrating it to `admin.resolver.ts` was considered and explicitly deprioritized (`docs/arch-todo.txt` item 4). Leave as-is, don't spend effort on it.
 
-- **Key**: `APP_ENCRYPTION_KEY` in `.env` — 32-byte hex string. Must be set in all environments; without it, credentials are stored and returned plaintext.
-- **Format stored in DB**: `iv:ciphertext:authtag` (all hex), single string per column.
-- **Where**: encrypt on write and decrypt on read happen only in `PrismaUserRepository` (`updateClockify`, `updateHubspot`, `findById`, `findAll`). No other layer is aware of encryption.
-- **Backward compat**: if the key is introduced on a DB that already has plaintext values, `decryptField` catches the parse error and returns the original string — existing rows remain readable.
-- **Key rule**: never import `encrypt`/`decrypt` from `src/common/crypto.util.ts` outside `PrismaUserRepository`. Encryption is a repository-layer concern only.
+### Rates system
 
-## Clockify Module (`src/clockify/`)
+Three rate models serve different scopes:
 
-Pure REST module — no GraphQL. All endpoints at `/clockify/*`, guarded by `AuthGuard('jwt')`.
+- `TranslationRate` — user's personal rate catalog (optionally scoped to a client)
+- `ClientRate` — per-client override rates
+- `RateSheet` — structured rate sheets with CAT-tool match rates stored as JSON
 
-```
-src/clockify/
-├── clockify.module.ts
-├── clockify.controller.ts   — REST endpoints (see table below)
-├── clockify.service.ts      — wraps Clockify REST API via native fetch; reads API key from user record
-├── dto/
-│   ├── set-credentials.dto.ts    — { apiKey: string; workspaceId?: string }
-│   ├── start-time-entry.dto.ts   — { description?, projectId?, tagIds?, start?, billable? }
-│   └── update-time-entry.dto.ts  — { start, end?, description?, projectId?, billable, tagIds[] }
-└── types/
-    ├── clockify-workspace.type.ts
-    ├── clockify-project.type.ts
-    ├── clockify-tag.type.ts       — { id, name, workspaceId, archived }
-    └── time-entry.type.ts
-```
+### Project pricing model
 
-**Endpoints:**
+`Project.unitPrice` (`Decimal(14,8)`) is **deprecated** for translation activity — no write path exists anywhere in the app (frontend or resolver logic beyond the raw DTO field), so any value on it is stale/legacy data. Current model: `fixedFee` / `hourlyRate` / `perWordRate` (each `Decimal(10,4)?` on `Project`), set independently, project can have any subset. Don't add new features against `unitPrice`; don't remove the column yet (still schema-present for old rows) but treat it as dead going forward.
 
-| Method   | Path                                      | Purpose                                                                                    |
-| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `GET`    | `/clockify/status`                        | `{ connected: boolean; workspaceId: string \| null }`                                      |
-| `POST`   | `/clockify/credentials`                   | Validate API key against Clockify, save key + `clockifyUserId` to user                     |
-| `PATCH`  | `/clockify/workspace`                     | Update preferred workspace ID only (no re-validation)                                      |
-| `GET`    | `/clockify/workspaces`                    | List user's Clockify workspaces                                                            |
-| `GET`    | `/clockify/workspaces/:id/projects`       | List projects in workspace                                                                 |
-| `GET`    | `/clockify/workspaces/:id/entries`        | List time entries (query: `start?`, `end?`)                                                |
-| `GET`    | `/clockify/workspaces/:id/entries/active` | Running timer or `null`                                                                    |
-| `POST`   | `/clockify/workspaces/:id/entries`        | Start new timer                                                                            |
-| `PATCH`  | `/clockify/workspaces/:id/entries/stop`   | Stop running timer — no entry ID needed; calls Clockify `PATCH .../user/:uid/time-entries` |
-| `PATCH`  | `/clockify/workspaces/:id/entries/:eid`   | Update entry (full replace) — calls Clockify `PUT /workspaces/{wsId}/time-entries/{eid}`   |
-| `DELETE` | `/clockify/workspaces/:id/entries/:eid`   | Delete entry                                                                               |
-| `GET`    | `/clockify/workspaces/:id/tags`           | List tags in workspace                                                                     |
-| `POST`   | `/clockify/workspaces/:id/tags`           | Create new tag (`{ name }` body) — calls Clockify `POST /workspaces/{wsId}/tags`           |
+### Invoice status machine
 
-**Key rules:**
+Valid transitions only: `DRAFT→SENT|CANCELLED`, `SENT→PAID|OVERDUE`, `OVERDUE→PAID`. Side effects: `SENT` sets `issuedAt`, `PAID` sets `paidAt`.
 
-- `ClockifyService` uses native `fetch` (no `@nestjs/axios`) — Node 18+ has `fetch` globally; `@types/node@24` types it.
-- API key stored per-user in `User.clockifyApiKey` (plain text). Never expose the raw key in any response.
-- `clockifyUserId` (Clockify's UUID for the user) is fetched from `GET /user` during `setCredentials` and stored in `User.clockifyUserId` — required for time entry list and stop endpoints.
-- The private `request()` helper only sends `Content-Type: application/json` when a body is present. Body-less calls (DELETE, GET) omit the header — Fastify rejects `Content-Type: application/json` with no body as 400.
-- The Clockify stop endpoint is `PATCH /workspaces/{wsId}/user/{userId}/time-entries` with `{ end: ISO }`. The `PUT .../time-entries/{id}` endpoint is for full updates; `PATCH .../time-entries/{id}` does not exist.
-- For REST controllers, use `@Req() req: FastifyRequest & { user: RequestUser }` — no `@CurrentUser()` decorator (that only works in GraphQL context).
-- `UsersModule` exports `UsersService` so `ClockifyModule` can import it.
-- CORS in `main.ts` must include all needed methods explicitly: `['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']`. The default `enableCors()` omits PATCH and DELETE.
-- `PATCH entries/stop` (static segment) must be registered in the controller **before** `PATCH entries/:entryId` (dynamic). Fastify's radix tree gives static precedence regardless of registration order in theory, but NestJS registers routes in declaration order — declare the static route first to be safe.
-- `ClockifyService.updateEntry` calls Clockify `PUT /workspaces/{wsId}/time-entries/{eid}` (full replace). Clockify has no `PATCH` for individual entries — only `PATCH /user/{uid}/time-entries` for stopping the active timer.
+### Throttling
 
-## HubSpot Module (`src/hubspot/`)
+Global: 100 req/60s per IP (Redis-backed). Auth mutations (login, register, password reset): 5 req/60s. `GqlThrottlerGuard` bridges NestJS throttler to GraphQL execution context.
 
-Pure REST module — no GraphQL. All CRM endpoints at `/hubspot/*`, guarded by `AuthGuard('jwt')`. OAuth endpoints are unguarded (OAuth redirect flow). Webhook endpoint is unguarded but HMAC-verified.
+## Environment
 
-```
-src/hubspot/
-├── hubspot.module.ts
-├── hubspot.controller.ts    — REST endpoints (OAuth + CRM proxy + webhooks)
-├── hubspot.service.ts       — HubSpot API calls via native fetch; per-request token refresh
-├── dto/
-│   ├── create-contact.dto.ts    — { email, firstname?, lastname?, phone?, company? }
-│   ├── update-contact.dto.ts    — Partial contact properties
-│   ├── create-deal.dto.ts       — { dealname, amount?, dealstage?, pipeline?, closedate? }
-│   └── update-deal.dto.ts       — Partial deal properties
-└── types/
-    ├── hubspot-contact.type.ts
-    ├── hubspot-company.type.ts
-    ├── hubspot-deal.type.ts
-    └── hubspot-webhook.type.ts
-```
+Required at startup (app aborts if missing): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `COOKIE_SECRET`, `APP_ENCRYPTION_KEY`.
 
-**Endpoints:**
-
-| Method   | Path                          | Auth          | Purpose                                                                    |
-| -------- | ----------------------------- | ------------- | -------------------------------------------------------------------------- |
-| `GET`    | `/hubspot/auth`               | JWT           | Redirect to HubSpot OAuth consent (HMAC-signed state)                      |
-| `GET`    | `/hubspot/auth/callback`      | none          | Exchange code → tokens; store on user; redirect to frontend                |
-| `GET`    | `/hubspot/status`             | JWT           | `{ connected, portalId }`                                                  |
-| `DELETE` | `/hubspot/disconnect`         | JWT           | Clear tokens + revoke refresh token server-side (fire-and-forget)          |
-| `GET`    | `/hubspot/contacts`           | JWT           | List contacts (`?after=`, `?limit=`)                                       |
-| `POST`   | `/hubspot/contacts/search`    | JWT           | Search contacts (`{ filterGroups?, sorts?, properties?, limit?, after? }`) |
-| `GET`    | `/hubspot/contacts/:id`       | JWT           | Single contact                                                             |
-| `POST`   | `/hubspot/contacts`           | JWT           | Create contact                                                             |
-| `PATCH`  | `/hubspot/contacts/:id`       | JWT           | Update contact                                                             |
-| `GET`    | `/hubspot/companies`          | JWT           | List companies (`?after=`, `?limit=`)                                      |
-| `POST`   | `/hubspot/companies/search`   | JWT           | Search companies                                                           |
-| `GET`    | `/hubspot/companies/:id`      | JWT           | Single company                                                             |
-| `GET`    | `/hubspot/deals`              | JWT           | List deals (`?after=`, `?limit=`)                                          |
-| `POST`   | `/hubspot/deals/search`       | JWT           | Search deals                                                               |
-| `GET`    | `/hubspot/deals/:id`          | JWT           | Single deal                                                                |
-| `POST`   | `/hubspot/deals`              | JWT           | Create deal                                                                |
-| `PATCH`  | `/hubspot/deals/:id`          | JWT           | Update deal                                                                |
-| `POST`   | `/hubspot/associations`       | JWT           | Create association between two objects                                     |
-| `POST`   | `/hubspot/webhooks/subscribe` | JWT + ADMIN   | Programmatically create HubSpot webhook subscription                       |
-| `POST`   | `/hubspot/webhooks`           | HMAC (no JWT) | Receive HubSpot CRM events (HMAC + timestamp verified)                     |
-
-**Key rules:**
-
-- `HubspotService.request()` calls `getValidToken()` before every API call. If token expires within 5 min, it refreshes via `POST /oauth/v1/token` (grant_type=refresh_token) and saves new tokens before proceeding. Concurrent refresh calls for the same user are coalesced via a per-user `refreshLocks: Map<number, Promise<string>>` — only one refresh runs at a time.
-- `HubspotService.request()` and `ClockifyService.request()` both use `fetchWithRetry` from `src/common/retry.util.ts` — retries up to 3 times on 429, honouring `Retry-After` header or using exponential backoff capped at 30 s.
-- `disconnect(userId)` reads the refresh token before clearing the DB, then fire-and-forgets `DELETE /oauth/v1/refresh-tokens/:token` to revoke server-side. Never block disconnect on revocation failure.
-- Association endpoint: `POST /hubspot/associations` calls `PUT /crm/v3/associations/{from}/{to}/batch/create`. Default `associationTypeId` is inferred for common pairs (contact→company: 1, contact→deal: 4). Pass `associationTypeId` explicitly for other pairs.
-- OAuth `state` is a signed token: `base64url(JSON.stringify({ payload: JSON.stringify({ userId, nonce, exp }), sig: HMAC-SHA256(JWT_SECRET, payload) }))`. 10-min TTL. Verified in callback with `timingSafeEqual`. Never pass a bare `userId` integer as state.
-- Webhook signature: `SHA256(HUBSPOT_WEBHOOK_SECRET + rawBody)`, compared via `timingSafeEqual`. `HUBSPOT_WEBHOOK_SECRET` left empty skips verification (dev convenience only).
-- Webhook replay protection: `verifyWebhookSignature` checks `x-hubspot-request-timestamp` header; requests older than 5 minutes are rejected with 401.
-- `main.ts` registers a custom `application/json` content-type parser that stores the raw body string on `req.rawBody` before parsing — needed for exact-byte HMAC verification. This replaces Fastify's built-in JSON parser but parses identically.
-- `HubspotModule` imports `UsersModule` (which exports `UsersService`) — same pattern as `ClockifyModule`.
-- Never expose `hubspotAccessToken` or `hubspotRefreshToken` in any response.
-- HubSpot OAuth scopes required: `crm.objects.contacts.read/write`, `crm.objects.companies.read`, `crm.objects.deals.read/write`.
-
-## Status & Known Gaps
-
-- Microsoft OAuth is not implemented (no `passport-microsoft` strategy or controller endpoints).
-- HubSpot webhook handler (`dispatchEvent`) logs events via NestJS Logger — add `switch` cases per `subscriptionType` for real business logic handlers.
-- HubSpot company write operations (`POST /hubspot/companies`, `PATCH /hubspot/companies/:id`) are not implemented — read-only.
-- HubSpot pagination FRONT: `HubspotPage` loads only the first page; "Load more" UI not yet wired.
-- Audit log for third-party writes (#15) not yet implemented.
-
-## Docs
-
-Implementation logs live in `../docs/implementations/`:
-
-- `auth-implementation.md` — backend auth system (Passport strategies, JWT, cookies, schema)
-- `auth-ui.md` — frontend auth pages and routing
-- `auth-remaining.md` — persistent redirect, cross-tab logout, resolver guards, disable 2FA, Apollo token refresh
-
-Plans live in `../docs/plans/`:
-
-- `clockify-integration.md` — Clockify REST integration design
-- `auth-remaining.md` — plan for the auth follow-up items above
-- `hubspot-upgrades.md` — HubSpot backend upgrades (associations, search, security, retry, refresh lock, webhook dispatch/subscription)
+Optional: `GOOGLE_CLIENT_ID/SECRET`, `HUBSPOT_*`, `SMTP_*`, `SENTRY_DSN`, `GRAPHQL_MAX_DEPTH` (default 10).

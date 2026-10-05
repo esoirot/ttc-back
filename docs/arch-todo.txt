@@ -1,0 +1,61 @@
+# Architecture TODO
+
+Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each item: what, why, where, how to verify. Follow repo's test-first workflow (failing spec before code) for every item below.
+
+## P0 — verify / fix first (correctness & safety risk, grows with graph size)
+
+### 1. Audit GraphQL authorization on nested fields
+- **What**: confirm every `@ResolveField()` and every resolver re-checks ownership/tenant scope rather than trusting the parent query already filtered correctly.
+- **Where to look**: `clients.resolver.ts` (`statusHistory`), `projects.resolver.ts` (`totalTimeSeconds`), `tasks.resolver.ts` (`subtasks`, `comments`, `labels`, `activities`, `attachments`), `time-entries.resolver.ts`/`task-time.resolver.ts` (`activities`, `totalTimeSeconds`), all of `admin.resolver.ts`.
+- **Specific risk case**: `client(id) { projects { tasks { timeEntries { ... } } } }` — verify each hop re-derives scope from `req.user.id`, not just the top-level `client` id.
+- **How to verify**: write e2e spec — user A queries `client(id: <user B's client>) { projects { tasks { ... } } }`, assert empty/forbidden at every nesting level, not just top-level 403.
+- **Done when**: spec above exists and passes; any resolver found trusting the parent gets an explicit ownership check added.
+
+### 2. Fix confirmed N+1 in field resolvers
+- **What**: `ProjectsResolver.totalTimeSeconds` and `TasksResolver`'s `subtasks`/`comments`/`labels`/`activities`/`attachments` each issue one DB query per parent row — no batching anywhere in `src/` (`DataLoader` absent).
+- **Where**: `src/projects/projects.resolver.ts`, `src/tasks/tasks.resolver.ts`.
+- **Fix**: introduce `dataloader` (or NestJS-idiomatic per-request batching via a request-scoped loader provider) for these fields; batch `findByTask`/`aggregate` calls keyed by parent id per request tick.
+- **Test first**: spec that issues a `tasks { subtasks { id } comments { id } }` query over N tasks and asserts DB call count doesn't scale linearly with N (mock/spy repository call count, not just result correctness).
+- **Done when**: field-resolver DB call count is O(1) per field per request, not O(N).
+
+### 3. Add GraphQL query depth/complexity/pagination guards
+- **What**: nothing currently stops a client building an expensive nested query over `Client → Project → Task → {Subtask, Comment, Activity, Attachment, TimeEntry}`.
+- **Where**: `AppModule`'s `GraphQLModule.forRoot(...)` config (same place `orphanedTypes` is registered).
+- **Fix**: add `graphql-depth-limit` (or equivalent) as a validation rule; confirm every list-returning query/field with unbounded cardinality (`tasks`, `timeEntries`, `subtasks`, `comments`, etc.) has cursor pagination or a hard cap — several already return `*Connection` types (`ProjectConnection`, `TaskConnection`, `TimeEntryConnection`, `InvoiceConnection`, `ClientConnection`) which is good; flag ones returning bare `[X]` with no bound (e.g. `Task.subtasks`, `Task.comments`, `RateSheet[]`, `TranslationRate[]`) for review — bare arrays are fine at low cardinality per-parent but should be checked against realistic max (e.g. max subtasks per task).
+- **Done when**: depth-limit middleware is in place with a test asserting an over-depth query is rejected; cardinality review of bare-array fields is documented (even if conclusion is "fine as-is, capped by domain reality").
+
+## P1 — improve (real but non-urgent)
+
+### 4. `GET /admin/audit` — UNUSED, not being migrated
+- **Status: UNUSED.** Decision made not to migrate this to GraphQL. No active consumer — leave `src/audit/audit.controller.ts` as-is. Do not spend effort on it. See matching note in `CLAUDE.md`'s Audit log section.
+
+### 5. Extract shared provider credential/OAuth infrastructure (Clockify + HubSpot)
+- **What**: `ClockifyController`/`ClockifyService` and `HubSpotController`/`HubSpotService` each repeat: JWT-guarded controller → look up encrypted credentials → decrypt → call provider client. Extract the repeated *context acquisition*, not the endpoint semantics — don't build a generic `proxy(provider, method, path)` abstraction (would hide that `contacts/:id/import-client` and `entries/import` are TTC domain operations, not passthroughs).
+- **Where**: new shared service, e.g. `src/common/provider-credentials/` — `ProviderCredentialService` (encrypted credential lookup, reused by both `ClockifyService` and `HubSpotService`) and, if OAuth token refresh logic is duplicated between Google Calendar/HubSpot, an `OAuthTokenService`.
+- **How to scope**: read `clockify.service.ts`, `hubspot.service.ts`, `google-calendar.service.ts` first to confirm exactly which lines are duplicated (credential decrypt via `crypto.util.ts`, token refresh) before extracting — don't extract a shape from assumption.
+- **Done when**: duplicated credential-lookup/decrypt code exists in one place; each controller's endpoint semantics (import, dedup, transform) stay in their own service, untouched.
+
+### 6. Share SSE realtime infrastructure between Timer and Auth events
+- **What**: `TimerEventsService` and `AuthEventsService` each independently instantiate their own `ioredis` publisher + subscriber pair and their own channel-lifecycle state machine — confirmed duplicate implementations of the same pattern, not shared infra behind two controllers.
+- **Where**: `src/timer-events/timer-events.service.ts`, `src/auth/auth-events.service.ts`.
+- **Fix**: extract a shared module (e.g. `src/common/realtime/`) providing: Redis pub/sub connection pair, channel-subscription lifecycle (the `subscribing → active → cleaning → deleted` state machine already documented in `timer-events.service.ts`'s comments), and SSE serialization helpers. Both services consume the shared module, keep their own channel-naming/event-payload logic.
+- **Explicitly not**: do not migrate either to GraphQL subscriptions — one-way server push, no client-to-server messages needed, SSE is the right transport (see `final-arch.txt` §1, §4 "Explicitly not recommended").
+- **Test first**: existing `timer-events.service.spec.ts` / `auth-events.service.spec.ts` should keep passing unmodified in behavior after the extraction — refactor under green tests, no behavior change.
+- **Done when**: one Redis connection-lifecycle implementation, two thin consumers.
+
+## P2 — low priority (cheap, low-value cleanup)
+
+### 7. Make the Swagger `/graphql` stub description generic — DONE
+- `src/main.ts`'s `documentFactory` stub `description` reworded to name no domain modules ("GraphQL API is documented by the generated schema (src/schema.gql) and explorable via Apollo Sandbox..."). No longer needs updating when a new top-level GraphQL module ships.
+
+## Explicitly out of scope (per final-arch.txt §4)
+
+- Do **not** migrate timer/auth SSE to GraphQL subscriptions "for architectural purity" — see item 6, the actual problem is duplicated Redis infra, not the transport choice.
+- Do **not** collapse Clockify/HubSpot into one generic REST proxy controller — see item 5.
+- Do **not** re-litigate GraphQL vs REST placement generally — the three-transport split (GraphQL/REST/SSE) is correct per `final-arch.txt`. Item 4 (`/admin/audit`) was the one genuine misplacement identified, but is marked UNUSED — not being fixed.
+
+## Suggested order of execution
+
+1 → 2 → 3 (P0, correctness/safety, do before the graph grows further)
+6 → 5 (P1, in this order: infra dedup first since it's isolated/low-risk, then the larger provider-credential extraction — item 4 skipped, UNUSED)
+7 (P2, whenever — 10-minute fix, no dependency on anything else)
