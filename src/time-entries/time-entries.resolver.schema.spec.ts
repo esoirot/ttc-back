@@ -54,6 +54,7 @@ describe('TimeEntriesResolver GraphQL schema', () => {
     const queries = schema.getQueryType()?.getFields() ?? {};
     expect(queries).toHaveProperty('timeEntries');
     expect(queries).toHaveProperty('activeTimer');
+    expect(queries).toHaveProperty('firstTimeEntryStart');
 
     const mutations = schema.getMutationType()?.getFields() ?? {};
     for (const name of [

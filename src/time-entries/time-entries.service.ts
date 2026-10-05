@@ -33,6 +33,10 @@ export class TimeEntriesService {
     return this.repo.findAll(userId, filters, pagination);
   }
 
+  firstStartTime(userId: number): Promise<Date | null> {
+    return this.repo.findFirstStartTime(userId);
+  }
+
   findActive(userId: number): Promise<TimeEntryModel | null> {
     return this.repo.findActive(userId);
   }

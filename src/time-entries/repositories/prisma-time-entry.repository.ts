@@ -130,6 +130,15 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     return { items: items.map(toModel), nextCursor, total };
   }
 
+  async findFirstStartTime(userId: number): Promise<Date | null> {
+    const first = await this.prisma.timeEntry.findFirst({
+      where: { userId },
+      orderBy: { startTime: 'asc' },
+      select: { startTime: true },
+    });
+    return first?.startTime ?? null;
+  }
+
   async findActive(userId: number): Promise<TimeEntryModel | null> {
     const entry = await this.prisma.timeEntry.findFirst({
       where: { userId, endTime: null },

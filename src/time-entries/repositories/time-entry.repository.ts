@@ -30,6 +30,7 @@ export abstract class TimeEntryRepository {
     pagination?: PaginationArgs,
   ): Promise<TimeEntryConnectionModel>;
   abstract findActive(userId: number): Promise<TimeEntryModel | null>;
+  abstract findFirstStartTime(userId: number): Promise<Date | null>;
   abstract create(
     userId: number,
     data: CreateTimeEntryInput,

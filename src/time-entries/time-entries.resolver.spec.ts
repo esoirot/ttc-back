@@ -11,6 +11,7 @@ describe('TimeEntriesResolver', () => {
   let service: {
     findAll: jest.Mock;
     findActive: jest.Mock;
+    firstStartTime: jest.Mock;
     create: jest.Mock;
     startTimer: jest.Mock;
     stopTimer: jest.Mock;
@@ -26,6 +27,7 @@ describe('TimeEntriesResolver', () => {
     service = {
       findAll: jest.fn(),
       findActive: jest.fn(),
+      firstStartTime: jest.fn(),
       create: jest.fn(),
       startTimer: jest.fn(),
       stopTimer: jest.fn(),
@@ -79,6 +81,15 @@ describe('TimeEntriesResolver', () => {
     const result = await resolver.activeTimer(user);
     expect(service.findActive).toHaveBeenCalledWith(1);
     expect(result).toEqual(entry);
+  });
+
+  it('firstTimeEntryStart — returns the start of the oldest entry', async () => {
+    const first = new Date('2024-03-04T09:00:00.000Z');
+    service.firstStartTime.mockResolvedValue(first);
+
+    const result = await resolver.firstTimeEntryStart(user);
+    expect(service.firstStartTime).toHaveBeenCalledWith(1);
+    expect(result).toEqual(first);
   });
 
   it('createTimeEntry — delegates to service', async () => {

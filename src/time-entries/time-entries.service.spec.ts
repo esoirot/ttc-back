@@ -11,6 +11,7 @@ describe('TimeEntriesService', () => {
     findById: jest.Mock;
     findAll: jest.Mock;
     findActive: jest.Mock;
+    findFirstStartTime: jest.Mock;
     create: jest.Mock;
     startTimer: jest.Mock;
     stopTimer: jest.Mock;
@@ -33,6 +34,7 @@ describe('TimeEntriesService', () => {
       findById: jest.fn(),
       findAll: jest.fn(),
       findActive: jest.fn(),
+      findFirstStartTime: jest.fn(),
       create: jest.fn(),
       startTimer: jest.fn(),
       stopTimer: jest.fn(),
@@ -419,6 +421,22 @@ describe('TimeEntriesService', () => {
         expect.objectContaining({ taskId: 5 }),
         5,
       );
+    });
+  });
+
+  describe('firstStartTime', () => {
+    it("returns the start of the user's oldest time entry", async () => {
+      const first = new Date('2024-03-04T09:00:00.000Z');
+      repo.findFirstStartTime.mockResolvedValue(first);
+
+      expect(await service.firstStartTime(1)).toEqual(first);
+      expect(repo.findFirstStartTime).toHaveBeenCalledWith(1);
+    });
+
+    it('returns null when the user has no time entries', async () => {
+      repo.findFirstStartTime.mockResolvedValue(null);
+
+      expect(await service.firstStartTime(1)).toBeNull();
     });
   });
 
