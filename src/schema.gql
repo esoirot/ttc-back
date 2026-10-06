@@ -535,6 +535,7 @@ input CreateSubtaskInput {
   dueDate: DateTime
   taskId: Int!
   title: String!
+  wordCount: Int
 }
 
 input CreateTagInput {
@@ -551,6 +552,7 @@ input CreateTaskInput {
   startDate: DateTime
   status: TaskStatus
   title: String!
+  wordCount: Int
 }
 
 input CreateTaskLabelInput {
@@ -902,6 +904,7 @@ type Project {
   status: ProjectStatus!
   targetLanguage: String
   title: String!
+  totalTaskWords: Int
   totalTimeSeconds: Int
   totalWordsProcessed: Int
   unitPrice: Float
@@ -941,6 +944,7 @@ type Query {
   clientRates(clientId: Int!): [ClientRate!]!
   clients(clientType: ClientType, excludeStatus: ClientStatus, pagination: PaginationInput, search: String, status: ClientStatus): ClientConnection!
   dashboard: DashboardData!
+  firstTimeEntryStart(projectId: Int): DateTime
   invoice(id: Int!): Invoice!
   invoices(clientId: Int, pagination: PaginationInput, search: String, status: InvoiceStatus): InvoiceConnection!
   me: User!
@@ -1022,6 +1026,7 @@ type Subtask {
   taskId: Int!
   title: String!
   updatedAt: DateTime!
+  wordCount: Int
 }
 
 type Tag {
@@ -1052,6 +1057,7 @@ type Task {
   title: String!
   totalTimeSeconds: Int
   updatedAt: DateTime!
+  wordCount: Int
 }
 
 type TaskActivity {
@@ -1349,6 +1355,7 @@ input UpdateSubtaskInput {
   dueDate: DateTime
   id: Int!
   title: String
+  wordCount: Int
 }
 
 input UpdateTagInput {
@@ -1368,6 +1375,7 @@ input UpdateTaskInput {
   startDate: DateTime
   status: TaskStatus
   title: String
+  wordCount: Int
 }
 
 input UpdateTimeEntryInput {

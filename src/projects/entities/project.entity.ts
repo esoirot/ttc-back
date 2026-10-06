@@ -81,6 +81,9 @@ export class Project {
   @Field(() => Int, { nullable: true })
   totalWordsProcessed?: number | null;
 
+  @Field(() => Int, { nullable: true })
+  totalTaskWords?: number | null;
+
   @Field(() => [Activity])
   activities!: Activity[];
 

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SubtasksService } from './subtasks.service';
 import { SubtaskRepository } from './repositories/subtask.repository';
 import { TaskRepository } from './repositories/task.repository';
@@ -27,6 +27,7 @@ describe('SubtasksService', () => {
     delete: jest.Mock;
     deleteByChecklist: jest.Mock;
     renameChecklist: jest.Mock;
+    sumWordsByProjectIds: jest.Mock;
   };
   let taskRepo: {
     findById: jest.Mock;
@@ -45,6 +46,7 @@ describe('SubtasksService', () => {
       delete: jest.fn(),
       deleteByChecklist: jest.fn(),
       renameChecklist: jest.fn(),
+      sumWordsByProjectIds: jest.fn(),
     };
     taskRepo = {
       findById: jest.fn().mockResolvedValue({ id: 1 }),
@@ -172,6 +174,46 @@ describe('SubtasksService', () => {
         NotFoundException,
       );
       expect(repo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('wordCount validation', () => {
+    it('rejects creating an item with a negative word count', async () => {
+      await expect(
+        service.create({ taskId: 1, title: 'Item', wordCount: -5 }, 7),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repo.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects updating an item to a negative word count', async () => {
+      repo.findById.mockResolvedValue(makeSubtask());
+      await expect(
+        service.update(1, { id: 1, wordCount: -1 }, 7),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repo.update).not.toHaveBeenCalled();
+    });
+
+    it('accepts zero and clearing with null', async () => {
+      repo.create.mockResolvedValue(makeSubtask());
+      repo.findById.mockResolvedValue(makeSubtask());
+      repo.update.mockResolvedValue(makeSubtask());
+      await service.create({ taskId: 1, title: 'Item', wordCount: 0 }, 7);
+      await service.update(1, { id: 1, wordCount: null }, 7);
+      expect(repo.create).toHaveBeenCalled();
+      expect(repo.update).toHaveBeenCalledWith(1, 7, {
+        id: 1,
+        wordCount: null,
+      });
+    });
+  });
+
+  describe('getTotalWordsByProjectIds', () => {
+    it('returns the per-project task word totals from the repository', async () => {
+      const totals = new Map([[1, 700]]);
+      repo.sumWordsByProjectIds.mockResolvedValue(totals);
+
+      expect(await service.getTotalWordsByProjectIds([1, 2], 7)).toBe(totals);
+      expect(repo.sumWordsByProjectIds).toHaveBeenCalledWith([1, 2], 7);
     });
   });
 

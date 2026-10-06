@@ -37,6 +37,9 @@ export class Task {
   @Field(() => Date, { nullable: true })
   dueDate?: Date | null;
 
+  @Field(() => Int, { nullable: true })
+  wordCount?: number | null;
+
   @Field(() => Date, { nullable: true })
   startDate?: Date | null;
 

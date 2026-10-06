@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
@@ -42,6 +43,22 @@ describe('TasksService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('wordCount validation', () => {
+    it('rejects creating a task with a negative word count', async () => {
+      await expect(
+        service.create({ title: 'T', projectId: 1, wordCount: -5 }, 7),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repo.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects updating a task to a negative word count', async () => {
+      await expect(
+        service.update(1, { id: 1, wordCount: -1 }, 7),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repo.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('create', () => {

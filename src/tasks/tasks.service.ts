@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   TaskRepository,
   TaskConnectionModel,
@@ -8,6 +8,13 @@ import { TaskModel } from './types/task.type';
 import { CreateTaskInput } from './dto/create-task.input';
 import { UpdateTaskInput } from './dto/update-task.input';
 import { TaskStatus } from './entities/task.entity';
+
+// Word counts are optional (null clears them) but never negative.
+function assertWordCount(wordCount: number | null | undefined): void {
+  if (wordCount != null && wordCount < 0) {
+    throw new BadRequestException('Words must be a whole number of 0 or more.');
+  }
+}
 
 @Injectable()
 export class TasksService {
@@ -36,6 +43,7 @@ export class TasksService {
   }
 
   async create(input: CreateTaskInput, userId: number): Promise<TaskModel> {
+    assertWordCount(input.wordCount);
     const task = await this.repo.create(input);
     await this.activitiesService.log(task.id, userId, 'CREATED');
     return task;
@@ -46,6 +54,7 @@ export class TasksService {
     input: UpdateTaskInput,
     userId: number,
   ): Promise<TaskModel> {
+    assertWordCount(input.wordCount);
     const before = await this.repo.findById(id, userId);
     const task = await this.repo.update(id, userId, input);
     if (input.title !== undefined && input.title !== before.title) {

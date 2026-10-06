@@ -36,6 +36,9 @@ describe('ProjectsResolver GraphQL schema', () => {
               totalWordsProcessedByProject: {
                 load: jest.fn().mockResolvedValue(1200),
               },
+              totalTaskWordsByProject: {
+                load: jest.fn().mockResolvedValue(700),
+              },
             },
           }),
         }),
@@ -103,6 +106,7 @@ describe('ProjectsResolver GraphQL schema', () => {
     const projectFields = projectType.getFields();
     expect(projectFields).toHaveProperty('activities');
     expect(projectFields).toHaveProperty('totalWordsProcessed');
+    expect(projectFields).toHaveProperty('totalTaskWords');
 
     const createInputType = schema.getType('CreateProjectInput') as unknown as {
       getFields: () => Record<string, unknown>;

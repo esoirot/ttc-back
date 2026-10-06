@@ -38,6 +38,7 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
         checklistTitle: data.checklistTitle ?? null,
         title: data.title,
         ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
+        ...(data.wordCount !== undefined ? { wordCount: data.wordCount } : {}),
       },
     });
   }
@@ -63,6 +64,7 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
         ...(data.title !== undefined ? { title: data.title } : {}),
         ...(data.done !== undefined ? { done: data.done } : {}),
         ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
+        ...(data.wordCount !== undefined ? { wordCount: data.wordCount } : {}),
       },
     });
   }
@@ -95,5 +97,31 @@ export class PrismaSubtaskRepository implements SubtaskRepository {
       where: { taskId, checklistTitle: title },
     });
     return result.count;
+  }
+
+  async sumWordsByProjectIds(
+    projectIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    const scope = { projectId: { in: projectIds }, project: { userId } };
+    const [taskSums, items] = await Promise.all([
+      this.prisma.task.groupBy({
+        by: ['projectId'],
+        where: { ...scope, wordCount: { not: null } },
+        _sum: { wordCount: true },
+      }),
+      this.prisma.subtask.findMany({
+        where: { task: scope, wordCount: { not: null } },
+        select: { wordCount: true, task: { select: { projectId: true } } },
+      }),
+    ]);
+    const totals = new Map<number, number>();
+    const add = (projectId: number, words: number | null) => {
+      if (!words) return;
+      totals.set(projectId, (totals.get(projectId) ?? 0) + words);
+    };
+    for (const t of taskSums) add(t.projectId, t._sum.wordCount);
+    for (const i of items) add(i.task.projectId, i.wordCount);
+    return totals;
   }
 }

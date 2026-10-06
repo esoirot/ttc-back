@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   SubtaskRepository,
   SubtaskModel,
@@ -7,6 +7,13 @@ import { TaskRepository } from './repositories/task.repository';
 import { ActivitiesService } from './activities.service';
 import { CreateSubtaskInput } from './dto/create-subtask.input';
 import { UpdateSubtaskInput } from './dto/update-subtask.input';
+
+// Word counts are optional (null clears them) but never negative.
+function assertWordCount(wordCount: number | null | undefined): void {
+  if (wordCount != null && wordCount < 0) {
+    throw new BadRequestException('Words must be a whole number of 0 or more.');
+  }
+}
 
 @Injectable()
 export class SubtasksService {
@@ -24,6 +31,7 @@ export class SubtasksService {
     input: CreateSubtaskInput,
     userId: number,
   ): Promise<SubtaskModel> {
+    assertWordCount(input.wordCount);
     // #18 — findById throws NotFoundException unless the caller owns the
     // task's project or is its assignee.
     await this.taskRepo.findById(input.taskId, userId);
@@ -39,6 +47,7 @@ export class SubtasksService {
     input: UpdateSubtaskInput,
     userId: number,
   ): Promise<SubtaskModel> {
+    assertWordCount(input.wordCount);
     const before = await this.repo.findById(id, userId);
     const subtask = await this.repo.update(id, userId, input);
     if (input.done !== undefined && input.done !== before.done) {
@@ -61,6 +70,13 @@ export class SubtasksService {
       );
     }
     return subtask;
+  }
+
+  getTotalWordsByProjectIds(
+    projectIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    return this.repo.sumWordsByProjectIds(projectIds, userId);
   }
 
   async createChecklist(

@@ -97,4 +97,12 @@ export class ProjectsResolver {
   ): Promise<number | null> {
     return ctx.loaders.totalWordsProcessedByProject.load(project.id);
   }
+
+  @ResolveField(() => Int, { nullable: true })
+  totalTaskWords(
+    @Parent() project: { id: number },
+    @Context() ctx: GqlContext,
+  ): Promise<number | null> {
+    return ctx.loaders.totalTaskWordsByProject.load(project.id);
+  }
 }

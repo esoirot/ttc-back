@@ -140,8 +140,22 @@ describe('TasksResolver GraphQL schema', () => {
       'activities',
       'attachments',
       'totalTimeSeconds',
+      'wordCount',
     ]) {
       expect(taskFields).toHaveProperty(name);
+    }
+
+    for (const typeName of [
+      'Subtask',
+      'CreateTaskInput',
+      'UpdateTaskInput',
+      'CreateSubtaskInput',
+      'UpdateSubtaskInput',
+    ]) {
+      const type = schema.getType(typeName) as unknown as {
+        getFields: () => Record<string, unknown>;
+      };
+      expect(type.getFields()).toHaveProperty('wordCount');
     }
   });
 

@@ -16,4 +16,7 @@ export class UpdateSubtaskInput {
 
   @Field({ nullable: true })
   dueDate?: Date;
+
+  @Field(() => Int, { nullable: true })
+  wordCount?: number | null;
 }

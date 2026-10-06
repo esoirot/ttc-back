@@ -182,4 +182,18 @@ describe('ProjectsResolver', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('totalTaskWords field resolver', () => {
+    it('delegates to the totalTaskWordsByProject loader', async () => {
+      const load = jest.fn().mockResolvedValue(700);
+      const ctx = {
+        loaders: { totalTaskWordsByProject: { load } },
+      } as unknown as GqlContext;
+
+      const result = await resolver.totalTaskWords({ id: 4 }, ctx);
+
+      expect(load).toHaveBeenCalledWith(4);
+      expect(result).toBe(700);
+    });
+  });
 });

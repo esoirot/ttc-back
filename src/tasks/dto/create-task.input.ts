@@ -29,4 +29,7 @@ export class CreateTaskInput {
 
   @Field({ nullable: true })
   reminderOffset?: string;
+
+  @Field(() => Int, { nullable: true })
+  wordCount?: number | null;
 }

@@ -11,14 +11,20 @@ import { TimeEntriesService } from '../../time-entries/time-entries.service';
 
 describe('LoadersService', () => {
   let service: LoadersService;
-  let subtasksService: { findByTaskIds: jest.Mock };
+  let subtasksService: {
+    findByTaskIds: jest.Mock;
+    getTotalWordsByProjectIds: jest.Mock;
+  };
   let timeEntriesService: {
     getTotalDurationByTaskIds: jest.Mock;
     getTotalDurationByProjectIds: jest.Mock;
   };
 
   beforeEach(async () => {
-    subtasksService = { findByTaskIds: jest.fn().mockResolvedValue([]) };
+    subtasksService = {
+      findByTaskIds: jest.fn().mockResolvedValue([]),
+      getTotalWordsByProjectIds: jest.fn().mockResolvedValue(new Map()),
+    };
     timeEntriesService = {
       getTotalDurationByTaskIds: jest.fn().mockResolvedValue(new Map()),
       getTotalDurationByProjectIds: jest.fn().mockResolvedValue(new Map()),
@@ -100,5 +106,25 @@ describe('LoadersService', () => {
     ).toHaveBeenCalledTimes(1);
     expect(withTime).toBe(3600);
     expect(withoutTime).toBeNull();
+  });
+
+  it('batches task word totals per project, null when a project has none', async () => {
+    subtasksService.getTotalWordsByProjectIds.mockResolvedValue(
+      new Map([[1, 700]]),
+    );
+    const loaders = service.createLoaders(() => 9);
+
+    const [one, two] = await Promise.all([
+      loaders.totalTaskWordsByProject.load(1),
+      loaders.totalTaskWordsByProject.load(2),
+    ]);
+
+    expect(subtasksService.getTotalWordsByProjectIds).toHaveBeenCalledTimes(1);
+    expect(subtasksService.getTotalWordsByProjectIds).toHaveBeenCalledWith(
+      [1, 2],
+      9,
+    );
+    expect(one).toBe(700);
+    expect(two).toBeNull();
   });
 });

@@ -275,6 +275,7 @@ model Task {
   assigneeId      Int?
   assignee        User?            @relation(fields: [assigneeId], references: [id])
   title           String
+  wordCount       Int?
   description     String?
   status          TaskStatus       @default(TODO)
   dueDate         DateTime?
@@ -314,6 +315,7 @@ model Subtask {
   title          String
   done           Boolean     @default(false)
   dueDate        DateTime?
+  wordCount      Int?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   timeEntries    TimeEntry[]

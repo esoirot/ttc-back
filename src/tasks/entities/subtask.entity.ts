@@ -20,6 +20,9 @@ export class Subtask {
   @Field({ nullable: true })
   dueDate?: Date;
 
+  @Field(() => Int, { nullable: true })
+  wordCount?: number | null;
+
   @Field()
   createdAt!: Date;
 

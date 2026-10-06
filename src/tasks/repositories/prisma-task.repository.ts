@@ -74,6 +74,7 @@ export class PrismaTaskRepository implements TaskRepository {
         assigneeId: data.assigneeId,
         status: (data.status as TaskStatus | undefined) ?? 'TODO',
         dueDate: data.dueDate,
+        wordCount: data.wordCount,
       },
     });
   }

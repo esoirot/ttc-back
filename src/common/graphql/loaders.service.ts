@@ -29,6 +29,7 @@ export interface GqlLoaders {
   totalSecondsByTask: DataLoader<number, number | null>;
   totalSecondsByProject: DataLoader<number, number | null>;
   totalWordsProcessedByProject: DataLoader<number, number | null>;
+  totalTaskWordsByProject: DataLoader<number, number | null>;
 }
 
 /**
@@ -135,6 +136,14 @@ export class LoadersService {
       totalWordsProcessedByProject: createMappedValueLoader(
         (projectIds) =>
           this.timeEntriesService.getTotalWordsProcessedByProjectIds(
+            [...projectIds],
+            requireUserId(getUserId),
+          ),
+        null,
+      ),
+      totalTaskWordsByProject: createMappedValueLoader(
+        (projectIds) =>
+          this.subtasksService.getTotalWordsByProjectIds(
             [...projectIds],
             requireUserId(getUserId),
           ),

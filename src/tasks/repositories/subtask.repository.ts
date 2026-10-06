@@ -8,6 +8,7 @@ export type SubtaskModel = {
   title: string;
   done: boolean;
   dueDate: Date | null;
+  wordCount: number | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -25,6 +26,11 @@ export abstract class SubtaskRepository {
     data: UpdateSubtaskInput,
   ): Promise<SubtaskModel>;
   abstract delete(id: number, userId: number): Promise<SubtaskModel>;
+  /** Per project: tasks' own word counts plus their checklist items' words. */
+  abstract sumWordsByProjectIds(
+    projectIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>>;
   abstract renameChecklist(
     taskId: number,
     oldTitle: string,
