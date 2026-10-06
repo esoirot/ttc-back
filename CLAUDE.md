@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Stack
 
-NestJS 11 + Fastify v5, GraphQL (code-first, Apollo), Prisma 7 + PostgreSQL, Redis (throttler + pub/sub), JWT via HTTP-only cookies.
+NestJS 11 + Fastify v5, GraphQL (code-first, Apollo), Prisma 7 (Prisma 8 installed side by side, not yet serving queries) + PostgreSQL, Redis (throttler + pub/sub), JWT via HTTP-only cookies.
 
 ## Working rules
 
@@ -18,9 +18,11 @@ NestJS 11 + Fastify v5, GraphQL (code-first, Apollo), Prisma 7 + PostgreSQL, Red
 pnpm run start:dev          # watch mode (requires .env + docker compose up -d)
 docker compose up -d        # start postgres + redis
 
-# DB
-pnpm prisma migrate dev --name <name>   # apply schema + regenerate client
-pnpm prisma generate                    # regenerate client only (src/generated/prisma/)
+# DB (Prisma 7 owns migrations + queries; see "Prisma 7 / 8 side by side" below)
+pnpm prisma7 migrate dev --name <name> --config prisma7.config.ts   # apply schema + regenerate client
+pnpm prisma7 generate --config prisma7.config.ts                    # regenerate client only (src/generated/prisma/)
+pnpm run prisma:miggen                                              # deploy: prisma7 migrate deploy + generate
+pnpm prisma contract emit                                           # Prisma 8: re-emit generated/prisma8/ from prisma8/contract.prisma
 
 # Quality (run all at once)
 pnpm run check              # typecheck + circular + audit + prune + format:check + lint
@@ -125,6 +127,12 @@ Third-party credentials (Clockify API key, HubSpot/Google Calendar OAuth tokens)
 Fire-and-forget `AuditLog` writes in HubSpot, Clockify, Clients, Projects, and Invoices services. Never `await` these — they must not block requests. Retention cleaned by scheduled job in `CleanupModule` (`AUDIT_RETENTION_DAYS`, default 90).
 
 `GET /admin/audit` (`src/audit/audit.controller.ts`) — **UNUSED**. No active consumer. It's the one REST endpoint left over from before the GraphQL admin surface existed (see `docs/final-arch.txt` §4); migrating it to `admin.resolver.ts` was considered and explicitly deprioritized (`docs/arch-todo.txt` item 4). Leave as-is, don't spend effort on it.
+
+### Prisma 7 / 8 side by side
+
+Mid-upgrade, following Prisma's 7 -> 8 guide (https://www.prisma.io/docs/guides/upgrade-prisma-orm/postgresql). Done: phase 1 (v7 CLI lives in `@prisma/prisma7`, binary `prisma7`, config `prisma7.config.ts`) and phase 2 (Prisma 8 CLI `prisma` + runtime `@prisma/orm-postgres`, config `prisma.config.ts`, contract `prisma8/contract.prisma` inferred from the live DB, emitted artefacts committed in `generated/prisma8/`). Not done: phase 3 (port repositories from `PrismaService`/`@prisma/client` to the v8 query API), phase 4 (`prisma db sign` hands migrations to v8), phase 5 (remove v7).
+
+Until phase 4, every schema change is a Prisma 7 migration (`prisma7 migrate dev`, edit `prisma/schema.prisma`); after each one, update `prisma8/contract.prisma` to match and re-run `pnpm prisma contract emit`. Never run `prisma db sign`, `prisma db init`, `prisma db update` or `prisma db migrate` yet — that is the phase-4 handover. Pin `@prisma/orm-postgres` to the `@prisma/orm-toolchain` version the `prisma` CLI depends on (`pnpm view prisma@<v> dependencies`): a mismatched pair crashes `contract infer`/`emit` with "Malformed authoring pslBlock contribution". Porting notes from the spike: v8 reads/writes Postgres timestamps as `Temporal` (needs `temporal-polyfill` before Node 26.8.2), has no automatic `updatedAt` on Postgres, uses `.ilike` for case-insensitive search and `db.transaction(async (tx) => ...)` for transactions; the runtime is ESM-only (`require()` works on Node 22.12+, Jest needs config).
 
 ### Rates system
 
