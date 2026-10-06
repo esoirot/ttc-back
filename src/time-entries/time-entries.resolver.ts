@@ -55,8 +55,11 @@ export class TimeEntriesResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => Date, { name: 'firstTimeEntryStart', nullable: true })
-  firstTimeEntryStart(@CurrentUser() user: RequestUser) {
-    return this.timeEntriesService.firstStartTime(user.id);
+  firstTimeEntryStart(
+    @CurrentUser() user: RequestUser,
+    @Args('projectId', { type: () => Int, nullable: true }) projectId?: number,
+  ) {
+    return this.timeEntriesService.firstStartTime(user.id, projectId);
   }
 
   @UseGuards(GqlAuthGuard)

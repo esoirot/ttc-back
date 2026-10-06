@@ -35,4 +35,26 @@ describe('PrismaTimeEntryRepository.findFirstStartTime', () => {
 
     expect(await repo.findFirstStartTime(7)).toBeNull();
   });
+
+  it('limits the search to one project when a projectId is given', async () => {
+    findFirst.mockResolvedValue(null);
+
+    await repo.findFirstStartTime(7, 12);
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { userId: 7, projectId: 12 },
+      orderBy: { startTime: 'asc' },
+      select: { startTime: true },
+    });
+  });
+
+  it('treats an explicit null projectId as no project filter', async () => {
+    findFirst.mockResolvedValue(null);
+
+    await repo.findFirstStartTime(7, null as unknown as number);
+
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 7 } }),
+    );
+  });
 });

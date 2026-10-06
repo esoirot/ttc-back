@@ -88,8 +88,15 @@ describe('TimeEntriesResolver', () => {
     service.firstStartTime.mockResolvedValue(first);
 
     const result = await resolver.firstTimeEntryStart(user);
-    expect(service.firstStartTime).toHaveBeenCalledWith(1);
+    expect(service.firstStartTime).toHaveBeenCalledWith(1, undefined);
     expect(result).toEqual(first);
+  });
+
+  it('firstTimeEntryStart — passes an optional projectId through', async () => {
+    service.firstStartTime.mockResolvedValue(null);
+
+    await resolver.firstTimeEntryStart(user, 12);
+    expect(service.firstStartTime).toHaveBeenCalledWith(1, 12);
   });
 
   it('createTimeEntry — delegates to service', async () => {

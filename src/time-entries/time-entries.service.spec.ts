@@ -430,7 +430,14 @@ describe('TimeEntriesService', () => {
       repo.findFirstStartTime.mockResolvedValue(first);
 
       expect(await service.firstStartTime(1)).toEqual(first);
-      expect(repo.findFirstStartTime).toHaveBeenCalledWith(1);
+      expect(repo.findFirstStartTime).toHaveBeenCalledWith(1, undefined);
+    });
+
+    it('can be scoped to one project', async () => {
+      repo.findFirstStartTime.mockResolvedValue(null);
+
+      await service.firstStartTime(1, 12);
+      expect(repo.findFirstStartTime).toHaveBeenCalledWith(1, 12);
     });
 
     it('returns null when the user has no time entries', async () => {
