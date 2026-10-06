@@ -270,7 +270,7 @@ describe('AdminService', () => {
     it('creates and logs ADMIN_RATE_CREATE', async () => {
       const result = await service.createRate(99, {
         userId: 5,
-        activityId: 1,
+        occupationId: 1,
         type: 'HOURLY',
         name: 'Rate',
         amount: 50,

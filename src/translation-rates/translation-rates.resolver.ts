@@ -22,10 +22,10 @@ export class TranslationRatesResolver {
     @CurrentUser() user: RequestUser,
     @Args('type', { type: () => TranslationRateType, nullable: true })
     type?: TranslationRateType,
-    @Args('activityId', { type: () => Int, nullable: true })
-    activityId?: number,
+    @Args('occupationId', { type: () => Int, nullable: true })
+    occupationId?: number,
   ) {
-    return this.service.findAll(user.id, type, activityId);
+    return this.service.findAll(user.id, type, occupationId);
   }
 
   @UseGuards(GqlAuthGuard)

@@ -1,7 +1,7 @@
 import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
 import { EntryTag } from './entry-tag.entity';
 import { TaskActivity } from '../../tasks/entities/task-activity.entity';
-import { Activity } from '../../activities/entities/activity.entity';
+import { Occupation } from '../../occupations/entities/occupation.entity';
 
 enum InvoicingStatus {
   NO = 'NO',
@@ -73,10 +73,10 @@ export class TimeEntry {
   clockifyEntryId?: string | null;
 
   @Field(() => Int, { nullable: true })
-  activityId?: number | null;
+  occupationId?: number | null;
 
-  @Field(() => Activity, { nullable: true })
-  activity?: Activity | null;
+  @Field(() => Occupation, { nullable: true })
+  occupation?: Occupation | null;
 
   @Field(() => Int, { nullable: true })
   wordsProcessed?: number | null;

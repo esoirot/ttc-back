@@ -13,7 +13,7 @@ registerEnumType(TranslationRateType, { name: 'TranslationRateType' });
 @ObjectType({ implements: IRateBase })
 export class TranslationRate extends IRateBase {
   @Field(() => Int, { nullable: true })
-  activityId?: number | null;
+  occupationId?: number | null;
 
   @Field(() => TranslationRateType)
   type!: TranslationRateType;

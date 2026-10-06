@@ -21,15 +21,15 @@ export class ProjectsService {
     userId: number,
     input: CreateProjectInput,
   ): Promise<ProjectModel> {
-    // If no activityIds were explicitly given and the project is linked to a
-    // client, inherit that client's current activity set. An explicit
-    // activityIds (even []) always overrides inheritance.
+    // If no occupationIds were explicitly given and the project is linked to a
+    // client, inherit that client's current occupation set. An explicit
+    // occupationIds (even []) always overrides inheritance.
     let resolvedInput = input;
-    if (input.activityIds === undefined && input.clientId != null) {
+    if (input.occupationIds === undefined && input.clientId != null) {
       const client = await this.clientsService.findOne(input.clientId, userId);
       resolvedInput = {
         ...input,
-        activityIds: client.activities.map((a: { id: number }) => a.id),
+        occupationIds: client.occupations.map((a: { id: number }) => a.id),
       };
     }
     const project = await this.repo.create(userId, resolvedInput);

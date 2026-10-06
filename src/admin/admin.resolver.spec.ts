@@ -207,7 +207,7 @@ describe('AdminResolver', () => {
 
     const rateInput = {
       userId: 5,
-      activityId: 1,
+      occupationId: 1,
       type: 'HOURLY' as const,
       name: 'Rate',
       amount: 50,

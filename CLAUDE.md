@@ -100,7 +100,9 @@ Rationale: this is the only REST surface documentation that exists in the repo �
 
 `src/schema.gql` is **auto-generated** — never edit it directly. Edit the TypeScript entity/resolver files, then restart the server to regenerate.
 
-Orphaned union types (`TranslatorActivity`, `CorrectorActivity`, `CustomActivity`) registered explicitly in `AppModule.buildSchemaOptions.orphanedTypes` — required because NestJS code-first won't include types not reachable from root resolvers.
+Orphaned union types (`TranslatorOccupation`, `CorrectorOccupation`, `CustomOccupation`) registered explicitly in `AppModule.buildSchemaOptions.orphanedTypes` — required because NestJS code-first won't include types not reachable from root resolvers.
+
+Naming: `Occupation` (`src/occupations/`, table `Occupation`) is the user's business line (translator, corrector...) — renamed from `Activity` in migration `20261006120000_rename_activity_to_occupation`. `TaskActivity` (`src/tasks/activities.service.ts`, the `activities` field on `Task`/`TimeEntry`) is the unrelated task history log and keeps its name.
 
 Query depth capped via `graphql-depth-limit` (`validationRules` in `GraphQLModule.forRootAsync`, `src/app.module.ts`) — `GRAPHQL_MAX_DEPTH` env var, default 10. Prevents an unbounded nested query over the Client → Project → Task → {Subtask, Comment, Activity, Attachment, TimeEntry} graph.
 

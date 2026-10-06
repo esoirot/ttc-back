@@ -6,7 +6,7 @@ import {
   registerEnumType,
 } from '@nestjs/graphql';
 import { CompanyContact } from './company-contact.entity';
-import { Activity } from '../../activities/entities/activity.entity';
+import { Occupation } from '../../occupations/entities/occupation.entity';
 
 export enum ClientType {
   COMPANY = 'COMPANY',
@@ -151,8 +151,8 @@ export class Client {
   @Field(() => [CompanyContact])
   contacts!: CompanyContact[];
 
-  @Field(() => [Activity])
-  activities!: Activity[];
+  @Field(() => [Occupation])
+  occupations!: Occupation[];
 
   @Field()
   createdAt!: Date;

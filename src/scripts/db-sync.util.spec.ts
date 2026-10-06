@@ -3,7 +3,7 @@ import { MODEL_ORDER, orderByFor, toClientProperty } from './db-sync.util';
 // [model, ...modelsItDependsOn] per FK fields in prisma/schema.prisma
 const FK_DEPENDENCIES: [string, string[]][] = [
   ['Client', ['User']],
-  ['Activity', ['User']],
+  ['Occupation', ['User']],
   ['CompanyContact', ['Client']],
   ['Project', ['User', 'Client', 'RateSheet']],
   ['Tag', ['User']],
@@ -23,12 +23,12 @@ const FK_DEPENDENCIES: [string, string[]][] = [
   ['OAuthAccount', ['User']],
   ['AuditLog', ['User']],
   ['TwoFactorBackupCode', ['User']],
-  ['TranslationRate', ['User', 'Activity', 'Client']],
+  ['TranslationRate', ['User', 'Occupation', 'Client']],
   ['ClientRate', ['Client', 'User']],
-  ['Charge', ['Activity']],
-  ['LanguagePair', ['Activity']],
-  ['CustomField', ['Activity']],
-  ['RateSheet', ['User', 'Activity', 'Client']],
+  ['Charge', ['Occupation']],
+  ['LanguagePair', ['Occupation']],
+  ['CustomField', ['Occupation']],
+  ['RateSheet', ['User', 'Occupation', 'Client']],
 ];
 
 describe('MODEL_ORDER', () => {

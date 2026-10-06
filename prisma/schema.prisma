@@ -92,7 +92,7 @@ model User {
   clientRates                  ClientRate[]
   rateSheets                   RateSheet[]
   tags                         Tag[]
-  activities                   Activity[]
+  occupations                   Occupation[]
   defaultCurrency              String                @default("EUR")
   firstName                    String?
   lastName                     String?
@@ -210,7 +210,7 @@ model Client {
   translationRates  TranslationRate[]
   tags              ClientTag[]
   statusHistory     ClientStatusHistory[]
-  activities        ClientActivity[]
+  occupations        ClientOccupation[]
 }
 
 model ClientStatusHistory {
@@ -265,7 +265,7 @@ model Project {
   tasks          Task[]
   timeEntries    TimeEntry[]
   invoiceItems   InvoiceItem[]
-  activities     ProjectActivity[]
+  occupations     ProjectOccupation[]
 }
 
 model Task {
@@ -370,8 +370,8 @@ model TimeEntry {
   durationSeconds Int?
   billable        Boolean         @default(true)
   clockifyEntryId String?
-  activityId      Int?
-  activity        Activity?       @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  occupationId      Int?
+  occupation        Occupation?       @relation(fields: [occupationId], references: [id], onDelete: SetNull)
   wordsProcessed  Int?
   invoicingStatus InvoicingStatus @default(NO)
   createdAt       DateTime        @default(now())
@@ -467,8 +467,8 @@ model TranslationRate {
   id             Int       @id @default(autoincrement())
   userId         Int
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activityId     Int?
-  activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  occupationId     Int?
+  occupation       Occupation? @relation(fields: [occupationId], references: [id], onDelete: SetNull)
   clientId       Int?
   client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   type           RateType
@@ -502,13 +502,13 @@ enum ChargeType {
   VARIABLE
 }
 
-enum ActivityType {
+enum OccupationType {
   TRANSLATOR
   CORRECTOR
   CUSTOM
 }
 
-model Activity {
+model Occupation {
   id                Int               @id @default(autoincrement())
   userId            Int
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -523,7 +523,7 @@ model Activity {
   objectiveQ2       Int?
   objectiveQ3       Int?
   objectiveQ4       Int?
-  activityType      ActivityType      @default(CUSTOM)
+  occupationType      OccupationType      @default(CUSTOM)
   charges           Charge[]
   translationRates  TranslationRate[]
   rateSheets        RateSheet[]
@@ -531,33 +531,33 @@ model Activity {
   customFields      CustomField[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
-  clients           ClientActivity[]
-  projects          ProjectActivity[]
+  clients           ClientOccupation[]
+  projects          ProjectOccupation[]
   timeEntries       TimeEntry[]
 }
 
-model ClientActivity {
+model ClientOccupation {
   clientId   Int
-  activityId Int
+  occupationId Int
   client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  occupation   Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
 
-  @@id([clientId, activityId])
+  @@id([clientId, occupationId])
 }
 
-model ProjectActivity {
+model ProjectOccupation {
   projectId  Int
-  activityId Int
+  occupationId Int
   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  occupation   Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
 
-  @@id([projectId, activityId])
+  @@id([projectId, occupationId])
 }
 
 model Charge {
   id         Int        @id @default(autoincrement())
-  activityId Int
-  activity   Activity   @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  occupationId Int
+  occupation   Occupation   @relation(fields: [occupationId], references: [id], onDelete: Cascade)
   name       String
   amount     Int
   type       ChargeType
@@ -565,16 +565,16 @@ model Charge {
 
 model LanguagePair {
   id           Int      @id @default(autoincrement())
-  activityId   Int
-  activity     Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  occupationId   Int
+  occupation     Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
   fromLanguage String
   toLanguage   String
 }
 
 model CustomField {
   id         Int      @id @default(autoincrement())
-  activityId Int
-  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  occupationId Int
+  occupation   Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
   key        String
   value      String
 }
@@ -583,8 +583,8 @@ model RateSheet {
   id             Int       @id @default(autoincrement())
   userId         Int
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activityId     Int?
-  activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  occupationId     Int?
+  occupation       Occupation? @relation(fields: [occupationId], references: [id], onDelete: SetNull)
   clientId       Int?
   client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   name           String

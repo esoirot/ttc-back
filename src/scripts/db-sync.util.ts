@@ -5,7 +5,7 @@
 export const MODEL_ORDER = [
   'User',
   'Client',
-  'Activity',
+  'Occupation',
   'RateSheet',
   'CompanyContact',
   'Project',

@@ -153,7 +153,7 @@ export class AdminCreateRateInput {
   userId!: number;
 
   @Field(() => Int)
-  activityId!: number;
+  occupationId!: number;
 
   @Field(() => RateType)
   type!: RateType;

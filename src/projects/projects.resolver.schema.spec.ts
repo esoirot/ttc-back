@@ -55,7 +55,7 @@ describe('ProjectsResolver GraphQL schema', () => {
               title: 'Project',
               status: 'ACTIVE',
               currency: 'EUR',
-              activities: [],
+              occupations: [],
               createdAt: new Date(),
               updatedAt: new Date(),
             }),
@@ -104,14 +104,14 @@ describe('ProjectsResolver GraphQL schema', () => {
       getFields: () => Record<string, unknown>;
     };
     const projectFields = projectType.getFields();
-    expect(projectFields).toHaveProperty('activities');
+    expect(projectFields).toHaveProperty('occupations');
     expect(projectFields).toHaveProperty('totalWordsProcessed');
     expect(projectFields).toHaveProperty('totalTaskWords');
 
     const createInputType = schema.getType('CreateProjectInput') as unknown as {
       getFields: () => Record<string, unknown>;
     };
-    expect(createInputType.getFields()).toHaveProperty('activityIds');
+    expect(createInputType.getFields()).toHaveProperty('occupationIds');
   });
 
   // @ResolveField return-type thunks resolve lazily on first real query

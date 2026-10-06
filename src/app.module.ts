@@ -33,12 +33,12 @@ import { ClientRatesModule } from './client-rates/client-rates.module';
 import { RateSheetsModule } from './rate-sheets/rate-sheets.module';
 import { TagsModule } from './tags/tags.module';
 import { AdminModule } from './admin/admin.module';
-import { ActivitiesModule } from './activities/activities.module';
+import { OccupationsModule } from './occupations/occupations.module';
 import {
-  CorrectorActivity,
-  CustomActivity,
-  TranslatorActivity,
-} from './activities/entities/activity.entity';
+  CorrectorOccupation,
+  CustomOccupation,
+  TranslatorOccupation,
+} from './occupations/entities/occupation.entity';
 import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
 import { GraphqlLoadersModule } from './common/graphql/loaders.module';
 import { LoadersService } from './common/graphql/loaders.service';
@@ -134,9 +134,9 @@ import type { RequestUser } from './auth/types/gql-context.type';
         sortSchema: true,
         buildSchemaOptions: {
           orphanedTypes: [
-            TranslatorActivity,
-            CorrectorActivity,
-            CustomActivity,
+            TranslatorOccupation,
+            CorrectorOccupation,
+            CustomOccupation,
           ],
         },
         // playground: false stops @nestjs/apollo from injecting its own
@@ -187,7 +187,7 @@ import type { RequestUser } from './auth/types/gql-context.type';
     RateSheetsModule,
     TagsModule,
     AdminModule,
-    ActivitiesModule,
+    OccupationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],

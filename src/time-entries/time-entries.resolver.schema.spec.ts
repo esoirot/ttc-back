@@ -73,8 +73,8 @@ describe('TimeEntriesResolver GraphQL schema', () => {
     };
     const timeEntryFields = timeEntryType.getFields();
     expect(timeEntryFields).toHaveProperty('activities');
-    expect(timeEntryFields).toHaveProperty('activity');
-    expect(timeEntryFields).toHaveProperty('activityId');
+    expect(timeEntryFields).toHaveProperty('occupation');
+    expect(timeEntryFields).toHaveProperty('occupationId');
     expect(timeEntryFields).toHaveProperty('wordsProcessed');
 
     const updateInputType = schema.getType(
@@ -82,7 +82,7 @@ describe('TimeEntriesResolver GraphQL schema', () => {
     ) as unknown as {
       getFields: () => Record<string, unknown>;
     };
-    expect(updateInputType.getFields()).toHaveProperty('activityId');
+    expect(updateInputType.getFields()).toHaveProperty('occupationId');
     expect(updateInputType.getFields()).toHaveProperty('wordsProcessed');
   });
 });

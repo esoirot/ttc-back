@@ -2,7 +2,7 @@ import { TranslationRateModel } from '../../translation-rates/types/translation-
 
 export interface ChargeModel {
   id: number;
-  activityId: number;
+  occupationId: number;
   name: string;
   amount: number;
   type: string;
@@ -10,23 +10,23 @@ export interface ChargeModel {
 
 interface LanguagePairModel {
   id: number;
-  activityId: number;
+  occupationId: number;
   fromLanguage: string;
   toLanguage: string;
 }
 
 interface CustomFieldModel {
   id: number;
-  activityId: number;
+  occupationId: number;
   key: string;
   value: string;
 }
 
-export interface ActivityModel {
+export interface OccupationModel {
   id: number;
   userId: number;
   name: string;
-  activityType: string;
+  occupationType: string;
   companyName: string | null;
   legalForm: string | null;
   professionalEmail: string | null;

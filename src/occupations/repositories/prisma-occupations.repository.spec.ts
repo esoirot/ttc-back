@@ -1,10 +1,10 @@
-import { PrismaActivitiesRepository } from './prisma-activities.repository';
+import { PrismaOccupationsRepository } from './prisma-occupations.repository';
 import type { PrismaService } from '../../prisma.service';
 
-describe('PrismaActivitiesRepository.update', () => {
-  let repo: PrismaActivitiesRepository;
+describe('PrismaOccupationsRepository.update', () => {
+  let repo: PrismaOccupationsRepository;
   let prisma: {
-    activity: {
+    occupation: {
       findFirst: jest.Mock;
       update: jest.Mock<Promise<unknown>, [{ data: object }]>;
     };
@@ -12,18 +12,18 @@ describe('PrismaActivitiesRepository.update', () => {
 
   beforeEach(() => {
     prisma = {
-      activity: {
+      occupation: {
         findFirst: jest.fn().mockResolvedValue({ id: 1, userId: 1 }),
         update: jest
           .fn<Promise<unknown>, [{ data: object }]>()
           .mockResolvedValue({ id: 1 }),
       },
     };
-    repo = new PrismaActivitiesRepository(prisma as unknown as PrismaService);
+    repo = new PrismaOccupationsRepository(prisma as unknown as PrismaService);
   });
 
   function sentData() {
-    return prisma.activity.update.mock.calls[0][0].data;
+    return prisma.occupation.update.mock.calls[0][0].data;
   }
 
   it('replaces the custom fields when a new list is given', async () => {

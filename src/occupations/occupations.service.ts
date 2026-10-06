@@ -1,32 +1,35 @@
 import { Injectable } from '@nestjs/common';
-import { ActivitiesRepository } from './repositories/activities.repository';
-import { CreateActivityInput } from './dto/create-activity.input';
-import { UpdateActivityInput } from './dto/update-activity.input';
+import { OccupationsRepository } from './repositories/occupations.repository';
+import { CreateOccupationInput } from './dto/create-occupation.input';
+import { UpdateOccupationInput } from './dto/update-occupation.input';
 import { CreateChargeInput } from './dto/create-charge.input';
 import { UpdateChargeInput } from './dto/update-charge.input';
-import { ActivityModel, ChargeModel } from './types/activity.type';
+import { OccupationModel, ChargeModel } from './types/occupation.type';
 
 @Injectable()
-export class ActivitiesService {
-  constructor(private readonly repo: ActivitiesRepository) {}
+export class OccupationsService {
+  constructor(private readonly repo: OccupationsRepository) {}
 
-  findAll(userId: number): Promise<ActivityModel[]> {
+  findAll(userId: number): Promise<OccupationModel[]> {
     return this.repo.findAll(userId);
   }
 
-  findById(id: number, userId: number): Promise<ActivityModel> {
+  findById(id: number, userId: number): Promise<OccupationModel> {
     return this.repo.findById(id, userId);
   }
 
-  create(userId: number, data: CreateActivityInput): Promise<ActivityModel> {
+  create(
+    userId: number,
+    data: CreateOccupationInput,
+  ): Promise<OccupationModel> {
     return this.repo.create(userId, data);
   }
 
   update(
     id: number,
     userId: number,
-    data: UpdateActivityInput,
-  ): Promise<ActivityModel> {
+    data: UpdateOccupationInput,
+  ): Promise<OccupationModel> {
     return this.repo.update(id, userId, data);
   }
 

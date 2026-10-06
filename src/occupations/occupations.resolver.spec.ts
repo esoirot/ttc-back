@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ActivitiesResolver } from './activities.resolver';
-import { ActivitiesService } from './activities.service';
-import { ActivityType, ChargeType } from './entities/activity.entity';
+import { OccupationsResolver } from './occupations.resolver';
+import { OccupationsService } from './occupations.service';
+import { OccupationType, ChargeType } from './entities/occupation.entity';
 
-describe('ActivitiesResolver', () => {
-  let resolver: ActivitiesResolver;
+describe('OccupationsResolver', () => {
+  let resolver: OccupationsResolver;
   let service: {
     findAll: jest.Mock;
     findById: jest.Mock;
@@ -32,65 +32,70 @@ describe('ActivitiesResolver', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        ActivitiesResolver,
-        { provide: ActivitiesService, useValue: service },
+        OccupationsResolver,
+        { provide: OccupationsService, useValue: service },
       ],
     }).compile();
 
-    resolver = module.get<ActivitiesResolver>(ActivitiesResolver);
+    resolver = module.get<OccupationsResolver>(OccupationsResolver);
   });
 
   it('should be defined', () => {
     expect(resolver).toBeDefined();
   });
 
-  it('myActivities — delegates with user id', async () => {
+  it('myOccupations — delegates with user id', async () => {
     service.findAll.mockResolvedValue([]);
 
-    const result = await resolver.myActivities(user);
+    const result = await resolver.myOccupations(user);
     expect(service.findAll).toHaveBeenCalledWith(1);
     expect(result).toEqual([]);
   });
 
-  it('activity — delegates with id and user id', async () => {
-    const activity = {
+  it('occupation — delegates with id and user id', async () => {
+    const occupation = {
       id: 1,
       userId: 1,
       type: 'TRANSLATOR',
       name: 'Translation',
     };
-    service.findById.mockResolvedValue(activity);
+    service.findById.mockResolvedValue(occupation);
 
-    const result = await resolver.activity(user, 1);
+    const result = await resolver.occupation(user, 1);
     expect(service.findById).toHaveBeenCalledWith(1, 1);
-    expect(result).toEqual(activity);
+    expect(result).toEqual(occupation);
   });
 
-  it('createActivity — delegates to service', async () => {
-    const activity = {
+  it('createOccupation — delegates to service', async () => {
+    const occupation = {
       id: 1,
       userId: 1,
       type: 'TRANSLATOR',
       name: 'Translation',
     };
-    service.create.mockResolvedValue(activity);
+    service.create.mockResolvedValue(occupation);
 
-    const result = await resolver.createActivity(user, {
+    const result = await resolver.createOccupation(user, {
       name: 'Translation',
-      activityType: ActivityType.TRANSLATOR,
+      occupationType: OccupationType.TRANSLATOR,
     });
     expect(service.create).toHaveBeenCalledWith(1, {
       name: 'Translation',
-      activityType: ActivityType.TRANSLATOR,
+      occupationType: OccupationType.TRANSLATOR,
     });
-    expect(result).toEqual(activity);
+    expect(result).toEqual(occupation);
   });
 
-  it('updateActivity — delegates with id from input', async () => {
-    const activity = { id: 1, userId: 1, type: 'TRANSLATOR', name: 'Updated' };
-    service.update.mockResolvedValue(activity);
+  it('updateOccupation — delegates with id from input', async () => {
+    const occupation = {
+      id: 1,
+      userId: 1,
+      type: 'TRANSLATOR',
+      name: 'Updated',
+    };
+    service.update.mockResolvedValue(occupation);
 
-    const result = await resolver.updateActivity(user, {
+    const result = await resolver.updateOccupation(user, {
       id: 1,
       name: 'Updated',
     });
@@ -98,29 +103,29 @@ describe('ActivitiesResolver', () => {
       id: 1,
       name: 'Updated',
     });
-    expect(result).toEqual(activity);
+    expect(result).toEqual(occupation);
   });
 
-  it('deleteActivity — calls service and returns true', async () => {
+  it('deleteOccupation — calls service and returns true', async () => {
     service.delete.mockResolvedValue(undefined);
 
-    const result = await resolver.deleteActivity(user, 1);
+    const result = await resolver.deleteOccupation(user, 1);
     expect(service.delete).toHaveBeenCalledWith(1, 1);
     expect(result).toBe(true);
   });
 
   it('createCharge — delegates to service', async () => {
-    const charge = { id: 1, activityId: 1, amount: 100 };
+    const charge = { id: 1, occupationId: 1, amount: 100 };
     service.createCharge.mockResolvedValue(charge);
 
     const result = await resolver.createCharge(user, {
-      activityId: 1,
+      occupationId: 1,
       name: 'Service fee',
       amount: 100,
       type: ChargeType.FIXED,
     });
     expect(service.createCharge).toHaveBeenCalledWith(1, {
-      activityId: 1,
+      occupationId: 1,
       name: 'Service fee',
       amount: 100,
       type: ChargeType.FIXED,
@@ -129,7 +134,7 @@ describe('ActivitiesResolver', () => {
   });
 
   it('updateCharge — delegates with id from input', async () => {
-    const charge = { id: 1, activityId: 1, amount: 150 };
+    const charge = { id: 1, occupationId: 1, amount: 150 };
     service.updateCharge.mockResolvedValue(charge);
 
     const result = await resolver.updateCharge(user, {

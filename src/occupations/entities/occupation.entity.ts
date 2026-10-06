@@ -13,12 +13,12 @@ export enum ChargeType {
 }
 registerEnumType(ChargeType, { name: 'ChargeType' });
 
-export enum ActivityType {
+export enum OccupationType {
   TRANSLATOR = 'TRANSLATOR',
   CORRECTOR = 'CORRECTOR',
   CUSTOM = 'CUSTOM',
 }
-registerEnumType(ActivityType, { name: 'ActivityType' });
+registerEnumType(OccupationType, { name: 'OccupationType' });
 
 @ObjectType()
 export class Charge {
@@ -26,7 +26,7 @@ export class Charge {
   id!: number;
 
   @Field(() => Int)
-  activityId!: number;
+  occupationId!: number;
 
   @Field()
   name!: string;
@@ -44,7 +44,7 @@ class LanguagePair {
   id!: number;
 
   @Field(() => Int)
-  activityId!: number;
+  occupationId!: number;
 
   @Field()
   fromLanguage!: string;
@@ -59,7 +59,7 @@ class CustomField {
   id!: number;
 
   @Field(() => Int)
-  activityId!: number;
+  occupationId!: number;
 
   @Field()
   key!: string;
@@ -69,14 +69,15 @@ class CustomField {
 }
 
 @InterfaceType({
-  resolveType(value: { activityType: ActivityType }) {
-    if (value.activityType === ActivityType.TRANSLATOR)
-      return TranslatorActivity;
-    if (value.activityType === ActivityType.CORRECTOR) return CorrectorActivity;
-    return CustomActivity;
+  resolveType(value: { occupationType: OccupationType }) {
+    if (value.occupationType === OccupationType.TRANSLATOR)
+      return TranslatorOccupation;
+    if (value.occupationType === OccupationType.CORRECTOR)
+      return CorrectorOccupation;
+    return CustomOccupation;
   },
 })
-export abstract class Activity {
+export abstract class Occupation {
   @Field(() => Int)
   id!: number;
 
@@ -86,8 +87,8 @@ export abstract class Activity {
   @Field()
   name!: string;
 
-  @Field(() => ActivityType)
-  activityType!: ActivityType;
+  @Field(() => OccupationType)
+  occupationType!: OccupationType;
 
   @Field(() => String, { nullable: true })
   companyName?: string | null;
@@ -132,17 +133,17 @@ export abstract class Activity {
   updatedAt!: Date;
 }
 
-@ObjectType({ implements: () => [Activity] })
-export class TranslatorActivity extends Activity {
+@ObjectType({ implements: () => [Occupation] })
+export class TranslatorOccupation extends Occupation {
   @Field(() => [LanguagePair])
   languagePairs!: LanguagePair[];
 }
 
-@ObjectType({ implements: () => [Activity] })
-export class CorrectorActivity extends Activity {}
+@ObjectType({ implements: () => [Occupation] })
+export class CorrectorOccupation extends Occupation {}
 
-@ObjectType({ implements: () => [Activity] })
-export class CustomActivity extends Activity {
+@ObjectType({ implements: () => [Occupation] })
+export class CustomOccupation extends Occupation {
   @Field(() => [CustomField])
   customFields!: CustomField[];
 }

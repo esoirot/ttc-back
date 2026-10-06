@@ -39,7 +39,7 @@ describe('TranslationRatesResolver', () => {
     expect(resolver).toBeDefined();
   });
 
-  it('findAll — delegates with type and activityId filters', async () => {
+  it('findAll — delegates with type and occupationId filters', async () => {
     const rates = [mockTranslationRate()];
     service.findAll.mockResolvedValue(rates);
 

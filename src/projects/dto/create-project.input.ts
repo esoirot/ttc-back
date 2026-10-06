@@ -52,5 +52,5 @@ export class CreateProjectInput {
   startDate?: Date;
 
   @Field(() => [Int], { nullable: true })
-  activityIds?: number[];
+  occupationIds?: number[];
 }

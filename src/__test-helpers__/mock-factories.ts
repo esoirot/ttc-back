@@ -49,7 +49,7 @@ export function mockProject(
     startDate: null,
     createdAt: now,
     updatedAt: now,
-    activities: [],
+    occupations: [],
     ...overrides,
   };
 }
@@ -110,8 +110,8 @@ export function mockTimeEntry(
     durationSeconds: null,
     billable: false,
     clockifyEntryId: null,
-    activityId: null,
-    activity: null,
+    occupationId: null,
+    occupation: null,
     wordsProcessed: null,
     invoicingStatus: 'NO',
     tags: [],
@@ -153,7 +153,7 @@ export function mockClient(overrides: Partial<ClientModel> = {}): ClientModel {
     contactedAt: null,
     tags: [],
     contacts: [],
-    activities: [],
+    occupations: [],
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -176,7 +176,7 @@ export function mockRateSheet(
   return {
     id: 1,
     userId: 1,
-    activityId: null,
+    occupationId: null,
     clientId: null,
     name: 'Standard Rate Sheet',
     description: null,
@@ -211,7 +211,7 @@ export function mockTranslationRate(
   return {
     id: 1,
     userId: 1,
-    activityId: null,
+    occupationId: null,
     clientId: null,
     type: 'PER_WORD',
     name: 'Standard Rate',

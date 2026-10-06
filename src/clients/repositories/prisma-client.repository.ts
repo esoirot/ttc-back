@@ -15,7 +15,7 @@ import { UpdateCompanyContactInput } from '../dto/update-company-contact.input';
 const INCLUDE_CONTACTS = {
   contacts: true,
   tags: { include: { tag: { select: { id: true, name: true } } } },
-  activities: { include: { activity: true } },
+  occupations: { include: { occupation: true } },
 } as const;
 
 type PrismaClientRow = Prisma.ClientGetPayload<{
@@ -23,12 +23,12 @@ type PrismaClientRow = Prisma.ClientGetPayload<{
 }>;
 
 function toModel(row: PrismaClientRow): ClientModel {
-  const { tags, activities, ...rest } = row;
+  const { tags, occupations, ...rest } = row;
   return {
     ...rest,
     taxRate: rest.taxRate?.toNumber() ?? null,
     tags: tags.map((t) => t.tag),
-    activities: activities.map((a) => a.activity),
+    occupations: occupations.map((a) => a.occupation),
   };
 }
 
@@ -104,14 +104,14 @@ export class PrismaClientRepository implements ClientRepository {
   }
 
   async create(userId: number, data: CreateClientInput): Promise<ClientModel> {
-    const { tagIds, activityIds, ...fields } = data;
+    const { tagIds, occupationIds, ...fields } = data;
     const row = await this.prisma.client.create({
       data: {
         ...fields,
         userId,
         tags: { create: (tagIds ?? []).map((id) => ({ tagId: id })) },
-        activities: {
-          create: (activityIds ?? []).map((id) => ({ activityId: id })),
+        occupations: {
+          create: (occupationIds ?? []).map((id) => ({ occupationId: id })),
         },
       },
       include: INCLUDE_CONTACTS,
@@ -124,7 +124,7 @@ export class PrismaClientRepository implements ClientRepository {
     userId: number,
     data: UpdateClientInput,
   ): Promise<ClientModel> {
-    const { id: _id, tagIds, activityIds, ...fields } = data;
+    const { id: _id, tagIds, occupationIds, ...fields } = data;
     const existing = await this.prisma.client.findFirst({
       where: { id, userId },
     });
@@ -145,11 +145,11 @@ export class PrismaClientRepository implements ClientRepository {
     //           },
     //         }
     //       : {}),
-    //     ...(activityIds !== undefined
+    //     ...(occupationIds !== undefined
     //       ? {
-    //           activities: {
+    //           occupations: {
     //             deleteMany: {},
-    //             create: activityIds.map((aid) => ({ activityId: aid })),
+    //             create: occupationIds.map((aid) => ({ occupationId: aid })),
     //           },
     //         }
     //       : {}),
@@ -168,11 +168,11 @@ export class PrismaClientRepository implements ClientRepository {
               },
             }
           : {}),
-        ...(activityIds !== undefined
+        ...(occupationIds !== undefined
           ? {
-              activities: {
+              occupations: {
                 deleteMany: {},
-                create: activityIds.map((aid) => ({ activityId: aid })),
+                create: occupationIds.map((aid) => ({ occupationId: aid })),
               },
             }
           : {}),

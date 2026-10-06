@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { ActivitiesRepository } from './activities.repository';
-import { ActivityModel, ChargeModel } from '../types/activity.type';
-import { CreateActivityInput } from '../dto/create-activity.input';
-import { UpdateActivityInput } from '../dto/update-activity.input';
+import { OccupationsRepository } from './occupations.repository';
+import { OccupationModel, ChargeModel } from '../types/occupation.type';
+import { CreateOccupationInput } from '../dto/create-occupation.input';
+import { UpdateOccupationInput } from '../dto/update-occupation.input';
 import { CreateChargeInput } from '../dto/create-charge.input';
 import { UpdateChargeInput } from '../dto/update-charge.input';
 
-const ACTIVITY_INCLUDE = {
+const OCCUPATION_INCLUDE = {
   charges: true,
   translationRates: true,
   languagePairs: true,
@@ -15,32 +15,35 @@ const ACTIVITY_INCLUDE = {
 } as const;
 
 @Injectable()
-export class PrismaActivitiesRepository implements ActivitiesRepository {
+export class PrismaOccupationsRepository implements OccupationsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(userId: number): Promise<ActivityModel[]> {
-    return this.prisma.activity.findMany({
+  findAll(userId: number): Promise<OccupationModel[]> {
+    return this.prisma.occupation.findMany({
       where: { userId },
-      include: ACTIVITY_INCLUDE,
+      include: OCCUPATION_INCLUDE,
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async findById(id: number, userId: number): Promise<ActivityModel> {
-    const activity = await this.prisma.activity.findFirst({
+  async findById(id: number, userId: number): Promise<OccupationModel> {
+    const occupation = await this.prisma.occupation.findFirst({
       where: { id, userId },
-      include: ACTIVITY_INCLUDE,
+      include: OCCUPATION_INCLUDE,
     });
-    if (!activity) throw new NotFoundException(`Activity ${id} not found`);
-    return activity;
+    if (!occupation) throw new NotFoundException(`Occupation ${id} not found`);
+    return occupation;
   }
 
-  create(userId: number, data: CreateActivityInput): Promise<ActivityModel> {
-    return this.prisma.activity.create({
+  create(
+    userId: number,
+    data: CreateOccupationInput,
+  ): Promise<OccupationModel> {
+    return this.prisma.occupation.create({
       data: {
         userId,
         name: data.name,
-        activityType: data.activityType ?? 'CUSTOM',
+        occupationType: data.occupationType ?? 'CUSTOM',
         companyName: data.companyName ?? null,
         legalForm: data.legalForm ?? null,
         professionalEmail: data.professionalEmail ?? null,
@@ -54,20 +57,20 @@ export class PrismaActivitiesRepository implements ActivitiesRepository {
           ? { customFields: { createMany: { data: data.customFields } } }
           : {}),
       },
-      include: ACTIVITY_INCLUDE,
+      include: OCCUPATION_INCLUDE,
     });
   }
 
   async update(
     id: number,
     userId: number,
-    data: UpdateActivityInput,
-  ): Promise<ActivityModel> {
-    const existing = await this.prisma.activity.findFirst({
+    data: UpdateOccupationInput,
+  ): Promise<OccupationModel> {
+    const existing = await this.prisma.occupation.findFirst({
       where: { id, userId },
     });
-    if (!existing) throw new NotFoundException(`Activity ${id} not found`);
-    return this.prisma.activity.update({
+    if (!existing) throw new NotFoundException(`Occupation ${id} not found`);
+    return this.prisma.occupation.update({
       where: { id },
       data: {
         ...(data.name != null ? { name: data.name } : {}),
@@ -116,30 +119,30 @@ export class PrismaActivitiesRepository implements ActivitiesRepository {
             }
           : {}),
       },
-      include: ACTIVITY_INCLUDE,
+      include: OCCUPATION_INCLUDE,
     });
   }
 
   async delete(id: number, userId: number): Promise<void> {
-    const existing = await this.prisma.activity.findFirst({
+    const existing = await this.prisma.occupation.findFirst({
       where: { id, userId },
     });
-    if (!existing) throw new NotFoundException(`Activity ${id} not found`);
-    await this.prisma.activity.delete({ where: { id } });
+    if (!existing) throw new NotFoundException(`Occupation ${id} not found`);
+    await this.prisma.occupation.delete({ where: { id } });
   }
 
   async createCharge(
     userId: number,
     data: CreateChargeInput,
   ): Promise<ChargeModel> {
-    const activity = await this.prisma.activity.findFirst({
-      where: { id: data.activityId, userId },
+    const occupation = await this.prisma.occupation.findFirst({
+      where: { id: data.occupationId, userId },
     });
-    if (!activity)
-      throw new NotFoundException(`Activity ${data.activityId} not found`);
+    if (!occupation)
+      throw new NotFoundException(`Occupation ${data.occupationId} not found`);
     return this.prisma.charge.create({
       data: {
-        activityId: data.activityId,
+        occupationId: data.occupationId,
         name: data.name,
         amount: data.amount,
         type: data.type,
@@ -153,7 +156,7 @@ export class PrismaActivitiesRepository implements ActivitiesRepository {
     data: UpdateChargeInput,
   ): Promise<ChargeModel> {
     const charge = await this.prisma.charge.findFirst({
-      where: { id, activity: { userId } },
+      where: { id, occupation: { userId } },
     });
     if (!charge) throw new NotFoundException(`Charge ${id} not found`);
     return this.prisma.charge.update({
@@ -168,7 +171,7 @@ export class PrismaActivitiesRepository implements ActivitiesRepository {
 
   async deleteCharge(id: number, userId: number): Promise<void> {
     const charge = await this.prisma.charge.findFirst({
-      where: { id, activity: { userId } },
+      where: { id, occupation: { userId } },
     });
     if (!charge) throw new NotFoundException(`Charge ${id} not found`);
     await this.prisma.charge.delete({ where: { id } });

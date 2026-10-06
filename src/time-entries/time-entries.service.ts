@@ -69,18 +69,18 @@ export class TimeEntriesService {
     return this.repo.sumWordsProcessedByProjectIds(projectIds, userId);
   }
 
-  // Defaults a new entry's activityId to its project's lowest-id activity
+  // Defaults a new entry's occupationId to its project's lowest-id occupation
   // when the caller didn't explicitly pass one and a project is linked.
-  private async resolveDefaultActivityId(
+  private async resolveDefaultOccupationId(
     projectId: number | undefined,
   ): Promise<number | null> {
     if (!projectId) return null;
-    const first = await this.prisma.projectActivity.findFirst({
+    const first = await this.prisma.projectOccupation.findFirst({
       where: { projectId },
-      orderBy: { activityId: 'asc' },
-      select: { activityId: true },
+      orderBy: { occupationId: 'asc' },
+      select: { occupationId: true },
     });
-    return first?.activityId ?? null;
+    return first?.occupationId ?? null;
   }
 
   async create(
@@ -93,8 +93,10 @@ export class TimeEntriesService {
       });
       if (sub) input.taskId = sub.taskId;
     }
-    if (input.activityId === undefined) {
-      input.activityId = await this.resolveDefaultActivityId(input.projectId);
+    if (input.occupationId === undefined) {
+      input.occupationId = await this.resolveDefaultOccupationId(
+        input.projectId,
+      );
     }
     return this.repo.create(userId, input);
   }
@@ -109,8 +111,10 @@ export class TimeEntriesService {
       });
       if (sub) input.taskId = sub.taskId;
     }
-    if (input.activityId === undefined) {
-      input.activityId = await this.resolveDefaultActivityId(input.projectId);
+    if (input.occupationId === undefined) {
+      input.occupationId = await this.resolveDefaultOccupationId(
+        input.projectId,
+      );
     }
     const entry = await this.repo.startTimer(userId, input);
     await this.activitiesService.logForTimeEntry(

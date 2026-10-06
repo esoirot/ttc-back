@@ -21,7 +21,7 @@ export class StartTimerInput {
   tagIds?: number[];
 
   @Field(() => Int, { nullable: true })
-  activityId?: number | null;
+  occupationId?: number | null;
 
   @Field(() => Int, { nullable: true })
   wordsProcessed?: number | null;

@@ -1,5 +1,5 @@
 import type {
-  Activity as PrismaActivity,
+  Occupation as PrismaOccupation,
   InvoicingStatus,
 } from '../../generated/prisma/client';
 
@@ -14,8 +14,8 @@ export type TimeEntryModel = {
   durationSeconds: number | null;
   billable: boolean;
   clockifyEntryId: string | null;
-  activityId: number | null;
-  activity: PrismaActivity | null;
+  occupationId: number | null;
+  occupation: PrismaOccupation | null;
   wordsProcessed: number | null;
   invoicingStatus: InvoicingStatus;
   tags: { id: number; name: string }[];

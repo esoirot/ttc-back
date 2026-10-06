@@ -16,13 +16,13 @@ export class PrismaTranslationRateRepository implements TranslationRateRepositor
   findAll(
     userId: number,
     type?: string,
-    activityId?: number,
+    occupationId?: number,
   ): Promise<TranslationRateModel[]> {
     return this.prisma.translationRate.findMany({
       where: {
         userId,
         ...(type ? { type: type as PrismaRateType } : {}),
-        ...(activityId != null ? { activityId } : {}),
+        ...(occupationId != null ? { occupationId } : {}),
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -43,7 +43,7 @@ export class PrismaTranslationRateRepository implements TranslationRateRepositor
     return this.prisma.translationRate.create({
       data: {
         userId,
-        activityId: data.activityId ?? null,
+        occupationId: data.occupationId ?? null,
         type: data.type,
         clientId: data.clientId ?? null,
         name: data.name,
@@ -73,7 +73,8 @@ export class PrismaTranslationRateRepository implements TranslationRateRepositor
     if (data.currency !== undefined) updateData.currency = data.currency;
     if (data.description !== undefined)
       updateData.description = data.description;
-    if (data.activityId !== undefined) updateData.activityId = data.activityId;
+    if (data.occupationId !== undefined)
+      updateData.occupationId = data.occupationId;
     if (data.clientId !== undefined) updateData.clientId = data.clientId;
     if (data.sourceLanguage !== undefined)
       updateData.sourceLanguage = data.sourceLanguage;

@@ -1,15 +1,14 @@
-import { InputType, Field } from '@nestjs/graphql';
-import { ActivityType } from '../entities/activity.entity';
+import { InputType, Field, Int } from '@nestjs/graphql';
 import { LanguagePairInput } from './language-pair.input';
 import { CustomFieldInput } from './custom-field.input';
 
 @InputType()
-export class CreateActivityInput {
-  @Field()
-  name!: string;
+export class UpdateOccupationInput {
+  @Field(() => Int)
+  id!: number;
 
-  @Field(() => ActivityType, { nullable: true })
-  activityType?: ActivityType | null;
+  @Field(() => String, { nullable: true })
+  name?: string | null;
 
   @Field(() => String, { nullable: true })
   companyName?: string | null;
@@ -28,6 +27,18 @@ export class CreateActivityInput {
 
   @Field(() => String, { nullable: true })
   timezone?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  objectiveQ1?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  objectiveQ2?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  objectiveQ3?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  objectiveQ4?: number | null;
 
   @Field(() => [LanguagePairInput], { nullable: true })
   languagePairs?: LanguagePairInput[] | null;

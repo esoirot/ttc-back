@@ -1,21 +1,21 @@
-import { CreateActivityInput } from '../dto/create-activity.input';
-import { UpdateActivityInput } from '../dto/update-activity.input';
+import { CreateOccupationInput } from '../dto/create-occupation.input';
+import { UpdateOccupationInput } from '../dto/update-occupation.input';
 import { CreateChargeInput } from '../dto/create-charge.input';
 import { UpdateChargeInput } from '../dto/update-charge.input';
-import { ActivityModel, ChargeModel } from '../types/activity.type';
+import { OccupationModel, ChargeModel } from '../types/occupation.type';
 
-export abstract class ActivitiesRepository {
-  abstract findAll(userId: number): Promise<ActivityModel[]>;
-  abstract findById(id: number, userId: number): Promise<ActivityModel>;
+export abstract class OccupationsRepository {
+  abstract findAll(userId: number): Promise<OccupationModel[]>;
+  abstract findById(id: number, userId: number): Promise<OccupationModel>;
   abstract create(
     userId: number,
-    data: CreateActivityInput,
-  ): Promise<ActivityModel>;
+    data: CreateOccupationInput,
+  ): Promise<OccupationModel>;
   abstract update(
     id: number,
     userId: number,
-    data: UpdateActivityInput,
-  ): Promise<ActivityModel>;
+    data: UpdateOccupationInput,
+  ): Promise<OccupationModel>;
   abstract delete(id: number, userId: number): Promise<void>;
   abstract createCharge(
     userId: number,

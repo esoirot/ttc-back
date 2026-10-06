@@ -10,7 +10,7 @@ import {
 } from './time-entry.repository';
 import { TimeEntryModel } from '../types/time-entry.type';
 import type {
-  Activity as PrismaActivity,
+  Occupation as PrismaOccupation,
   InvoicingStatus,
 } from '../../generated/prisma/client';
 import { CreateTimeEntryInput } from '../dto/create-time-entry.input';
@@ -21,7 +21,7 @@ const TAG_INCLUDE = {
   tags: { include: { tag: { select: { id: true, name: true } } } },
   task: { select: { id: true, title: true } },
   subtask: { select: { id: true, title: true, checklistTitle: true } },
-  activity: true,
+  occupation: true,
 } as const;
 
 type PrismaEntryWithTags = {
@@ -36,7 +36,7 @@ type PrismaEntryWithTags = {
   durationSeconds: number | null;
   billable: boolean;
   clockifyEntryId: string | null;
-  activityId: number | null;
+  occupationId: number | null;
   wordsProcessed: number | null;
   invoicingStatus: InvoicingStatus;
   createdAt: Date;
@@ -44,7 +44,7 @@ type PrismaEntryWithTags = {
   tags: { tag: { id: number; name: string } }[];
   task: { id: number; title: string } | null;
   subtask: { id: number; title: string; checklistTitle: string | null } | null;
-  activity: PrismaActivity | null;
+  occupation: PrismaOccupation | null;
 };
 
 function toModel(row: PrismaEntryWithTags): TimeEntryModel {
@@ -167,7 +167,7 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
         durationSeconds: duration,
         billable: data.billable ?? true,
         clockifyEntryId: data.clockifyEntryId,
-        activityId: data.activityId,
+        occupationId: data.occupationId,
         wordsProcessed: data.wordsProcessed,
         ...(data.tagIds?.length
           ? { tags: { create: data.tagIds.map((tagId) => ({ tagId })) } }
@@ -193,7 +193,7 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
         description: data.description,
         startTime: new Date(),
         billable: data.billable ?? true,
-        activityId: data.activityId,
+        occupationId: data.occupationId,
         wordsProcessed: data.wordsProcessed,
         ...(data.tagIds?.length
           ? { tags: { create: data.tagIds.map((tagId) => ({ tagId })) } }

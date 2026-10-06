@@ -1,5 +1,5 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
-import { ChargeType } from '../entities/activity.entity';
+import { ChargeType } from '../entities/occupation.entity';
 
 @InputType()
 export class UpdateChargeInput {

@@ -26,7 +26,7 @@ describe('TimeEntriesService', () => {
   };
   let prisma: {
     subtask: { findUnique: jest.Mock };
-    projectActivity: { findFirst: jest.Mock };
+    projectOccupation: { findFirst: jest.Mock };
   };
 
   beforeEach(async () => {
@@ -49,7 +49,7 @@ describe('TimeEntriesService', () => {
     };
     prisma = {
       subtask: { findUnique: jest.fn() },
-      projectActivity: { findFirst: jest.fn().mockResolvedValue(null) },
+      projectOccupation: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -82,13 +82,13 @@ describe('TimeEntriesService', () => {
       const result = await service.create(1, input);
       expect(repo.create).toHaveBeenCalledWith(1, {
         ...input,
-        activityId: null,
+        occupationId: null,
       });
       expect(result).toEqual(entry);
     });
 
-    it("defaults activityId to the project's lowest-id activity when omitted", async () => {
-      prisma.projectActivity.findFirst.mockResolvedValue({ activityId: 3 });
+    it("defaults occupationId to the project's lowest-id occupation when omitted", async () => {
+      prisma.projectOccupation.findFirst.mockResolvedValue({ occupationId: 3 });
       repo.create.mockResolvedValue(mockTimeEntry());
 
       await service.create(1, {
@@ -97,18 +97,18 @@ describe('TimeEntriesService', () => {
         endTime: new Date('2024-01-01T10:00:00Z'),
       });
 
-      expect(prisma.projectActivity.findFirst).toHaveBeenCalledWith({
+      expect(prisma.projectOccupation.findFirst).toHaveBeenCalledWith({
         where: { projectId: 7 },
-        orderBy: { activityId: 'asc' },
-        select: { activityId: true },
+        orderBy: { occupationId: 'asc' },
+        select: { occupationId: true },
       });
       expect(repo.create).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ activityId: 3 }),
+        expect.objectContaining({ occupationId: 3 }),
       );
     });
 
-    it('leaves activityId null when no project is linked', async () => {
+    it('leaves occupationId null when no project is linked', async () => {
       repo.create.mockResolvedValue(mockTimeEntry());
 
       await service.create(1, {
@@ -116,43 +116,43 @@ describe('TimeEntriesService', () => {
         endTime: new Date('2024-01-01T10:00:00Z'),
       });
 
-      expect(prisma.projectActivity.findFirst).not.toHaveBeenCalled();
+      expect(prisma.projectOccupation.findFirst).not.toHaveBeenCalled();
       expect(repo.create).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ activityId: null }),
+        expect.objectContaining({ occupationId: null }),
       );
     });
 
-    it('leaves activityId null when the project has no activities', async () => {
-      prisma.projectActivity.findFirst.mockResolvedValue(null);
-      repo.create.mockResolvedValue(mockTimeEntry());
-
-      await service.create(1, {
-        projectId: 7,
-        startTime: new Date('2024-01-01T09:00:00Z'),
-        endTime: new Date('2024-01-01T10:00:00Z'),
-      });
-
-      expect(repo.create).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ activityId: null }),
-      );
-    });
-
-    it('respects an explicitly-passed activityId and skips the default lookup', async () => {
+    it('leaves occupationId null when the project has no occupations', async () => {
+      prisma.projectOccupation.findFirst.mockResolvedValue(null);
       repo.create.mockResolvedValue(mockTimeEntry());
 
       await service.create(1, {
         projectId: 7,
-        activityId: 42,
         startTime: new Date('2024-01-01T09:00:00Z'),
         endTime: new Date('2024-01-01T10:00:00Z'),
       });
 
-      expect(prisma.projectActivity.findFirst).not.toHaveBeenCalled();
       expect(repo.create).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ activityId: 42 }),
+        expect.objectContaining({ occupationId: null }),
+      );
+    });
+
+    it('respects an explicitly-passed occupationId and skips the default lookup', async () => {
+      repo.create.mockResolvedValue(mockTimeEntry());
+
+      await service.create(1, {
+        projectId: 7,
+        occupationId: 42,
+        startTime: new Date('2024-01-01T09:00:00Z'),
+        endTime: new Date('2024-01-01T10:00:00Z'),
+      });
+
+      expect(prisma.projectOccupation.findFirst).not.toHaveBeenCalled();
+      expect(repo.create).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ occupationId: 42 }),
       );
     });
   });
@@ -165,37 +165,37 @@ describe('TimeEntriesService', () => {
       const result = await service.startTimer(1, { projectId: 2 });
       expect(repo.startTimer).toHaveBeenCalledWith(1, {
         projectId: 2,
-        activityId: null,
+        occupationId: null,
       });
       expect(result).toEqual(entry);
     });
 
-    it("defaults activityId to the project's lowest-id activity when omitted", async () => {
-      prisma.projectActivity.findFirst.mockResolvedValue({ activityId: 3 });
+    it("defaults occupationId to the project's lowest-id occupation when omitted", async () => {
+      prisma.projectOccupation.findFirst.mockResolvedValue({ occupationId: 3 });
       repo.startTimer.mockResolvedValue(mockTimeEntry({ endTime: null }));
 
       await service.startTimer(1, { projectId: 7 });
 
-      expect(prisma.projectActivity.findFirst).toHaveBeenCalledWith({
+      expect(prisma.projectOccupation.findFirst).toHaveBeenCalledWith({
         where: { projectId: 7 },
-        orderBy: { activityId: 'asc' },
-        select: { activityId: true },
+        orderBy: { occupationId: 'asc' },
+        select: { occupationId: true },
       });
       expect(repo.startTimer).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ activityId: 3 }),
+        expect.objectContaining({ occupationId: 3 }),
       );
     });
 
-    it('respects an explicitly-passed activityId and skips the default lookup', async () => {
+    it('respects an explicitly-passed occupationId and skips the default lookup', async () => {
       repo.startTimer.mockResolvedValue(mockTimeEntry({ endTime: null }));
 
-      await service.startTimer(1, { projectId: 7, activityId: 42 });
+      await service.startTimer(1, { projectId: 7, occupationId: 42 });
 
-      expect(prisma.projectActivity.findFirst).not.toHaveBeenCalled();
+      expect(prisma.projectOccupation.findFirst).not.toHaveBeenCalled();
       expect(repo.startTimer).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ activityId: 42 }),
+        expect.objectContaining({ occupationId: 42 }),
       );
     });
 

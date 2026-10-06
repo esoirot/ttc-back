@@ -11,9 +11,9 @@ export class TranslationRatesService {
   findAll(
     userId: number,
     type?: string,
-    activityId?: number,
+    occupationId?: number,
   ): Promise<TranslationRateModel[]> {
-    return this.repo.findAll(userId, type, activityId);
+    return this.repo.findAll(userId, type, occupationId);
   }
 
   findOne(id: number, userId: number): Promise<TranslationRateModel> {

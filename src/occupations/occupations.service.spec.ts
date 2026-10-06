@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ActivitiesService } from './activities.service';
-import { ActivitiesRepository } from './repositories/activities.repository';
-import { ActivityType, ChargeType } from './entities/activity.entity';
+import { OccupationsService } from './occupations.service';
+import { OccupationsRepository } from './repositories/occupations.repository';
+import { OccupationType, ChargeType } from './entities/occupation.entity';
 
-describe('ActivitiesService', () => {
-  let service: ActivitiesService;
+describe('OccupationsService', () => {
+  let service: OccupationsService;
   let repo: {
     findAll: jest.Mock;
     findById: jest.Mock;
@@ -30,12 +30,12 @@ describe('ActivitiesService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        ActivitiesService,
-        { provide: ActivitiesRepository, useValue: repo },
+        OccupationsService,
+        { provide: OccupationsRepository, useValue: repo },
       ],
     }).compile();
 
-    service = module.get(ActivitiesService);
+    service = module.get(OccupationsService);
   });
 
   it('should be defined', () => {
@@ -50,36 +50,36 @@ describe('ActivitiesService', () => {
   });
 
   it('findById — delegates to repo', async () => {
-    const activity = { id: 1, userId: 1 };
-    repo.findById.mockResolvedValue(activity);
+    const occupation = { id: 1, userId: 1 };
+    repo.findById.mockResolvedValue(occupation);
     const result = await service.findById(1, 1);
     expect(repo.findById).toHaveBeenCalledWith(1, 1);
-    expect(result).toEqual(activity);
+    expect(result).toEqual(occupation);
   });
 
   it('create — delegates to repo', async () => {
-    const activity = {
+    const occupation = {
       id: 2,
       userId: 1,
       name: 'Translation',
-      activityType: ActivityType.TRANSLATOR,
+      occupationType: OccupationType.TRANSLATOR,
     };
-    repo.create.mockResolvedValue(activity);
+    repo.create.mockResolvedValue(occupation);
     const input = {
       name: 'Translation',
-      activityType: ActivityType.TRANSLATOR,
+      occupationType: OccupationType.TRANSLATOR,
     };
     const result = await service.create(1, input);
     expect(repo.create).toHaveBeenCalledWith(1, input);
-    expect(result).toEqual(activity);
+    expect(result).toEqual(occupation);
   });
 
   it('update — delegates to repo', async () => {
-    const activity = { id: 1, userId: 1 };
-    repo.update.mockResolvedValue(activity);
+    const occupation = { id: 1, userId: 1 };
+    repo.update.mockResolvedValue(occupation);
     const result = await service.update(1, 1, { id: 1, name: 'Renamed' });
     expect(repo.update).toHaveBeenCalledWith(1, 1, { id: 1, name: 'Renamed' });
-    expect(result).toEqual(activity);
+    expect(result).toEqual(occupation);
   });
 
   it('delete — delegates to repo', async () => {
@@ -89,10 +89,10 @@ describe('ActivitiesService', () => {
   });
 
   it('createCharge — delegates to repo', async () => {
-    const charge = { id: 1, activityId: 1 };
+    const charge = { id: 1, occupationId: 1 };
     repo.createCharge.mockResolvedValue(charge);
     const chargeInput = {
-      activityId: 1,
+      occupationId: 1,
       name: 'Service fee',
       amount: 100,
       type: ChargeType.FIXED,

@@ -22,7 +22,7 @@ export class UpdateTranslationRateInput {
   description?: string;
 
   @Field(() => Int, { nullable: true })
-  activityId?: number;
+  occupationId?: number;
 
   @Field(() => Int, { nullable: true })
   clientId?: number;

@@ -64,12 +64,12 @@ describe('ProjectsService', () => {
       expect(result).toEqual(project);
     });
 
-    it('inherits the client activities when activityIds is omitted and clientId is set', async () => {
+    it('inherits the client occupations when occupationIds is omitted and clientId is set', async () => {
       const client = mockClient({
         id: 5,
-        activities: [
-          { id: 1, activityType: 'TRANSLATOR' } as never,
-          { id: 2, activityType: 'CORRECTOR' } as never,
+        occupations: [
+          { id: 1, occupationType: 'TRANSLATOR' } as never,
+          { id: 2, occupationType: 'CORRECTOR' } as never,
         ],
       });
       clientsService.findOne.mockResolvedValue(client);
@@ -81,26 +81,26 @@ describe('ProjectsService', () => {
       expect(repo.create).toHaveBeenCalledWith(1, {
         title: 'My Project',
         clientId: 5,
-        activityIds: [1, 2],
+        occupationIds: [1, 2],
       });
     });
 
-    it('does not inherit and skips the client lookup when activityIds is explicitly provided', async () => {
+    it('does not inherit and skips the client lookup when occupationIds is explicitly provided', async () => {
       repo.create.mockResolvedValue(
-        mockProject({ id: 10, clientId: 5, activities: [] }),
+        mockProject({ id: 10, clientId: 5, occupations: [] }),
       );
 
       await service.create(1, {
         title: 'My Project',
         clientId: 5,
-        activityIds: [],
+        occupationIds: [],
       });
 
       expect(clientsService.findOne).not.toHaveBeenCalled();
       expect(repo.create).toHaveBeenCalledWith(1, {
         title: 'My Project',
         clientId: 5,
-        activityIds: [],
+        occupationIds: [],
       });
     });
 

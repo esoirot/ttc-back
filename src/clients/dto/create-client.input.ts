@@ -89,5 +89,5 @@ export class CreateClientInput {
   tagIds?: number[];
 
   @Field(() => [Int], { nullable: true })
-  activityIds?: number[];
+  occupationIds?: number[];
 }

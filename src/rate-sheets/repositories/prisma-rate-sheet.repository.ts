@@ -12,7 +12,7 @@ export class PrismaRateSheetRepository implements RateSheetRepository {
   private toModel(row: {
     id: number;
     userId: number;
-    activityId: number | null;
+    occupationId: number | null;
     clientId: number | null;
     name: string;
     description: string | null;
@@ -28,7 +28,7 @@ export class PrismaRateSheetRepository implements RateSheetRepository {
     return {
       id: row.id,
       userId: row.userId,
-      activityId: row.activityId,
+      occupationId: row.occupationId,
       clientId: row.clientId,
       name: row.name,
       description: row.description,
@@ -81,7 +81,7 @@ export class PrismaRateSheetRepository implements RateSheetRepository {
       const row = await tx.rateSheet.create({
         data: {
           userId,
-          activityId: data.activityId ?? null,
+          occupationId: data.occupationId ?? null,
           clientId,
           name: data.name,
           description: data.description,

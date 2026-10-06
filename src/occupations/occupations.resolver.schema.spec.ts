@@ -10,24 +10,24 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { ActivitiesResolver } from './activities.resolver';
-import { ActivitiesService } from './activities.service';
+import { OccupationsResolver } from './occupations.resolver';
+import { OccupationsService } from './occupations.service';
 import {
-  TranslatorActivity,
-  CorrectorActivity,
-  CustomActivity,
-} from './entities/activity.entity';
+  TranslatorOccupation,
+  CorrectorOccupation,
+  CustomOccupation,
+} from './entities/occupation.entity';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 
 // Exercises the GraphQL type thunks (`() => Foo` decorator args) that only
 // run when the schema is actually built — a plain Test.createTestingModule
 // resolver spec never triggers them. Mirrors AppModule's GraphQLModule setup
 // (same orphanedTypes requirement, see CLAUDE.md "GraphQL schema").
-describe('ActivitiesResolver GraphQL schema', () => {
+describe('OccupationsResolver GraphQL schema', () => {
   let app: NestFastifyApplication;
 
   beforeAll(async () => {
-    const service: Partial<Record<keyof ActivitiesService, jest.Mock>> = {
+    const service: Partial<Record<keyof OccupationsService, jest.Mock>> = {
       findAll: jest.fn().mockResolvedValue([]),
       findById: jest.fn(),
       create: jest.fn(),
@@ -45,9 +45,9 @@ describe('ActivitiesResolver GraphQL schema', () => {
           autoSchemaFile: true,
           buildSchemaOptions: {
             orphanedTypes: [
-              TranslatorActivity,
-              CorrectorActivity,
-              CustomActivity,
+              TranslatorOccupation,
+              CorrectorOccupation,
+              CustomOccupation,
             ],
           },
           context: (request: FastifyRequest, reply: FastifyReply) => ({
@@ -57,8 +57,8 @@ describe('ActivitiesResolver GraphQL schema', () => {
         }),
       ],
       providers: [
-        ActivitiesResolver,
-        { provide: ActivitiesService, useValue: service },
+        OccupationsResolver,
+        { provide: OccupationsService, useValue: service },
       ],
     })
       .overrideGuard(GqlAuthGuard)
@@ -84,25 +84,25 @@ describe('ActivitiesResolver GraphQL schema', () => {
 
   afterAll(() => app.close());
 
-  it('builds a schema exposing Activity queries and mutations', () => {
+  it('builds a schema exposing Occupation queries and mutations', () => {
     const { schema } = app.get(GraphQLSchemaHost);
 
-    expect(schema.getType('Activity')).toBeDefined();
+    expect(schema.getType('Occupation')).toBeDefined();
     expect(schema.getType('Charge')).toBeDefined();
 
     const queries = schema.getQueryType()?.getFields() ?? {};
-    expect(queries).toHaveProperty('myActivities');
-    expect(queries).toHaveProperty('activity');
+    expect(queries).toHaveProperty('myOccupations');
+    expect(queries).toHaveProperty('occupation');
 
     const mutations = schema.getMutationType()?.getFields() ?? {};
-    expect(mutations).toHaveProperty('createActivity');
-    expect(mutations).toHaveProperty('updateActivity');
-    expect(mutations).toHaveProperty('deleteActivity');
+    expect(mutations).toHaveProperty('createOccupation');
+    expect(mutations).toHaveProperty('updateOccupation');
+    expect(mutations).toHaveProperty('deleteOccupation');
     expect(mutations).toHaveProperty('createCharge');
     expect(mutations).toHaveProperty('updateCharge');
     expect(mutations).toHaveProperty('deleteCharge');
 
-    const updateInput = schema.getType('UpdateActivityInput');
+    const updateInput = schema.getType('UpdateOccupationInput');
     const updateFields =
       updateInput && 'getFields' in updateInput ? updateInput.getFields() : {};
     expect(updateFields).toHaveProperty('customFields');
