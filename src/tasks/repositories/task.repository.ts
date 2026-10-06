@@ -16,6 +16,7 @@ export abstract class TaskRepository {
     projectId: number,
     userId: number,
     pagination?: PaginationArgs,
+    search?: string,
   ): Promise<TaskConnectionModel>;
   abstract findByAssignee(
     assigneeId: number,

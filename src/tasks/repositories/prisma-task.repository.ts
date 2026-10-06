@@ -22,10 +22,17 @@ export class PrismaTaskRepository implements TaskRepository {
     projectId: number,
     userId: number,
     pagination?: { limit?: number; cursor?: number },
+    search?: string,
   ): Promise<TaskConnectionModel> {
     const limit = pagination?.limit ?? 20;
     const cursor = pagination?.cursor;
-    const baseWhere = { projectId, project: { userId } };
+    const baseWhere = {
+      projectId,
+      project: { userId },
+      ...(search
+        ? { title: { contains: search, mode: 'insensitive' as const } }
+        : {}),
+    };
     const where = {
       ...baseWhere,
       ...(cursor !== undefined ? { id: { gt: cursor } } : {}),

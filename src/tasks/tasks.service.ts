@@ -31,8 +31,9 @@ export class TasksService {
     projectId: number,
     userId: number,
     pagination?: { limit?: number; cursor?: number },
+    search?: string,
   ): Promise<TaskConnectionModel> {
-    return this.repo.findByProject(projectId, userId, pagination);
+    return this.repo.findByProject(projectId, userId, pagination, search);
   }
 
   findByAssignee(

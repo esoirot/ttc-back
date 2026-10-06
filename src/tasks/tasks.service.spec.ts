@@ -288,8 +288,25 @@ describe('TasksService', () => {
       repo.findByProject.mockResolvedValue(connection);
 
       const result = await service.findByProject(1, 7, { limit: 10 });
-      expect(repo.findByProject).toHaveBeenCalledWith(1, 7, { limit: 10 });
+      expect(repo.findByProject).toHaveBeenCalledWith(
+        1,
+        7,
+        { limit: 10 },
+        undefined,
+      );
       expect(result).toEqual(connection);
+    });
+
+    it('passes the title search to the repository', async () => {
+      repo.findByProject.mockResolvedValue({ items: [] });
+
+      await service.findByProject(1, 7, { limit: 10 }, 'chapter');
+      expect(repo.findByProject).toHaveBeenCalledWith(
+        1,
+        7,
+        { limit: 10 },
+        'chapter',
+      );
     });
   });
 

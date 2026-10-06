@@ -62,8 +62,14 @@ export class TasksResolver {
     @Args('projectId', { type: () => Int }) projectId: number,
     @CurrentUser() user: RequestUser,
     @Args('pagination', { nullable: true }) pagination?: PaginationInput,
+    @Args('search', { nullable: true }) search?: string,
   ) {
-    return this.tasksService.findByProject(projectId, user.id, pagination);
+    return this.tasksService.findByProject(
+      projectId,
+      user.id,
+      pagination,
+      search,
+    );
   }
 
   @UseGuards(GqlAuthGuard)

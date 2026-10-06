@@ -957,7 +957,7 @@ type Query {
   rateSheets: [RateSheet!]!
   tags: [Tag!]!
   task(id: Int!): Task!
-  tasks(pagination: PaginationInput, projectId: Int!): TaskConnection!
+  tasks(pagination: PaginationInput, projectId: Int!, search: String): TaskConnection!
   timeEntries(end: DateTime, pagination: PaginationInput, projectId: Int, projectIds: [Int!], start: DateTime, subtaskId: Int, taskId: Int): TimeEntryConnection!
   translationRate(id: Int!): TranslationRate!
   translationRates(activityId: Int, type: TranslationRateType): [TranslationRate!]!

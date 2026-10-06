@@ -111,10 +111,25 @@ describe('TasksResolver', () => {
     tasksService.findByProject.mockResolvedValue(conn);
 
     const result = await resolver.findByProject(1, user, { limit: 10 });
-    expect(tasksService.findByProject).toHaveBeenCalledWith(1, 7, {
-      limit: 10,
-    });
+    expect(tasksService.findByProject).toHaveBeenCalledWith(
+      1,
+      7,
+      { limit: 10 },
+      undefined,
+    );
     expect(result).toEqual(conn);
+  });
+
+  it('findByProject — passes the title search to tasksService', async () => {
+    tasksService.findByProject.mockResolvedValue({ items: [] });
+
+    await resolver.findByProject(1, user, { limit: 10 }, 'chapter');
+    expect(tasksService.findByProject).toHaveBeenCalledWith(
+      1,
+      7,
+      { limit: 10 },
+      'chapter',
+    );
   });
 
   it('findMyTasks — delegates with current user id', async () => {
