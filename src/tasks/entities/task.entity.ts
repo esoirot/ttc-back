@@ -58,6 +58,9 @@ export class Task {
   @Field(() => Int, { nullable: true })
   totalTimeSeconds?: number | null;
 
+  @Field(() => Int, { nullable: true })
+  totalWordsProcessed?: number | null;
+
   @Field()
   createdAt!: Date;
 

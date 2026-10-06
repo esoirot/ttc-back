@@ -58,3 +58,33 @@ describe('PrismaTimeEntryRepository.findFirstStartTime', () => {
     );
   });
 });
+
+describe('PrismaTimeEntryRepository.sumWordsProcessedByTaskIds', () => {
+  it("sums every contributor's words per task the user can access", async () => {
+    const groupBy = jest.fn().mockResolvedValue([
+      { taskId: 3, _sum: { wordsProcessed: 300 } },
+      { taskId: 4, _sum: { wordsProcessed: null } },
+      { taskId: null, _sum: { wordsProcessed: 50 } },
+    ]);
+    const repo = new PrismaTimeEntryRepository({
+      timeEntry: { groupBy },
+    } as unknown as PrismaService);
+
+    const totals = await repo.sumWordsProcessedByTaskIds([3, 4], 7);
+
+    expect(groupBy).toHaveBeenCalledWith({
+      by: ['taskId'],
+      where: {
+        taskId: { in: [3, 4] },
+        task: { OR: [{ project: { userId: 7 } }, { assigneeId: 7 }] },
+      },
+      _sum: { wordsProcessed: true },
+    });
+    expect(totals).toEqual(
+      new Map([
+        [3, 300],
+        [4, 0],
+      ]),
+    );
+  });
+});

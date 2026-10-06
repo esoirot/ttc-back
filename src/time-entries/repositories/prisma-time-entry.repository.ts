@@ -369,6 +369,26 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     );
   }
 
+  async sumWordsProcessedByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    // Same access rule as sumDurationByTaskIds: every contributor's words.
+    const rows = await this.prisma.timeEntry.groupBy({
+      by: ['taskId'],
+      where: {
+        taskId: { in: taskIds },
+        task: { OR: [{ project: { userId } }, { assigneeId: userId }] },
+      },
+      _sum: { wordsProcessed: true },
+    });
+    return new Map(
+      rows
+        .filter((r) => r.taskId !== null)
+        .map((r) => [r.taskId as number, r._sum.wordsProcessed ?? 0]),
+    );
+  }
+
   async sumWordsProcessedByProjectIds(
     projectIds: number[],
     userId: number,

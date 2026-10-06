@@ -55,6 +55,13 @@ export class TimeEntriesService {
     return this.repo.sumDurationByProjectIds(projectIds, userId);
   }
 
+  getTotalWordsProcessedByTaskIds(
+    taskIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    return this.repo.sumWordsProcessedByTaskIds(taskIds, userId);
+  }
+
   getTotalWordsProcessedByProjectIds(
     projectIds: number[],
     userId: number,

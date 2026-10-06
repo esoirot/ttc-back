@@ -3,7 +3,12 @@ import { TaskTimeResolver } from './task-time.resolver';
 import type { GqlContext } from '../auth/types/gql-context.type';
 
 function makeLoaderCtx(load: jest.Mock): GqlContext {
-  return { loaders: { totalSecondsByTask: { load } } } as unknown as GqlContext;
+  return {
+    loaders: {
+      totalSecondsByTask: { load },
+      totalWordsProcessedByTask: { load },
+    },
+  } as unknown as GqlContext;
 }
 
 describe('TaskTimeResolver', () => {
@@ -42,5 +47,17 @@ describe('TaskTimeResolver', () => {
     );
 
     expect(result).toBeNull();
+  });
+
+  it('totalWordsProcessed — delegates to the totalWordsProcessedByTask loader', async () => {
+    const load = jest.fn().mockResolvedValue(300);
+
+    const result = await resolver.totalWordsProcessed(
+      { id: 3 },
+      makeLoaderCtx(load),
+    );
+
+    expect(load).toHaveBeenCalledWith(3);
+    expect(result).toBe(300);
   });
 });
