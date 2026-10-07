@@ -2,33 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-interface Occupation {
-  occupationType: OccupationType!
-  charges: [Charge!]!
-  companyName: String
-  createdAt: DateTime!
-  id: Int!
-  legalForm: String
-  name: String!
-  objectiveQ1: Int
-  objectiveQ2: Int
-  objectiveQ3: Int
-  objectiveQ4: Int
-  professionalEmail: String
-  professionalPhone: String
-  timezone: String
-  translationRates: [TranslationRate!]!
-  updatedAt: DateTime!
-  userId: Int!
-  website: String
-}
-
-enum OccupationType {
-  CORRECTOR
-  CUSTOM
-  TRANSLATOR
-}
-
 input AddInvoiceItemInput {
   description: String
   invoiceId: Int!
@@ -91,11 +64,11 @@ input AdminCreateProjectInput {
 }
 
 input AdminCreateRateInput {
-  occupationId: Int!
   amount: Float!
   currency: String!
   description: String
   name: String!
+  occupationId: Int!
   type: RateType!
   userId: Int!
 }
@@ -257,10 +230,10 @@ input AdminUpdateRateInput {
 }
 
 type Charge {
-  occupationId: Int!
   amount: Int!
   id: Int!
   name: String!
+  occupationId: Int!
   type: ChargeType!
 }
 
@@ -270,7 +243,6 @@ enum ChargeType {
 }
 
 type Client {
-  occupations: [Occupation!]!
   address: String
   addressLine2: String
   billingEndOfMonth: Boolean!
@@ -292,6 +264,7 @@ type Client {
   legalName: String
   name: String!
   notes: String
+  occupations: [Occupation!]!
   paymentDelayDays: Int
   phone: String
   postalCode: String
@@ -395,7 +368,6 @@ type CompanyContact {
 }
 
 type CorrectorOccupation implements Occupation {
-  occupationType: OccupationType!
   charges: [Charge!]!
   companyName: String
   createdAt: DateTime!
@@ -406,6 +378,7 @@ type CorrectorOccupation implements Occupation {
   objectiveQ2: Int
   objectiveQ3: Int
   objectiveQ4: Int
+  occupationType: OccupationType!
   professionalEmail: String
   professionalPhone: String
   timezone: String
@@ -415,28 +388,14 @@ type CorrectorOccupation implements Occupation {
   website: String
 }
 
-input CreateOccupationInput {
-  occupationType: OccupationType
-  companyName: String
-  customFields: [CustomFieldInput!]
-  languagePairs: [LanguagePairInput!]
-  legalForm: String
-  name: String!
-  professionalEmail: String
-  professionalPhone: String
-  timezone: String
-  website: String
-}
-
 input CreateChargeInput {
-  occupationId: Int!
   amount: Int!
   name: String!
+  occupationId: Int!
   type: ChargeType!
 }
 
 input CreateClientInput {
-  occupationIds: [Int!]
   address: String
   addressLine2: String
   billingEndOfMonth: Boolean
@@ -455,6 +414,7 @@ input CreateClientInput {
   legalName: String
   name: String!
   notes: String
+  occupationIds: [Int!]
   paymentDelayDays: Int
   phone: String
   postalCode: String
@@ -497,14 +457,27 @@ input CreateInvoiceInput {
   notes: String
 }
 
+input CreateOccupationInput {
+  companyName: String
+  customFields: [CustomFieldInput!]
+  languagePairs: [LanguagePairInput!]
+  legalForm: String
+  name: String!
+  occupationType: OccupationType
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  website: String
+}
+
 input CreateProjectInput {
-  occupationIds: [Int!]
   clientId: Int
   currency: String
   deadline: DateTime
   description: String
   fixedFee: Float
   hourlyRate: Float
+  occupationIds: [Int!]
   perWordRate: Float
   rateSheetId: Int
   sourceLanguage: String
@@ -518,13 +491,13 @@ input CreateProjectInput {
 }
 
 input CreateRateSheetInput {
-  occupationId: Int
   clientId: Int
   currency: String! = "EUR"
   description: String
   isDefault: Boolean
   matchRates: MatchRatesInput!
   name: String!
+  occupationId: Int
   pricePerWord: Float!
   sourceLanguage: String!
   targetLanguage: String!
@@ -562,11 +535,11 @@ input CreateTaskLabelInput {
 }
 
 input CreateTimeEntryInput {
-  occupationId: Int
   billable: Boolean
   clockifyEntryId: String
   description: String
   endTime: DateTime!
+  occupationId: Int
   projectId: Int
   startTime: DateTime!
   subtaskId: Int
@@ -576,12 +549,12 @@ input CreateTimeEntryInput {
 }
 
 input CreateTranslationRateInput {
-  occupationId: Int
   amount: Float!
   clientId: Int
   currency: String! = "EUR"
   description: String
   name: String!
+  occupationId: Int
   sourceLanguage: String
   targetLanguage: String
   type: TranslationRateType!
@@ -592,8 +565,19 @@ input CreateUserInput {
   name: String
 }
 
+type CustomField {
+  id: Int!
+  key: String!
+  occupationId: Int!
+  value: String!
+}
+
+input CustomFieldInput {
+  key: String!
+  value: String!
+}
+
 type CustomOccupation implements Occupation {
-  occupationType: OccupationType!
   charges: [Charge!]!
   companyName: String
   createdAt: DateTime!
@@ -605,6 +589,7 @@ type CustomOccupation implements Occupation {
   objectiveQ2: Int
   objectiveQ3: Int
   objectiveQ4: Int
+  occupationType: OccupationType!
   professionalEmail: String
   professionalPhone: String
   timezone: String
@@ -612,18 +597,6 @@ type CustomOccupation implements Occupation {
   updatedAt: DateTime!
   userId: Int!
   website: String
-}
-
-type CustomField {
-  occupationId: Int!
-  id: Int!
-  key: String!
-  value: String!
-}
-
-input CustomFieldInput {
-  key: String!
-  value: String!
 }
 
 type DashboardData {
@@ -742,9 +715,9 @@ enum InvoicingStatus {
 }
 
 type LanguagePair {
-  occupationId: Int!
   fromLanguage: String!
   id: Int!
+  occupationId: Int!
   toLanguage: String!
 }
 
@@ -810,13 +783,13 @@ type Mutation {
   adminUpdateProject(input: AdminUpdateProjectInput!): AdminProject!
   adminUpdateRate(input: AdminUpdateRateInput!): AdminRate!
   changePassword(currentPassword: String!, newPassword: String!): Boolean!
-  createOccupation(input: CreateOccupationInput!): Occupation!
   createCharge(input: CreateChargeInput!): Charge!
   createChecklist(taskId: Int!, title: String!): Boolean!
   createClient(input: CreateClientInput!): Client!
   createClientRate(input: CreateClientRateInput!): ClientRate!
   createCompanyContact(input: CreateCompanyContactInput!): CompanyContact!
   createInvoice(input: CreateInvoiceInput!): Invoice!
+  createOccupation(input: CreateOccupationInput!): Occupation!
   createProject(input: CreateProjectInput!): Project!
   createRateSheet(input: CreateRateSheetInput!): RateSheet!
   createSubtask(input: CreateSubtaskInput!): Subtask!
@@ -828,13 +801,13 @@ type Mutation {
   createTranslationRate(input: CreateTranslationRateInput!): TranslationRate!
   createUser(createUserInput: CreateUserInput!): User!
   deleteAccount: Boolean!
-  deleteOccupation(id: Int!): Boolean!
   deleteCharge(id: Int!): Boolean!
   deleteChecklist(taskId: Int!, title: String!): Boolean!
   deleteClient(id: Int!): Boolean!
   deleteClientRate(id: Int!): Boolean!
   deleteCompanyContact(id: Int!): Boolean!
   deleteInvoice(id: Int!): Boolean!
+  deleteOccupation(id: Int!): Boolean!
   deleteProject(id: Int!): Boolean!
   deleteRateSheet(id: Int!): Boolean!
   deleteSubtask(id: Int!): Boolean!
@@ -861,7 +834,6 @@ type Mutation {
   setupTwoFactor: SetupTwoFactorResponse!
   startTimer(input: StartTimerInput!): TimeEntry!
   stopTimer: TimeEntry!
-  updateOccupation(input: UpdateOccupationInput!): Occupation!
   updateCharge(input: UpdateChargeInput!): Charge!
   updateClient(input: UpdateClientInput!): Client!
   updateClientRate(input: UpdateClientRateInput!): ClientRate!
@@ -869,6 +841,7 @@ type Mutation {
   updateInvoice(input: UpdateInvoiceInput!): Invoice!
   updateInvoiceItem(input: UpdateInvoiceItemInput!): InvoiceItem!
   updateMe(input: UpdateMeInput!): User!
+  updateOccupation(input: UpdateOccupationInput!): Occupation!
   updateProject(input: UpdateProjectInput!): Project!
   updateRateSheet(input: UpdateRateSheetInput!): RateSheet!
   updateSubtask(input: UpdateSubtaskInput!): Subtask!
@@ -882,13 +855,39 @@ type Mutation {
   verifyTwoFactorBackup(input: VerifyTwoFactorBackupInput!): LoginResponse!
 }
 
+interface Occupation {
+  charges: [Charge!]!
+  companyName: String
+  createdAt: DateTime!
+  id: Int!
+  legalForm: String
+  name: String!
+  objectiveQ1: Int
+  objectiveQ2: Int
+  objectiveQ3: Int
+  objectiveQ4: Int
+  occupationType: OccupationType!
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  translationRates: [TranslationRate!]!
+  updatedAt: DateTime!
+  userId: Int!
+  website: String
+}
+
+enum OccupationType {
+  CORRECTOR
+  CUSTOM
+  TRANSLATOR
+}
+
 input PaginationInput {
   cursor: Int
   limit: Int
 }
 
 type Project {
-  occupations: [Occupation!]!
   clientId: Int
   createdAt: DateTime!
   currency: String!
@@ -897,6 +896,7 @@ type Project {
   fixedFee: Float
   hourlyRate: Float
   id: Int!
+  occupations: [Occupation!]!
   perWordRate: Float
   rateSheetId: Int
   sourceLanguage: String
@@ -932,7 +932,6 @@ enum ProjectStatus {
 
 type Query {
   activeTimer: TimeEntry
-  occupation(id: Int!): Occupation!
   adminClients(pagination: PaginationInput, search: String): AdminClientConnection!
   adminInvoices(pagination: PaginationInput, search: String, status: InvoiceStatus): AdminInvoiceConnection!
   adminProjects(pagination: PaginationInput, search: String, status: ProjectStatus): AdminProjectConnection!
@@ -951,6 +950,7 @@ type Query {
   members: [User!]!
   myOccupations: [Occupation!]!
   myTasks(pagination: PaginationInput): TaskConnection!
+  occupation(id: Int!): Occupation!
   project(id: Int!): Project
   projects(pagination: PaginationInput, search: String, status: ProjectStatus): ProjectConnection!
   rateSheet(id: Int!): RateSheet!
@@ -966,7 +966,6 @@ type Query {
 }
 
 type RateSheet {
-  occupationId: Int
   clientId: Int
   createdAt: DateTime!
   currency: String!
@@ -975,6 +974,7 @@ type RateSheet {
   isDefault: Boolean!
   matchRates: MatchRates!
   name: String!
+  occupationId: Int
   pricePerWord: Float!
   sourceLanguage: String!
   targetLanguage: String!
@@ -1007,9 +1007,9 @@ type SetupTwoFactorResponse {
 }
 
 input StartTimerInput {
-  occupationId: Int
   billable: Boolean
   description: String
+  occupationId: Int
   projectId: Int
   subtaskId: Int
   tagIds: [Int!]
@@ -1119,8 +1119,6 @@ enum TaskStatus {
 
 type TimeEntry {
   activities: [TaskActivity!]!
-  occupation: Occupation
-  occupationId: Int
   billable: Boolean!
   clockifyEntryId: String
   createdAt: DateTime!
@@ -1129,6 +1127,8 @@ type TimeEntry {
   endTime: DateTime
   id: Int!
   invoicingStatus: InvoicingStatus!
+  occupation: Occupation
+  occupationId: Int
   projectId: Int
   startTime: DateTime!
   subtask: TimeEntrySubtaskRef
@@ -1159,7 +1159,6 @@ type TimeEntryTaskRef {
 }
 
 type TranslationRate implements IRateBase {
-  occupationId: Int
   amount: Float!
   clientId: Int
   createdAt: DateTime!
@@ -1167,6 +1166,7 @@ type TranslationRate implements IRateBase {
   description: String
   id: Int!
   name: String!
+  occupationId: Int
   sourceLanguage: String
   targetLanguage: String
   type: TranslationRateType!
@@ -1182,7 +1182,6 @@ enum TranslationRateType {
 }
 
 type TranslatorOccupation implements Occupation {
-  occupationType: OccupationType!
   charges: [Charge!]!
   companyName: String
   createdAt: DateTime!
@@ -1194,29 +1193,13 @@ type TranslatorOccupation implements Occupation {
   objectiveQ2: Int
   objectiveQ3: Int
   objectiveQ4: Int
+  occupationType: OccupationType!
   professionalEmail: String
   professionalPhone: String
   timezone: String
   translationRates: [TranslationRate!]!
   updatedAt: DateTime!
   userId: Int!
-  website: String
-}
-
-input UpdateOccupationInput {
-  companyName: String
-  customFields: [CustomFieldInput!]
-  id: Int!
-  languagePairs: [LanguagePairInput!]
-  legalForm: String
-  name: String
-  objectiveQ1: Int
-  objectiveQ2: Int
-  objectiveQ3: Int
-  objectiveQ4: Int
-  professionalEmail: String
-  professionalPhone: String
-  timezone: String
   website: String
 }
 
@@ -1228,7 +1211,6 @@ input UpdateChargeInput {
 }
 
 input UpdateClientInput {
-  occupationIds: [Int!]
   address: String
   addressLine2: String
   billingEndOfMonth: Boolean
@@ -1248,6 +1230,7 @@ input UpdateClientInput {
   legalName: String
   name: String
   notes: String
+  occupationIds: [Int!]
   paymentDelayDays: Int
   phone: String
   postalCode: String
@@ -1315,8 +1298,24 @@ input UpdateMeInput {
   numberFormat: String
 }
 
+input UpdateOccupationInput {
+  companyName: String
+  customFields: [CustomFieldInput!]
+  id: Int!
+  languagePairs: [LanguagePairInput!]
+  legalForm: String
+  name: String
+  objectiveQ1: Int
+  objectiveQ2: Int
+  objectiveQ3: Int
+  objectiveQ4: Int
+  professionalEmail: String
+  professionalPhone: String
+  timezone: String
+  website: String
+}
+
 input UpdateProjectInput {
-  occupationIds: [Int!]
   clientId: Int
   currency: String
   deadline: DateTime
@@ -1324,6 +1323,7 @@ input UpdateProjectInput {
   fixedFee: Float
   hourlyRate: Float
   id: Int!
+  occupationIds: [Int!]
   perWordRate: Float
   rateSheetId: Int
   sourceLanguage: String
@@ -1337,7 +1337,6 @@ input UpdateProjectInput {
 }
 
 input UpdateRateSheetInput {
-  occupationId: Int
   clientId: Int
   currency: String
   description: String
@@ -1345,6 +1344,7 @@ input UpdateRateSheetInput {
   isDefault: Boolean
   matchRates: MatchRatesInput
   name: String
+  occupationId: Int
   pricePerWord: Float
   sourceLanguage: String
   targetLanguage: String
@@ -1380,12 +1380,12 @@ input UpdateTaskInput {
 }
 
 input UpdateTimeEntryInput {
-  occupationId: Int
   billable: Boolean
   clockifyEntryId: String
   description: String
   endTime: DateTime
   id: Int!
+  occupationId: Int
   projectId: Int
   startTime: DateTime
   subtaskId: Int
@@ -1395,13 +1395,13 @@ input UpdateTimeEntryInput {
 }
 
 input UpdateTranslationRateInput {
-  occupationId: Int
   amount: Float
   clientId: Int
   currency: String
   description: String
   id: Int!
   name: String
+  occupationId: Int
   sourceLanguage: String
   targetLanguage: String
   type: TranslationRateType
