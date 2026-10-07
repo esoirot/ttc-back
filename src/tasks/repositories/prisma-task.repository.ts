@@ -6,9 +6,37 @@ import { CreateTaskInput } from '../dto/create-task.input';
 import { UpdateTaskInput } from '../dto/update-task.input';
 import { TaskStatus } from '../../generated/prisma/client';
 
+// Postgres sorts an enum by declaration order, which Object.values keeps.
+const STATUS_ORDER = Object.values(TaskStatus);
+
 @Injectable()
 export class PrismaTaskRepository implements TaskRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Keyset filter: tasks strictly after the cursor task in (status, sortOrder, id) order. */
+  private async after(cursor: number | undefined) {
+    if (cursor === undefined) return {};
+    const c = await this.prisma.task.findUnique({
+      where: { id: cursor },
+      select: { status: true, sortOrder: true },
+    });
+    if (!c) return { id: { gt: cursor } };
+    return {
+      AND: [
+        {
+          OR: [
+            {
+              status: {
+                in: STATUS_ORDER.slice(STATUS_ORDER.indexOf(c.status) + 1),
+              },
+            },
+            { status: c.status, sortOrder: { gt: c.sortOrder } },
+            { status: c.status, sortOrder: c.sortOrder, id: { gt: cursor } },
+          ],
+        },
+      ],
+    };
+  }
 
   async findById(id: number, userId: number): Promise<TaskModel> {
     const task = await this.prisma.task.findFirst({
@@ -33,10 +61,7 @@ export class PrismaTaskRepository implements TaskRepository {
         ? { title: { contains: search, mode: 'insensitive' as const } }
         : {}),
     };
-    const where = {
-      ...baseWhere,
-      ...(cursor !== undefined ? { id: { gt: cursor } } : {}),
-    };
+    const where = { ...baseWhere, ...(await this.after(cursor)) };
     const rows = await this.prisma.task.findMany({
       where,
       orderBy: [{ status: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
@@ -56,10 +81,7 @@ export class PrismaTaskRepository implements TaskRepository {
     const limit = pagination?.limit ?? 50;
     const cursor = pagination?.cursor;
     const baseWhere = { assigneeId };
-    const where = {
-      ...baseWhere,
-      ...(cursor !== undefined ? { id: { gt: cursor } } : {}),
-    };
+    const where = { ...baseWhere, ...(await this.after(cursor)) };
     const rows = await this.prisma.task.findMany({
       where,
       orderBy: [{ status: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],

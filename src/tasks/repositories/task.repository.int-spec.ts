@@ -90,6 +90,39 @@ describe.each([
       expect(page2).toMatchObject({ total: 21, nextCursor: null });
     });
 
+    it('pages through every task exactly once, in sort order', async () => {
+      const p = await seedProject(db.prisma8, s.owner);
+      const tasks = [
+        await seedTask(db.prisma8, p.id, { status: 'DONE' }),
+        await seedTask(db.prisma8, p.id, { sortOrder: 2 }),
+        await seedTask(db.prisma8, p.id, { status: 'IN_PROGRESS' }),
+        await seedTask(db.prisma8, p.id, { sortOrder: 1 }),
+        await seedTask(db.prisma8, p.id, { sortOrder: 1 }),
+        await seedTask(db.prisma8, p.id, { status: 'PAID' }),
+      ];
+      const expected = [
+        tasks[3],
+        tasks[4],
+        tasks[1],
+        tasks[2],
+        tasks[0],
+        tasks[5],
+      ].map((t) => t.id);
+
+      const seen: number[] = [];
+      let cursor: number | undefined;
+      for (let i = 0; i < 10; i++) {
+        const page = await repo.findByProject(p.id, s.owner, {
+          limit: 2,
+          cursor,
+        });
+        seen.push(...page.items.map((t) => t.id));
+        if (page.nextCursor === null) break;
+        cursor = page.nextCursor;
+      }
+      expect(seen).toEqual(expected);
+    });
+
     it('searches titles case-insensitively', async () => {
       const p = await seedProject(db.prisma8, s.owner);
       await seedTask(db.prisma8, p.id, { title: 'Translate Chapter 1' });
@@ -151,6 +184,33 @@ describe.each([
         cursor: ids[1],
       });
       expect(page2.items.map((t) => t.id)).toEqual([ids[2]]);
+    });
+  });
+
+  describe('findByAssignee paging', () => {
+    it('pages through every assigned task exactly once, in sort order', async () => {
+      const done = await seedTask(db.prisma8, s.project, {
+        assigneeId: s.assignee,
+        status: 'DONE',
+      });
+      const later = await seedTask(db.prisma8, s.project, {
+        assigneeId: s.assignee,
+        sortOrder: 5,
+      });
+      const expected = [s.task, later.id, done.id];
+
+      const seen: number[] = [];
+      let cursor: number | undefined;
+      for (let i = 0; i < 10; i++) {
+        const page = await repo.findByAssignee(s.assignee, {
+          limit: 1,
+          cursor,
+        });
+        seen.push(...page.items.map((t) => t.id));
+        if (page.nextCursor === null) break;
+        cursor = page.nextCursor;
+      }
+      expect(seen).toEqual(expected);
     });
   });
 
