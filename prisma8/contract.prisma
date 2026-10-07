@@ -1,24 +1,23 @@
 // use prisma-8
 // Contract inferred from the live database schema. Edit as needed, then run `prisma contract emit`.
-
 namespace public {
   model User {
     id                           Int                   @id(map: "User_pkey") @default(autoincrement())
     email                        String
     name                         String?
-    createdAt                    Timestamp(3)          @default(now())
+    createdAt                    TimestampString(3)    @default(now())
     password                     String?
     role                         pg.enum(Role)         @default("USER")
     twoFactorEnabled             Boolean               @default(false)
     twoFactorSecret              String?
-    updatedAt                    Timestamp(3)
+    updatedAt                    TimestampString(3)
     clockifyApiKey               String?
     clockifyUserId               String?
     clockifyWorkspaceId          String?
     hubspotAccessToken           String?
     hubspotPortalId              String?
     hubspotRefreshToken          String?
-    hubspotTokenExpiresAt        Timestamp(3)?
+    hubspotTokenExpiresAt        TimestampString(3)?
     logoUrl                      String?
     adminPermissions             String[]?             @default([]) @noCheck(elementNotNull)
     defaultCurrency              String                @default("EUR")
@@ -33,13 +32,13 @@ namespace public {
     googleCalendarAccessToken    String?
     googleCalendarEmail          String?
     googleCalendarRefreshToken   String?
-    googleCalendarTokenExpiresAt Timestamp(3)?
+    googleCalendarTokenExpiresAt TimestampString(3)?
     auditLogs                    AuditLog[]
     clients                      Client[]
     clientRates                  ClientRate[]
-    clientStatusHistories        ClientStatusHistory[]
+    clientStatusHistory          ClientStatusHistory[]
     invoices                     Invoice[]
-    oAuthAccounts                OAuthAccount[]
+    oauthAccounts                OAuthAccount[]
     occupations                  Occupation[]
     passwordResetTokens          PasswordResetToken[]
     projects                     Project[]
@@ -57,41 +56,41 @@ namespace public {
   }
 
   model AuditLog {
-    id        Int          @id(map: "AuditLog_pkey") @default(autoincrement())
+    id        Int                @id(map: "AuditLog_pkey") @default(autoincrement())
     userId    Int
     action    String
     resource  String
     payload   Jsonb?
-    createdAt Timestamp(3) @default(now())
-    user      User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "AuditLog_userId_fkey", index: false)
+    createdAt TimestampString(3) @default(now())
+    user      User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "AuditLog_userId_fkey", index: false)
   }
 
   model Occupation {
-    id                 Int                     @id(map: "Occupation_pkey") @default(autoincrement())
-    userId             Int
-    name               String
-    companyName        String?
-    legalForm          String?
-    professionalEmail  String?
-    professionalPhone  String?
-    website            String?
-    timezone           String?
-    objectiveQ1        Int?
-    objectiveQ2        Int?
-    objectiveQ3        Int?
-    objectiveQ4        Int?
-    createdAt          Timestamp(3)            @default(now())
-    updatedAt          Timestamp(3)
-    occupationType     pg.enum(OccupationType) @default("CUSTOM")
-    charges            Charge[]
-    clientOccupations  ClientOccupation[]
-    customFields       CustomField[]
-    languagePairs      LanguagePair[]
-    projectOccupations ProjectOccupation[]
-    rateSheets         RateSheet[]
-    timeEntries        TimeEntry[]
-    translationRates   TranslationRate[]
-    user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Occupation_userId_fkey", index: false)
+    id                Int                     @id(map: "Occupation_pkey") @default(autoincrement())
+    userId            Int
+    name              String
+    companyName       String?
+    legalForm         String?
+    professionalEmail String?
+    professionalPhone String?
+    website           String?
+    timezone          String?
+    objectiveQ1       Int?
+    objectiveQ2       Int?
+    objectiveQ3       Int?
+    objectiveQ4       Int?
+    createdAt         TimestampString(3)      @default(now())
+    updatedAt         TimestampString(3)
+    occupationType    pg.enum(OccupationType) @default("CUSTOM")
+    charges           Charge[]
+    clients           ClientOccupation[]
+    customFields      CustomField[]
+    languagePairs     LanguagePair[]
+    projects          ProjectOccupation[]
+    rateSheets        RateSheet[]
+    timeEntries       TimeEntry[]
+    translationRates  TranslationRate[]
+    user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Occupation_userId_fkey", index: false)
   }
 
   model Charge {
@@ -104,46 +103,46 @@ namespace public {
   }
 
   model Client {
-    id                    Int                      @id(map: "Client_pkey") @default(autoincrement())
-    userId                Int
-    name                  String
-    email                 String?
-    phone                 String?
-    company               String?
-    address               String?
-    notes                 String?
-    hubspotId             String?
-    createdAt             Timestamp(3)             @default(now())
-    updatedAt             Timestamp(3)
-    city                  String?
-    country               String?
-    legalName             String?
-    postalCode            String?
-    vatNumber             String?
-    billingEndOfMonth     Boolean                  @default(false)
-    clientType            pg.enum(ClientType)      @default("COMPANY")
-    firstName             String?
-    lastName              String?
-    paymentDelayDays      Int?
-    taxRate               Numeric(5, 2)?
-    industry              pg.enum(ClientIndustry)?
-    website               String?
-    contactedAt           Timestamp(3)?
-    status                pg.enum(ClientStatus)    @default("CLIENT")
-    addressLine2          String?
-    color                 String?
-    legalForm             String?
-    state                 String?
-    clientOccupations     ClientOccupation[]
-    clientRates           ClientRate[]
-    clientStatusHistories ClientStatusHistory[]
-    clientTags            ClientTag[]
-    companyContacts       CompanyContact[]
-    invoices              Invoice[]
-    projects              Project[]
-    rateSheets            RateSheet[]
-    translationRates      TranslationRate[]
-    user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Client_userId_fkey", index: false)
+    id                Int                      @id(map: "Client_pkey") @default(autoincrement())
+    userId            Int
+    name              String
+    email             String?
+    phone             String?
+    company           String?
+    address           String?
+    notes             String?
+    hubspotId         String?
+    createdAt         TimestampString(3)       @default(now())
+    updatedAt         TimestampString(3)
+    city              String?
+    country           String?
+    legalName         String?
+    postalCode        String?
+    vatNumber         String?
+    billingEndOfMonth Boolean                  @default(false)
+    clientType        pg.enum(ClientType)      @default("COMPANY")
+    firstName         String?
+    lastName          String?
+    paymentDelayDays  Int?
+    taxRate           Numeric(5, 2)?
+    industry          pg.enum(ClientIndustry)?
+    website           String?
+    contactedAt       TimestampString(3)?
+    status            pg.enum(ClientStatus)    @default("CLIENT")
+    addressLine2      String?
+    color             String?
+    legalForm         String?
+    state             String?
+    occupations       ClientOccupation[]
+    clientRates       ClientRate[]
+    statusHistory     ClientStatusHistory[]
+    tags              ClientTag[]
+    contacts          CompanyContact[]
+    invoices          Invoice[]
+    projects          Project[]
+    rateSheets        RateSheet[]
+    translationRates  TranslationRate[]
+    user              User                     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Client_userId_fkey", index: false)
   }
 
   model ClientOccupation {
@@ -156,39 +155,39 @@ namespace public {
   }
 
   model ClientRate {
-    id          Int               @id(map: "ClientRate_pkey") @default(autoincrement())
+    id          Int                @id(map: "ClientRate_pkey") @default(autoincrement())
     clientId    Int
     userId      Int
-    _type       pg.enum(RateType) @map("type")
+    _type       pg.enum(RateType)  @map("type")
     name        String
     amount      Numeric(10, 4)
-    currency    String            @default("EUR")
+    currency    String             @default("EUR")
     description String?
-    createdAt   Timestamp(3)      @default(now())
-    updatedAt   Timestamp(3)
-    client      Client            @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ClientRate_clientId_fkey", index: false)
-    user        User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ClientRate_userId_fkey", index: false)
+    createdAt   TimestampString(3) @default(now())
+    updatedAt   TimestampString(3)
+    client      Client             @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ClientRate_clientId_fkey", index: false)
+    user        User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ClientRate_userId_fkey", index: false)
   }
 
   model ClientStatusHistory {
-    id        Int          @id(map: "ClientStatusHistory_pkey") @default(autoincrement())
+    id        Int                @id(map: "ClientStatusHistory_pkey") @default(autoincrement())
     clientId  Int
     userId    Int
-    _type     String       @map("type")
+    _type     String             @map("type")
     payload   String?
-    createdAt Timestamp(3) @default(now())
-    client    Client       @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ClientStatusHistory_clientId_fkey", index: false)
-    user      User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ClientStatusHistory_userId_fkey", index: false)
+    createdAt TimestampString(3) @default(now())
+    client    Client             @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ClientStatusHistory_clientId_fkey", index: false)
+    user      User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ClientStatusHistory_userId_fkey", index: false)
   }
 
   model Tag {
-    id            Int            @id(map: "Tag_pkey") @default(autoincrement())
-    userId        Int
-    name          String
-    createdAt     Timestamp(3)   @default(now())
-    clientTags    ClientTag[]
-    timeEntryTags TimeEntryTag[]
-    user          User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Tag_userId_fkey", index: false)
+    id        Int                @id(map: "Tag_pkey") @default(autoincrement())
+    userId    Int
+    name      String
+    createdAt TimestampString(3) @default(now())
+    clients   ClientTag[]
+    entries   TimeEntryTag[]
+    user      User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Tag_userId_fkey", index: false)
 
     @@index([userId, name], map: "Tag_userId_name_key", unique: true)
   }
@@ -203,17 +202,17 @@ namespace public {
   }
 
   model CompanyContact {
-    id        Int          @id(map: "CompanyContact_pkey") @default(autoincrement())
+    id        Int                @id(map: "CompanyContact_pkey") @default(autoincrement())
     clientId  Int
     firstName String?
     lastName  String?
     email     String?
     phone     String?
-    createdAt Timestamp(3) @default(now())
-    updatedAt Timestamp(3)
+    createdAt TimestampString(3) @default(now())
+    updatedAt TimestampString(3)
     color     String?
     jobTitle  String?
-    client    Client       @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "CompanyContact_clientId_fkey", index: false)
+    client    Client             @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "CompanyContact_clientId_fkey", index: false)
   }
 
   model CustomField {
@@ -225,74 +224,74 @@ namespace public {
   }
 
   model Invoice {
-    id           Int                    @id(map: "Invoice_pkey") @default(autoincrement())
-    userId       Int
-    clientId     Int?
-    number       String
-    status       pg.enum(InvoiceStatus) @default("DRAFT")
-    currency     String                 @default("EUR")
-    issuedAt     Timestamp(3)?
-    dueDate      Timestamp(3)?
-    paidAt       Timestamp(3)?
-    notes        String?
-    createdAt    Timestamp(3)           @default(now())
-    updatedAt    Timestamp(3)
-    invoiceItems InvoiceItem[]
-    client       Client?                @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Invoice_clientId_fkey", index: false)
-    user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Invoice_userId_fkey", index: false)
+    id        Int                    @id(map: "Invoice_pkey") @default(autoincrement())
+    userId    Int
+    clientId  Int?
+    number    String
+    status    pg.enum(InvoiceStatus) @default("DRAFT")
+    currency  String                 @default("EUR")
+    issuedAt  TimestampString(3)?
+    dueDate   TimestampString(3)?
+    paidAt    TimestampString(3)?
+    notes     String?
+    createdAt TimestampString(3)     @default(now())
+    updatedAt TimestampString(3)
+    items     InvoiceItem[]
+    client    Client?                @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Invoice_clientId_fkey", index: false)
+    user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Invoice_userId_fkey", index: false)
 
     @@index([number], map: "Invoice_number_key", unique: true)
   }
 
   model RateSheet {
-    id             Int            @id(map: "RateSheet_pkey") @default(autoincrement())
+    id             Int                @id(map: "RateSheet_pkey") @default(autoincrement())
     userId         Int
     clientId       Int?
     name           String
     description    String?
     sourceLanguage VarChar(2)
     targetLanguage VarChar(2)
-    currency       String         @default("EUR")
+    currency       String             @default("EUR")
     pricePerWord   Numeric(10, 6)
     matchRates     Jsonb
-    createdAt      Timestamp(3)   @default(now())
-    updatedAt      Timestamp(3)
+    createdAt      TimestampString(3) @default(now())
+    updatedAt      TimestampString(3)
     occupationId   Int?
-    isDefault      Boolean        @default(false)
+    isDefault      Boolean            @default(false)
     projects       Project[]
-    client         Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "RateSheet_clientId_fkey", index: false)
-    occupation     Occupation?    @relation(fields: [occupationId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "RateSheet_occupationId_fkey", index: false)
-    user           User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RateSheet_userId_fkey", index: false)
+    client         Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "RateSheet_clientId_fkey", index: false)
+    occupation     Occupation?        @relation(fields: [occupationId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "RateSheet_occupationId_fkey", index: false)
+    user           User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RateSheet_userId_fkey", index: false)
   }
 
   model Project {
-    id                 Int                    @id(map: "Project_pkey") @default(autoincrement())
-    title              String
-    description        String?
-    userId             Int?
-    clientId           Int?
-    createdAt          Timestamp(3)           @default(now())
-    currency           String                 @default("EUR")
-    deadline           Timestamp(3)?
-    sourceLanguage     String?
-    startDate          Timestamp(3)?
-    status             pg.enum(ProjectStatus) @default("DRAFT")
-    targetLanguage     String?
-    unitPrice          Numeric(14, 8)?
-    updatedAt          Timestamp(3)
-    wordCount          Int?
-    fixedFee           Numeric(10, 4)?
-    hourlyRate         Numeric(10, 4)?
-    perWordRate        Numeric(10, 4)?
-    useCustomRate      Boolean                @default(false)
-    rateSheetId        Int?
-    invoiceItems       InvoiceItem[]
-    projectOccupations ProjectOccupation[]
-    tasks              Task[]
-    timeEntries        TimeEntry[]
-    client             Client?                @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Project_clientId_fkey", index: false)
-    rateSheet          RateSheet?             @relation(fields: [rateSheetId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Project_rateSheetId_fkey", index: false)
-    user               User?                  @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Project_userId_fkey", index: false)
+    id             Int                    @id(map: "Project_pkey") @default(autoincrement())
+    title          String
+    description    String?
+    userId         Int?
+    clientId       Int?
+    createdAt      TimestampString(3)     @default(now())
+    currency       String                 @default("EUR")
+    deadline       TimestampString(3)?
+    sourceLanguage String?
+    startDate      TimestampString(3)?
+    status         pg.enum(ProjectStatus) @default("DRAFT")
+    targetLanguage String?
+    unitPrice      Numeric(14, 8)?
+    updatedAt      TimestampString(3)
+    wordCount      Int?
+    fixedFee       Numeric(10, 4)?
+    hourlyRate     Numeric(10, 4)?
+    perWordRate    Numeric(10, 4)?
+    useCustomRate  Boolean                @default(false)
+    rateSheetId    Int?
+    invoiceItems   InvoiceItem[]
+    occupations    ProjectOccupation[]
+    tasks          Task[]
+    timeEntries    TimeEntry[]
+    client         Client?                @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Project_clientId_fkey", index: false)
+    rateSheet      RateSheet?             @relation(fields: [rateSheetId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Project_rateSheetId_fkey", index: false)
+    user           User?                  @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Project_userId_fkey", index: false)
   }
 
   model Task {
@@ -302,37 +301,37 @@ namespace public {
     title           String
     description     String?
     status          pg.enum(TaskStatus) @default("TODO")
-    dueDate         Timestamp(3)?
+    dueDate         TimestampString(3)?
     sortOrder       Int                 @default(0)
-    createdAt       Timestamp(3)        @default(now())
-    updatedAt       Timestamp(3)
+    createdAt       TimestampString(3)  @default(now())
+    updatedAt       TimestampString(3)
     checklistTitles String[]?           @noCheck(elementNotNull)
     recurring       String?
     reminderOffset  String?
-    startDate       Timestamp(3)?
+    startDate       TimestampString(3)?
     wordCount       Int?
     subtasks        Subtask[]
-    taskActivities  TaskActivity[]
-    taskAttachments TaskAttachment[]
-    taskComments    TaskComment[]
-    taskLabels      TaskLabel[]
+    activities      TaskActivity[]
+    attachments     TaskAttachment[]
+    comments        TaskComment[]
+    labels          TaskLabel[]
     timeEntries     TimeEntry[]
     assignee        User?               @relation(fields: [assigneeId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Task_assigneeId_fkey", index: false)
     project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Task_projectId_fkey", index: false)
   }
 
   model Subtask {
-    id             Int           @id(map: "Subtask_pkey") @default(autoincrement())
+    id             Int                 @id(map: "Subtask_pkey") @default(autoincrement())
     taskId         Int
     title          String
-    done           Boolean       @default(false)
-    createdAt      Timestamp(3)  @default(now())
-    updatedAt      Timestamp(3)
-    dueDate        Timestamp(3)?
+    done           Boolean             @default(false)
+    createdAt      TimestampString(3)  @default(now())
+    updatedAt      TimestampString(3)
+    dueDate        TimestampString(3)?
     checklistTitle String?
     wordCount      Int?
     timeEntries    TimeEntry[]
-    task           Task          @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Subtask_taskId_fkey", index: false)
+    task           Task                @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Subtask_taskId_fkey", index: false)
   }
 
   model TimeEntry {
@@ -340,21 +339,21 @@ namespace public {
     userId          Int
     projectId       Int?
     description     String?
-    startTime       Timestamp(3)
-    endTime         Timestamp(3)?
+    startTime       TimestampString(3)
+    endTime         TimestampString(3)?
     durationSeconds Int?
     billable        Boolean                  @default(true)
     clockifyEntryId String?
-    createdAt       Timestamp(3)             @default(now())
-    updatedAt       Timestamp(3)
+    createdAt       TimestampString(3)       @default(now())
+    updatedAt       TimestampString(3)
     taskId          Int?
     subtaskId       Int?
     occupationId    Int?
     wordsProcessed  Int?
     invoicingStatus pg.enum(InvoicingStatus) @default("NO")
     invoiceItems    InvoiceItem[]
-    taskActivities  TaskActivity[]
-    timeEntryTags   TimeEntryTag[]
+    activities      TaskActivity[]
+    tags            TimeEntryTag[]
     occupation      Occupation?              @relation(fields: [occupationId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TimeEntry_occupationId_fkey", index: false)
     project         Project?                 @relation(fields: [projectId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TimeEntry_projectId_fkey", index: false)
     subtask         Subtask?                 @relation(fields: [subtaskId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TimeEntry_subtaskId_fkey", index: false)
@@ -395,12 +394,12 @@ namespace public {
   }
 
   model PasswordResetToken {
-    id        Int          @id(map: "PasswordResetToken_pkey") @default(autoincrement())
+    id        Int                @id(map: "PasswordResetToken_pkey") @default(autoincrement())
     userId    Int
     tokenHash String
-    expiresAt Timestamp(3)
-    createdAt Timestamp(3) @default(now())
-    user      User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PasswordResetToken_userId_fkey", index: false)
+    expiresAt TimestampString(3)
+    createdAt TimestampString(3) @default(now())
+    user      User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PasswordResetToken_userId_fkey", index: false)
 
     @@index([tokenHash], map: "PasswordResetToken_tokenHash_key", unique: true)
   }
@@ -415,60 +414,60 @@ namespace public {
   }
 
   model RefreshToken {
-    id        Int          @id(map: "RefreshToken_pkey") @default(autoincrement())
+    id        Int                @id(map: "RefreshToken_pkey") @default(autoincrement())
     tokenHash String
     userId    Int
-    expiresAt Timestamp(3)
-    createdAt Timestamp(3) @default(now())
-    user      User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RefreshToken_userId_fkey", index: false)
+    expiresAt TimestampString(3)
+    createdAt TimestampString(3) @default(now())
+    user      User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RefreshToken_userId_fkey", index: false)
 
     @@index([tokenHash], map: "RefreshToken_tokenHash_key", unique: true)
   }
 
   model TaskActivity {
-    id          Int          @id(map: "TaskActivity_pkey") @default(autoincrement())
+    id          Int                @id(map: "TaskActivity_pkey") @default(autoincrement())
     taskId      Int?
     userId      Int
-    _type       String       @map("type")
+    _type       String             @map("type")
     payload     String?
-    createdAt   Timestamp(3) @default(now())
+    createdAt   TimestampString(3) @default(now())
     timeEntryId Int?
-    task        Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskActivity_taskId_fkey", index: false)
-    timeEntry   TimeEntry?   @relation(fields: [timeEntryId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TaskActivity_timeEntryId_fkey", index: false)
-    user        User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskActivity_userId_fkey", index: false)
+    task        Task?              @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskActivity_taskId_fkey", index: false)
+    timeEntry   TimeEntry?         @relation(fields: [timeEntryId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TaskActivity_timeEntryId_fkey", index: false)
+    user        User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskActivity_userId_fkey", index: false)
   }
 
   model TaskAttachment {
-    id            Int          @id(map: "TaskAttachment_pkey") @default(autoincrement())
+    id            Int                @id(map: "TaskAttachment_pkey") @default(autoincrement())
     taskId        Int
-    _type         String       @map("type")
+    _type         String             @map("type")
     fileName      String?
     url           String
     displayText   String?
-    createdAt     Timestamp(3) @default(now())
+    createdAt     TimestampString(3) @default(now())
     storageDriver String?
     storageKey    String?
-    task          Task         @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskAttachment_taskId_fkey", index: false)
+    task          Task               @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskAttachment_taskId_fkey", index: false)
   }
 
   model TaskComment {
-    id        Int          @id(map: "TaskComment_pkey") @default(autoincrement())
+    id        Int                @id(map: "TaskComment_pkey") @default(autoincrement())
     taskId    Int
     authorId  Int
     body      String
-    createdAt Timestamp(3) @default(now())
-    updatedAt Timestamp(3)
-    author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskComment_authorId_fkey", index: false)
-    task      Task         @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskComment_taskId_fkey", index: false)
+    createdAt TimestampString(3) @default(now())
+    updatedAt TimestampString(3)
+    author    User               @relation(fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskComment_authorId_fkey", index: false)
+    task      Task               @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskComment_taskId_fkey", index: false)
   }
 
   model TaskLabel {
-    id        Int          @id(map: "TaskLabel_pkey") @default(autoincrement())
+    id        Int                @id(map: "TaskLabel_pkey") @default(autoincrement())
     taskId    Int
     name      String
-    color     String       @default("#6B7280")
-    createdAt Timestamp(3) @default(now())
-    task      Task         @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskLabel_taskId_fkey", index: false)
+    color     String             @default("#6B7280")
+    createdAt TimestampString(3) @default(now())
+    task      Task               @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TaskLabel_taskId_fkey", index: false)
   }
 
   model TimeEntryTag {
@@ -481,31 +480,31 @@ namespace public {
   }
 
   model TranslationRate {
-    id             Int               @id(map: "TranslationRate_pkey") @default(autoincrement())
+    id             Int                @id(map: "TranslationRate_pkey") @default(autoincrement())
     userId         Int
-    _type          pg.enum(RateType) @map("type")
+    _type          pg.enum(RateType)  @map("type")
     name           String
     amount         Float
-    currency       String            @default("EUR")
+    currency       String             @default("EUR")
     description    String?
-    createdAt      Timestamp(3)      @default(now())
-    updatedAt      Timestamp(3)
+    createdAt      TimestampString(3) @default(now())
+    updatedAt      TimestampString(3)
     clientId       Int?
     sourceLanguage VarChar(2)?
     targetLanguage VarChar(2)?
     occupationId   Int?
-    client         Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TranslationRate_clientId_fkey", index: false)
-    occupation     Occupation?       @relation(fields: [occupationId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TranslationRate_occupationId_fkey", index: false)
-    user           User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TranslationRate_userId_fkey", index: false)
+    client         Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TranslationRate_clientId_fkey", index: false)
+    occupation     Occupation?        @relation(fields: [occupationId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "TranslationRate_occupationId_fkey", index: false)
+    user           User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TranslationRate_userId_fkey", index: false)
   }
 
   model TwoFactorBackupCode {
-    id        Int           @id(map: "TwoFactorBackupCode_pkey") @default(autoincrement())
+    id        Int                 @id(map: "TwoFactorBackupCode_pkey") @default(autoincrement())
     userId    Int
     codeHash  String
-    usedAt    Timestamp(3)?
-    createdAt Timestamp(3)  @default(now())
-    user      User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TwoFactorBackupCode_userId_fkey", index: false)
+    usedAt    TimestampString(3)?
+    createdAt TimestampString(3)  @default(now())
+    user      User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TwoFactorBackupCode_userId_fkey", index: false)
   }
 
   native_enum ChargeType {

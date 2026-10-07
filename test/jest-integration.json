@@ -1,0 +1,33 @@
+{
+  "moduleFileExtensions": ["js", "mjs", "json", "ts"],
+  "setupFiles": ["<rootDir>/test/setup-env.js"],
+  "rootDir": "..",
+  "roots": ["<rootDir>/src"],
+  "testEnvironment": "node",
+  "testRegex": "\\.int-spec\\.ts$",
+  "maxWorkers": 1,
+  "transform": {
+    "^.+\\.ts$": [
+      "@swc/jest",
+      {
+        "jsc": {
+          "parser": {
+            "syntax": "typescript",
+            "decorators": true
+          },
+          "transform": {
+            "legacyDecorator": true,
+            "decoratorMetadata": true
+          },
+          "target": "es2022"
+        }
+      }
+    ],
+    "node_modules/.+\\.m?js$": "<rootDir>/test/esm-transformer.js"
+  },
+  "moduleNameMapper": {
+    "^(\\.{1,2}/.*)\\.js$": "$1"
+  },
+  "transformIgnorePatterns": [],
+  "globalSetup": "<rootDir>/test/integration-setup.js"
+}

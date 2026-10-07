@@ -37,6 +37,7 @@ pnpm run lint               # ESLint --fix
 pnpm run test               # unit (Jest, files: src/**/*.spec.ts)
 pnpm run test:watch
 pnpm run test:e2e           # config: test/jest-e2e.json
+pnpm run test:integration   # real Postgres (ttc_test), *.int-spec.ts
 ```
 
 ## Working process
@@ -132,7 +133,13 @@ Fire-and-forget `AuditLog` writes in HubSpot, Clockify, Clients, Projects, and I
 
 Mid-upgrade, following Prisma's 7 -> 8 guide (https://www.prisma.io/docs/guides/upgrade-prisma-orm/postgresql). Done: phase 1 (v7 CLI lives in `@prisma/prisma7`, binary `prisma7`, config `prisma7.config.ts`) and phase 2 (Prisma 8 CLI `prisma` + runtime `@prisma/orm-postgres`, config `prisma.config.ts`, contract `prisma8/contract.prisma` inferred from the live DB, emitted artefacts committed in `generated/prisma8/`). Not done: phase 3 (port repositories from `PrismaService`/`@prisma/client` to the v8 query API), phase 4 (`prisma db sign` hands migrations to v8), phase 5 (remove v7).
 
-Until phase 4, every schema change is a Prisma 7 migration (`prisma7 migrate dev`, edit `prisma/schema.prisma`); after each one, update `prisma8/contract.prisma` to match and re-run `pnpm prisma contract emit`. Never run `prisma db sign`, `prisma db init`, `prisma db update` or `prisma db migrate` yet — that is the phase-4 handover. Pin `@prisma/orm-postgres` to the `@prisma/orm-toolchain` version the `prisma` CLI depends on (`pnpm view prisma@<v> dependencies`): a mismatched pair crashes `contract infer`/`emit` with "Malformed authoring pslBlock contribution". Porting notes from the spike: v8 reads/writes Postgres timestamps as `Temporal` (needs `temporal-polyfill` before Node 26.8.2), has no automatic `updatedAt` on Postgres, uses `.ilike` for case-insensitive search and `db.transaction(async (tx) => ...)` for transactions; the runtime is ESM-only (`require()` works on Node 22.12+, Jest needs config).
+Until phase 4, every schema change is a Prisma 7 migration (`prisma7 migrate dev`, edit `prisma/schema.prisma`); after each one, update `prisma8/contract.prisma` to match and re-run `pnpm prisma contract emit`. Never run `prisma db sign`, `prisma db init`, `prisma db update` or `prisma db migrate` yet — that is the phase-4 handover. Pin `@prisma/orm-postgres` to the `@prisma/orm-toolchain` version the `prisma` CLI depends on (`pnpm view prisma@<v> dependencies`): a mismatched pair crashes `contract infer`/`emit` with "Malformed authoring pslBlock contribution". Port plan: `../docs/plans/step1.25/prisma8-port.md` (phases A-E). Port conventions:
+
+- Client: inject `Prisma8Service` (`src/prisma8/`), query via `this.db.orm.public.<Model>`.
+- Timestamps: the contract types every `timestamp(3)` column as `TimestampString(3)` (no `Temporal`, no polyfill). Convert at the repository boundary with `fromDb`/`toDb` (`src/prisma8/timestamp.ts`); the app keeps using `Date`. No automatic `updatedAt` on Postgres: set it on every update.
+- Relation field names in `prisma8/contract.prisma` match `prisma/schema.prisma` (`contacts`, `items`, `tags`...); keep them aligned.
+- Case-insensitive search: `.ilike(...)` (escape `%`/`_` in user input). Transactions: `db.transaction(async (tx) => ...)`. Decimals come back as strings: `Number(...)` where Prisma 7 code called `.toNumber()`.
+- Tests: `pnpm run test:integration` (`*.int-spec.ts`, real Postgres `ttc_test` from `.env.test`, migrated by `test/integration-setup.js`, which refuses any other database). Call `resetDb()` (`src/prisma8/testing/reset-db.ts`) in `beforeEach`. The runtime is ESM-only: `test/esm-transformer.js` compiles only ESM files from `node_modules` for Jest; the app itself loads it through Node's `require(esm)` (Node 22.12+).
 
 ### Rates system
 
