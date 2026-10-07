@@ -3,6 +3,7 @@ import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaTaskActivityRepository } from './prisma-task-activity.repository';
 import { TaskActivityRepository } from './task-activity.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -53,7 +54,7 @@ describe.each([
 
       expect(rows.map((r) => r.type)).toEqual(['CREATED', 'UPDATED']);
       expect(rows[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         taskId: s.task,
         timeEntryId: null,
         userId: s.owner,

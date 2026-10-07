@@ -14,6 +14,7 @@ import { useTestDb } from '../../prisma8/testing/test-db';
 import { ProjectStatus } from '../../projects/entities/project.entity';
 import { AdminRepository } from './admin.repository';
 import { PrismaAdminRepository } from './prisma-admin.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 const MISSING = 999999;
@@ -98,7 +99,7 @@ describe.each([
         owner: { id: alice.id, email: alice.email, name: 'Alice' },
         contacts: [
           {
-            id: expect.any(Number),
+            id: anyNumber,
             clientId: a.id,
             firstName: 'Ann',
             lastName: null,

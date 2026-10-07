@@ -2,7 +2,7 @@ import { PrismaService } from '../../prisma.service';
 import { Prisma8Service } from '../prisma8.service';
 import { resetDb } from './reset-db';
 
-export interface TestDb {
+interface TestDb {
   prisma7: PrismaService;
   prisma8: Prisma8Service;
 }

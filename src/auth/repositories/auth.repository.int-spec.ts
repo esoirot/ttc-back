@@ -4,13 +4,12 @@ import { seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { AuthRepository } from './auth.repository';
 import { PrismaAuthRepository } from './prisma-auth.repository';
+import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 const config = {
   getOrThrow: () => process.env.APP_ENCRYPTION_KEY,
 } as unknown as ConfigService;
-
-const inAnHour = () => new Date(Date.now() + 3_600_000);
 
 describe.each([
   [
@@ -136,11 +135,11 @@ describe.each([
       await repo.storeRefreshToken(other, 'h3', expiresAt);
 
       await expect(repo.findRefreshTokenByHash('h1')).resolves.toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         tokenHash: 'h1',
         userId: user,
         expiresAt,
-        createdAt: expect.any(Date),
+        createdAt: anyDate,
       });
       await repo.deleteRefreshToken('h1');
       await expect(repo.findRefreshTokenByHash('h1')).resolves.toBeNull();
@@ -227,7 +226,7 @@ describe.each([
       await expect(repo.getBackupCodeCount(user)).resolves.toBe(2);
 
       const used = await repo.findMatchingBackupCode(user, 'bbbb-2222');
-      expect(used).toEqual({ id: expect.any(Number) });
+      expect(used).toEqual({ id: anyNumber });
       await expect(repo.getBackupCodeCount(user)).resolves.toBe(1);
       await expect(
         repo.findMatchingBackupCode(user, 'bbbb-2222'),

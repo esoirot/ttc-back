@@ -9,6 +9,7 @@ import { useTestDb } from '../../prisma8/testing/test-db';
 import { TranslationRateType } from '../entities/translation-rate.entity';
 import { PrismaTranslationRateRepository } from './prisma-translation-rate.repository';
 import { TranslationRateRepository } from './translation-rate.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -58,7 +59,7 @@ describe.each([
 
       expect(rows.map((r) => r.name)).toEqual(['first', 'second']);
       expect(rows[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         userId: owner,
         occupationId: null,
         clientId: null,

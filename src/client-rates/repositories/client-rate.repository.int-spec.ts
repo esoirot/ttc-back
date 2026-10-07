@@ -5,6 +5,7 @@ import { at, seedClient, seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ClientRateRepository } from './client-rate.repository';
 import { PrismaClientRateRepository } from './prisma-client-rate.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -46,7 +47,7 @@ describe.each([
 
       expect(rows.map((r) => r.name)).toEqual(['first', 'second']);
       expect(rows[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         clientId: client,
         userId: owner,
         type: 'HOURLY',

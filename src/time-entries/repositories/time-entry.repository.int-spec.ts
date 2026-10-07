@@ -12,6 +12,7 @@ import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaTimeEntryRepository } from './prisma-time-entry.repository';
 import { TimeEntryRepository } from './time-entry.repository';
+import { anyString } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 const t = (iso: string) => new Date(iso);
@@ -86,7 +87,7 @@ describe.each([
         wordsProcessed: 1200,
         invoicingStatus: 'NO',
         tags: [{ id: tag.id, name: 'focus' }],
-        task: { id: s.task, title: expect.any(String) },
+        task: { id: s.task, title: anyString },
         subtask: {
           id: subtask.id,
           title: 'Section A',

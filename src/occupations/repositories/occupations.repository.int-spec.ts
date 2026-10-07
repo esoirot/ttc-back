@@ -4,6 +4,7 @@ import { useTestDb } from '../../prisma8/testing/test-db';
 import { ChargeType, OccupationType } from '../entities/occupation.entity';
 import { OccupationsRepository } from './occupations.repository';
 import { PrismaOccupationsRepository } from './prisma-occupations.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -94,7 +95,7 @@ describe.each([
       expect(rows.map((o) => o.name)).toEqual(['first', 'second']);
       expect(rows[0].charges).toEqual([
         {
-          id: expect.any(Number),
+          id: anyNumber,
           occupationId: first.id,
           name: 'rent',
           amount: 500,
@@ -211,7 +212,7 @@ describe.each([
           type: ChargeType.VARIABLE,
         }),
       ).resolves.toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         occupationId: mine.id,
         name: 'insurance',
         amount: 30,

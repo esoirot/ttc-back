@@ -2,6 +2,7 @@ import { at, seedClient, seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ClientStatusHistoryRepository } from './client-status-history.repository';
 import { PrismaClientStatusHistoryRepository } from './prisma-client-status-history.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -48,7 +49,7 @@ describe.each([
 
       expect(rows.map((r) => r.type)).toEqual(['CREATED', 'CONTACTED']);
       expect(rows[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         clientId: client,
         userId: owner,
         type: 'CREATED',

@@ -4,6 +4,7 @@ import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { CommentRepository } from './comment.repository';
 import { PrismaCommentRepository } from './prisma-comment.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -42,7 +43,7 @@ describe.each([
 
       expect(rows.map((c) => c.body)).toEqual(['first', 'second']);
       expect(rows[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         taskId: s.task,
         authorId: s.assignee,
         body: 'first',

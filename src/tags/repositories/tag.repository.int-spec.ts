@@ -3,6 +3,7 @@ import { useTestDb } from '../../prisma8/testing/test-db';
 import { seedTag, seedUser } from '../../prisma8/testing/seed';
 import { PrismaTagRepository } from './prisma-tag.repository';
 import { TagRepository } from './tag.repository';
+import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -29,10 +30,10 @@ describe.each([
 
       expect(tags.map((t) => t.name)).toEqual(['alpha', 'zeta']);
       expect(tags[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         userId: owner,
         name: 'alpha',
-        createdAt: expect.any(Date),
+        createdAt: anyDate,
       });
     });
   });

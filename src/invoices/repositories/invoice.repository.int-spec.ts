@@ -10,6 +10,7 @@ import { useTestDb } from '../../prisma8/testing/test-db';
 import { InvoiceStatus } from '../entities/invoice.entity';
 import { InvoiceRepository } from './invoice.repository';
 import { PrismaInvoiceRepository } from './prisma-invoice.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 const year = new Date().getFullYear();
@@ -216,7 +217,7 @@ describe.each([
         owner,
       );
       expect(item).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         invoiceId: inv.id,
         projectId: null,
         timeEntryId: null,

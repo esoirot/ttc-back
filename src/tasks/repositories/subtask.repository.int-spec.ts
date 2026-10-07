@@ -4,6 +4,7 @@ import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaSubtaskRepository } from './prisma-subtask.repository';
 import { SubtaskRepository } from './subtask.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -46,7 +47,7 @@ describe.each([
 
       expect(rows.map((r) => r.title)).toEqual(['first', 'second']);
       expect(rows[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         taskId: s.task,
         checklistTitle: 'Sections',
         title: 'first',

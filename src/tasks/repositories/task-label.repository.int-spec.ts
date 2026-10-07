@@ -4,6 +4,7 @@ import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaTaskLabelRepository } from './prisma-task-label.repository';
 import { TaskLabelRepository } from './task-label.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -38,7 +39,7 @@ describe.each([
 
       expect(labels.map((l) => l.name)).toEqual(['first', 'second']);
       expect(labels[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         taskId: s.task,
         name: 'first',
         color: '#6B7280',

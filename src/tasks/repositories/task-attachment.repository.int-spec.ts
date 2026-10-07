@@ -3,6 +3,7 @@ import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaTaskAttachmentRepository } from './prisma-task-attachment.repository';
 import { TaskAttachmentRepository } from './task-attachment.repository';
+import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -39,7 +40,7 @@ describe.each([
 
       expect(rows.map((r) => r.url)).toEqual(['https://a', 'https://b']);
       expect(rows[0]).toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         taskId: s.task,
         type: 'LINK',
         fileName: null,

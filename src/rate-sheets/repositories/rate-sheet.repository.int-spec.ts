@@ -4,6 +4,7 @@ import { useTestDb } from '../../prisma8/testing/test-db';
 import { CreateRateSheetInput } from '../dto/create-rate-sheet.input';
 import { PrismaRateSheetRepository } from './prisma-rate-sheet.repository';
 import { RateSheetRepository } from './rate-sheet.repository';
+import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -60,7 +61,7 @@ describe.each([
       await expect(
         repo.create(owner, input({ description: 'd' })),
       ).resolves.toEqual({
-        id: expect.any(Number),
+        id: anyNumber,
         userId: owner,
         occupationId: null,
         clientId: null,
@@ -72,8 +73,8 @@ describe.each([
         pricePerWord: 0.123456,
         matchRates,
         isDefault: false,
-        createdAt: expect.any(Date),
-        updatedAt: expect.any(Date),
+        createdAt: anyDate,
+        updatedAt: anyDate,
       });
     });
 
