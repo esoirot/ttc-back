@@ -1,26 +1,20 @@
 import 'dotenv/config';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client';
-import { PrismaClientLike, runExport } from './db-backup.core';
+import { Prisma8Service } from '../prisma8/prisma8.service';
+import { runExport } from './db-backup.core';
+import { prisma8BackupClient } from './db-backup.prisma8';
 
 async function main() {
   const dumpDir = process.argv[2];
-
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+  const db = new Prisma8Service();
 
   try {
-    const { file, counts } = await runExport(
-      prisma as unknown as PrismaClientLike,
-      dumpDir,
-    );
+    const { file, counts } = await runExport(prisma8BackupClient(db), dumpDir);
     for (const [model, count] of Object.entries(counts)) {
       console.log(`exported ${model}: ${count} rows`);
     }
     console.log(`wrote ${file}`);
   } finally {
-    await prisma.$disconnect();
+    await db.onModuleDestroy();
   }
 }
 

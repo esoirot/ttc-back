@@ -2,10 +2,10 @@ import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client';
-import { MODEL_ORDER, hasSerialId, toClientProperty } from './db-sync.util';
+import { Prisma8Service } from '../prisma8/prisma8.service';
+import { MODEL_ORDER, hasSerialId } from './db-sync.util';
 import { latestBackupPath } from './db-backup.core';
+import { importBackup8 } from './db-backup.prisma8';
 
 interface ExportPayload {
   exportedAt: string;
@@ -46,49 +46,26 @@ async function main() {
 
   await confirm();
 
+  const db = new Prisma8Service();
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
   try {
-    await prisma.$transaction(
-      async (tx) => {
-        const txClient = tx as unknown as Record<
-          string,
-          {
-            deleteMany: () => Promise<unknown>;
-            createMany: (args: {
-              data: unknown[];
-              skipDuplicates: boolean;
-            }) => Promise<unknown>;
-          }
-        >;
-
-        for (const model of [...MODEL_ORDER].reverse()) {
-          await txClient[toClientProperty(model)].deleteMany();
-        }
-
-        for (const model of MODEL_ORDER) {
-          const rows = payload.data[model] ?? [];
-          if (rows.length === 0) continue;
-          await txClient[toClientProperty(model)].createMany({
-            data: rows,
-            skipDuplicates: true,
-          });
-          console.log(`imported ${model}: ${rows.length} rows`);
-        }
-      },
-      { timeout: 120_000 },
+    await importBackup8(
+      db,
+      payload.data as Record<string, Record<string, unknown>[]>,
+      console.log,
     );
 
     for (const model of MODEL_ORDER.filter(hasSerialId)) {
-      await prisma.$executeRawUnsafe(
+      await pool.query(
         `SELECT setval(pg_get_serial_sequence('"${model}"', 'id'), COALESCE((SELECT MAX(id) FROM "${model}"), 1))`,
       );
     }
 
     console.log('import complete, sequences reset');
   } finally {
-    await prisma.$disconnect();
+    await db.onModuleDestroy();
+    await pool.end();
   }
 }
 

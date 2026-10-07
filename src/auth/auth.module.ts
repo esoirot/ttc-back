@@ -8,8 +8,7 @@ import { AuthResolver } from './auth.resolver';
 import { AuthController } from './auth.controller';
 import { AuthEventsController } from './auth-events.controller';
 import { AuthRepository } from './repositories/auth.repository';
-import { PrismaAuthRepository } from './repositories/prisma-auth.repository';
-import { PrismaService } from '../prisma.service';
+import { Prisma8AuthRepository } from './repositories/prisma8-auth.repository';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -42,9 +41,7 @@ import { AuditModule } from '../audit/audit.module';
     AuthService,
     AuthEventsService,
     AuthResolver,
-    PrismaService,
-    PrismaAuthRepository,
-    { provide: AuthRepository, useClass: PrismaAuthRepository },
+    { provide: AuthRepository, useClass: Prisma8AuthRepository },
     LocalStrategy,
     JwtStrategy,
     GoogleStrategy,

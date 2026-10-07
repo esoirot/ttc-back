@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DbBackupService } from './db-backup.service';
-import { PrismaService } from '../../prisma.service';
+import { Prisma8Service } from '../../prisma8/prisma8.service';
 import { runExport } from '../../scripts/db-backup.core';
 
 jest.mock('../../scripts/db-backup.core', () => ({
@@ -16,7 +16,10 @@ describe('DbBackupService', () => {
     runExportMock.mockReset();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [DbBackupService, { provide: PrismaService, useValue: {} }],
+      providers: [
+        DbBackupService,
+        { provide: Prisma8Service, useValue: { orm: { public: {} } } },
+      ],
     }).compile();
 
     service = module.get<DbBackupService>(DbBackupService);
