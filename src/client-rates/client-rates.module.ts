@@ -2,16 +2,13 @@ import { Module } from '@nestjs/common';
 import { ClientRatesService } from './client-rates.service';
 import { ClientRatesResolver } from './client-rates.resolver';
 import { ClientRateRepository } from './repositories/client-rate.repository';
-import { PrismaClientRateRepository } from './repositories/prisma-client-rate.repository';
-import { PrismaService } from '../prisma.service';
+import { Prisma8ClientRateRepository } from './repositories/prisma8-client-rate.repository';
 
 @Module({
   providers: [
     ClientRatesResolver,
     ClientRatesService,
-    PrismaService,
-    PrismaClientRateRepository,
-    { provide: ClientRateRepository, useClass: PrismaClientRateRepository },
+    { provide: ClientRateRepository, useClass: Prisma8ClientRateRepository },
   ],
   exports: [ClientRatesService],
 })

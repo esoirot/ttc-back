@@ -2,16 +2,13 @@ import { Module } from '@nestjs/common';
 import { RateSheetsService } from './rate-sheets.service';
 import { RateSheetsResolver } from './rate-sheets.resolver';
 import { RateSheetRepository } from './repositories/rate-sheet.repository';
-import { PrismaRateSheetRepository } from './repositories/prisma-rate-sheet.repository';
-import { PrismaService } from '../prisma.service';
+import { Prisma8RateSheetRepository } from './repositories/prisma8-rate-sheet.repository';
 
 @Module({
   providers: [
     RateSheetsResolver,
     RateSheetsService,
-    PrismaService,
-    PrismaRateSheetRepository,
-    { provide: RateSheetRepository, useClass: PrismaRateSheetRepository },
+    { provide: RateSheetRepository, useClass: Prisma8RateSheetRepository },
   ],
   exports: [RateSheetsService],
 })
