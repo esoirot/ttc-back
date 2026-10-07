@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { seedProject, seedTask, seedUser } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
+import { fromDb } from '../../prisma8/timestamp';
 import { TaskStatus } from '../entities/task.entity';
 import { PrismaTaskRepository } from './prisma-task.repository';
 import { TaskRepository } from './task.repository';
@@ -237,7 +238,7 @@ describe.each([
       });
     });
 
-    it('keeps an explicit status, and ignores startDate / recurring / reminderOffset', async () => {
+    it('keeps an explicit status and stores startDate / recurring / reminderOffset', async () => {
       const task = await repo.create({
         projectId: s.project,
         title: 'X',
@@ -248,11 +249,10 @@ describe.each([
       });
       expect(task.status).toBe('IN_PROGRESS');
       const row = await db.prisma8.orm.public.Task.first({ id: task.id });
-      expect(row).toMatchObject({
-        startDate: null,
-        recurring: null,
-        reminderOffset: null,
-      });
+      expect(row).toMatchObject({ recurring: 'WEEKLY', reminderOffset: '1d' });
+      expect(fromDb(row!.startDate)).toEqual(
+        new Date('2026-11-01T00:00:00.000Z'),
+      );
     });
   });
 

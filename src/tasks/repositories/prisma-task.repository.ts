@@ -104,6 +104,9 @@ export class PrismaTaskRepository implements TaskRepository {
         status: (data.status as TaskStatus | undefined) ?? 'TODO',
         dueDate: data.dueDate,
         wordCount: data.wordCount,
+        startDate: data.startDate,
+        recurring: data.recurring,
+        reminderOffset: data.reminderOffset,
       },
     });
   }
