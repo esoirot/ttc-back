@@ -72,6 +72,14 @@ describe.each([
       });
     });
 
+    it('returns stored credentials decrypted', async () => {
+      const { id } = await seedUser(db.prisma8);
+      await repo.updateClockify(id, { clockifyApiKey: 'k' });
+      await expect(
+        repo.update(id, { id, role: Role.MANAGER }),
+      ).resolves.toMatchObject({ role: 'MANAGER', clockifyApiKey: 'k' });
+    });
+
     it('throws NotFound for an unknown id', async () => {
       await expect(
         repo.update(MISSING, { id: MISSING, role: Role.USER }),
@@ -90,8 +98,10 @@ describe.each([
       const row = await stored(id);
       expect(row.clockifyApiKey).not.toBe('secret-key');
       expect(row.clockifyWorkspaceId).toBe('ws1');
-      // Current behaviour: the update returns the stored (encrypted) value.
-      expect(returned.clockifyApiKey).toBe(row.clockifyApiKey);
+      expect(returned).toMatchObject({
+        clockifyApiKey: 'secret-key',
+        clockifyWorkspaceId: 'ws1',
+      });
       await expect(repo.findById(id)).resolves.toMatchObject({
         clockifyApiKey: 'secret-key',
         clockifyWorkspaceId: 'ws1',
@@ -101,7 +111,7 @@ describe.each([
     it('encrypts both HubSpot tokens and keeps the other fields as given', async () => {
       const { id } = await seedUser(db.prisma8);
       const expiresAt = new Date('2026-12-01T10:00:00.000Z');
-      await repo.updateHubspot(id, {
+      const returned = await repo.updateHubspot(id, {
         hubspotAccessToken: 'access',
         hubspotRefreshToken: 'refresh',
         hubspotTokenExpiresAt: expiresAt,
@@ -113,6 +123,10 @@ describe.each([
         'access',
       );
       expect(row.hubspotRefreshToken).not.toBe('refresh');
+      expect(returned).toMatchObject({
+        hubspotAccessToken: 'access',
+        hubspotRefreshToken: 'refresh',
+      });
       await expect(repo.findById(id)).resolves.toMatchObject({
         hubspotAccessToken: 'access',
         hubspotRefreshToken: 'refresh',
@@ -123,7 +137,7 @@ describe.each([
 
     it('encrypts both Google Calendar tokens', async () => {
       const { id } = await seedUser(db.prisma8);
-      await repo.updateGoogleCalendar(id, {
+      const returned = await repo.updateGoogleCalendar(id, {
         googleCalendarAccessToken: 'g-access',
         googleCalendarRefreshToken: 'g-refresh',
         googleCalendarEmail: 'me@gmail.com',
@@ -131,6 +145,10 @@ describe.each([
 
       const row = await stored(id);
       expect(row.googleCalendarAccessToken).not.toBe('g-access');
+      expect(returned).toMatchObject({
+        googleCalendarAccessToken: 'g-access',
+        googleCalendarRefreshToken: 'g-refresh',
+      });
       await expect(repo.findById(id)).resolves.toMatchObject({
         googleCalendarAccessToken: 'g-access',
         googleCalendarRefreshToken: 'g-refresh',
