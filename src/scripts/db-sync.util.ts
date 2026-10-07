@@ -6,9 +6,12 @@ export const MODEL_ORDER = [
   'User',
   'Client',
   'Occupation',
+  'ClientOccupation',
+  'ClientStatusHistory',
   'RateSheet',
   'CompanyContact',
   'Project',
+  'ProjectOccupation',
   'Tag',
   'Task',
   'Subtask',
@@ -45,10 +48,17 @@ export function toClientProperty(modelName: string): string {
 const MODEL_ORDER_BY: Record<string, Record<string, 'asc'>[]> = {
   TimeEntryTag: [{ timeEntryId: 'asc' }, { tagId: 'asc' }],
   ClientTag: [{ clientId: 'asc' }, { tagId: 'asc' }],
+  ClientOccupation: [{ clientId: 'asc' }, { occupationId: 'asc' }],
+  ProjectOccupation: [{ projectId: 'asc' }, { occupationId: 'asc' }],
 };
 
 export function orderByFor(
   modelName: string,
 ): Record<string, 'asc'> | Record<string, 'asc'>[] {
   return MODEL_ORDER_BY[modelName] ?? { id: 'asc' };
+}
+
+/** False for composite-key join tables: they have no `id` column and no sequence to reset. */
+export function hasSerialId(modelName: string): boolean {
+  return !(modelName in MODEL_ORDER_BY);
 }

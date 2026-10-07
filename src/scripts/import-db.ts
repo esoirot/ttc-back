@@ -4,7 +4,7 @@ import { createInterface } from 'node:readline/promises';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
-import { MODEL_ORDER, toClientProperty } from './db-sync.util';
+import { MODEL_ORDER, hasSerialId, toClientProperty } from './db-sync.util';
 import { latestBackupPath } from './db-backup.core';
 
 interface ExportPayload {
@@ -80,7 +80,7 @@ async function main() {
       { timeout: 120_000 },
     );
 
-    for (const model of MODEL_ORDER) {
+    for (const model of MODEL_ORDER.filter(hasSerialId)) {
       await prisma.$executeRawUnsafe(
         `SELECT setval(pg_get_serial_sequence('"${model}"', 'id'), COALESCE((SELECT MAX(id) FROM "${model}"), 1))`,
       );

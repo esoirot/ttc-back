@@ -1,58 +1,61 @@
-import { MODEL_ORDER, orderByFor, toClientProperty } from './db-sync.util';
+import {
+  MODEL_ORDER,
+  hasSerialId,
+  orderByFor,
+  toClientProperty,
+} from './db-sync.util';
 
 // [model, ...modelsItDependsOn] per FK fields in prisma/schema.prisma
-const FK_DEPENDENCIES: [string, string[]][] = [
-  ['Client', ['User']],
-  ['Occupation', ['User']],
-  ['CompanyContact', ['Client']],
-  ['Project', ['User', 'Client', 'RateSheet']],
-  ['Tag', ['User']],
-  ['Task', ['Project', 'User']],
-  ['Subtask', ['Task']],
-  ['TaskComment', ['Task', 'User']],
-  ['TaskLabel', ['Task']],
-  ['TaskAttachment', ['Task']],
-  ['TimeEntry', ['User', 'Project', 'Task', 'Subtask']],
-  ['TaskActivity', ['Task', 'TimeEntry', 'User']],
-  ['TimeEntryTag', ['TimeEntry', 'Tag']],
-  ['ClientTag', ['Client', 'Tag']],
-  ['Invoice', ['User', 'Client']],
-  ['InvoiceItem', ['Invoice', 'Project', 'TimeEntry']],
-  ['RefreshToken', ['User']],
-  ['PasswordResetToken', ['User']],
-  ['OAuthAccount', ['User']],
-  ['AuditLog', ['User']],
-  ['TwoFactorBackupCode', ['User']],
-  ['TranslationRate', ['User', 'Occupation', 'Client']],
-  ['ClientRate', ['Client', 'User']],
-  ['Charge', ['Occupation']],
-  ['LanguagePair', ['Occupation']],
-  ['CustomField', ['Occupation']],
-  ['RateSheet', ['User', 'Occupation', 'Client']],
-];
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+// Read the real schema so a new model or FK can never be forgotten here.
+const SCHEMA = readFileSync(
+  join(__dirname, '../../prisma/schema.prisma'),
+  'utf-8',
+);
+
+const SCHEMA_MODELS = [
+  ...SCHEMA.matchAll(/^model (\w+) \{([\s\S]*?)^\}/gm),
+].map(([, name, body]) => ({
+  name,
+  hasId: /^\s+id\s.*@id\b/m.test(body),
+  fkTargets: [...body.matchAll(/^\s+\w+\s+(\w+)\??\s+@relation\(fields:/gm)]
+    .map(([, target]) => target)
+    .filter((target) => target !== name),
+}));
 
 describe('MODEL_ORDER', () => {
   it('lists every model exactly once', () => {
     expect(new Set(MODEL_ORDER).size).toBe(MODEL_ORDER.length);
   });
 
-  it('includes every model referenced in FK_DEPENDENCIES', () => {
-    for (const [model, deps] of FK_DEPENDENCIES) {
-      expect(MODEL_ORDER).toContain(model);
-      for (const dep of deps) {
-        expect(MODEL_ORDER).toContain(dep);
-      }
-    }
+  it('covers every model in prisma/schema.prisma, so backups miss no table', () => {
+    expect([...MODEL_ORDER].sort()).toEqual(
+      SCHEMA_MODELS.map((m) => m.name).sort(),
+    );
   });
 
   it('places every model after all models it has an FK to', () => {
     const indexOf = (name: string) =>
       MODEL_ORDER.indexOf(name as (typeof MODEL_ORDER)[number]);
 
-    for (const [model, deps] of FK_DEPENDENCIES) {
-      for (const dep of deps) {
-        expect(indexOf(model)).toBeGreaterThan(indexOf(dep));
+    for (const { name, fkTargets } of SCHEMA_MODELS) {
+      for (const target of fkTargets) {
+        expect([name, indexOf(name) > indexOf(target), target]).toEqual([
+          name,
+          true,
+          target,
+        ]);
       }
+    }
+  });
+});
+
+describe('hasSerialId', () => {
+  it('is true exactly for models with an id column, whose sequence import resets', () => {
+    for (const { name, hasId } of SCHEMA_MODELS) {
+      expect([name, hasSerialId(name)]).toEqual([name, hasId]);
     }
   });
 });
@@ -81,5 +84,11 @@ describe('orderByFor', () => {
       { clientId: 'asc' },
       { tagId: 'asc' },
     ]);
+  });
+
+  it('gives every model without an id column a composite orderBy', () => {
+    for (const { name, hasId } of SCHEMA_MODELS.filter((m) => !m.hasId)) {
+      expect([name, Array.isArray(orderByFor(name))]).toEqual([name, !hasId]);
+    }
   });
 });
