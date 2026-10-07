@@ -82,3 +82,11 @@ export function seedTimeEntry(
     ...data,
   });
 }
+
+export function seedOccupation(
+  db: Prisma8Service,
+  userId: number,
+  name = `Occupation ${next()}`,
+) {
+  return db.orm.public.Occupation.create({ userId, name, updatedAt: now() });
+}
