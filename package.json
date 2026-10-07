@@ -27,6 +27,7 @@
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "test:e2e": "CI=true jest --config ./test/jest-e2e.json",
     "prisma:miggen": "prisma7 migrate deploy --config prisma7.config.ts && prisma7 generate --config prisma7.config.ts",
+    "db:dump": "tsx --env-file .env src/scripts/pg-dump.ts",
     "db:export": "tsx --env-file .env src/scripts/export-db.ts",
     "db:import": "tsx --env-file .env src/scripts/import-db.ts",
     "import:tholemac": "tsx src/scripts/import-tholemac.ts"
