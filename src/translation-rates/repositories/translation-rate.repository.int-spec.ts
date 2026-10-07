@@ -8,6 +8,7 @@ import {
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { TranslationRateType } from '../entities/translation-rate.entity';
 import { PrismaTranslationRateRepository } from './prisma-translation-rate.repository';
+import { Prisma8TranslationRateRepository } from './prisma8-translation-rate.repository';
 import { TranslationRateRepository } from './translation-rate.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
@@ -18,6 +19,11 @@ describe.each([
     'prisma7',
     (): TranslationRateRepository =>
       new PrismaTranslationRateRepository(db.prisma7),
+  ],
+  [
+    'prisma8',
+    (): TranslationRateRepository =>
+      new Prisma8TranslationRateRepository(db.prisma8),
   ],
 ])('TranslationRateRepository (%s)', (_impl, make) => {
   let repo: TranslationRateRepository;
@@ -43,10 +49,21 @@ describe.each([
       updatedAt: at(data.minute ?? 0),
     });
 
+  // A third user's rate, created first: a write or read that loses its
+  // filter lands here.
+  let decoy: Awaited<ReturnType<typeof rate>>;
+
   beforeEach(async () => {
     repo = make();
+    decoy = await rate((await seedUser(db.prisma8)).id, 'decoy');
     owner = (await seedUser(db.prisma8)).id;
     stranger = (await seedUser(db.prisma8)).id;
+  });
+
+  afterEach(async () => {
+    await expect(
+      db.prisma8.orm.public.TranslationRate.first({ id: decoy.id }),
+    ).resolves.toEqual(decoy);
   });
 
   describe('findAll', () => {
@@ -126,6 +143,7 @@ describe.each([
         type: 'PER_WORD',
         amount: 0.12,
         currency: 'USD',
+        description: 'words',
         sourceLanguage: 'en',
         targetLanguage: 'fr',
       });
@@ -167,6 +185,26 @@ describe.each([
       expect(updated.updatedAt.getTime()).toBeGreaterThan(
         updated.createdAt.getTime(),
       );
+    });
+
+    it('changes the type', async () => {
+      const { id } = await rate(owner, 'r');
+      await expect(
+        repo.update(id, owner, { id, type: TranslationRateType.PER_WORD }),
+      ).resolves.toMatchObject({ type: 'PER_WORD', name: 'r' });
+    });
+
+    it('stores an occupation given on create', async () => {
+      const occupation = (await seedOccupation(db.prisma8, owner)).id;
+      await expect(
+        repo.create(owner, {
+          type: TranslationRateType.HOURLY,
+          occupationId: occupation,
+          name: 'h',
+          amount: 1,
+          currency: 'EUR',
+        }),
+      ).resolves.toMatchObject({ occupationId: occupation });
     });
 
     it("throws NotFound for someone else's rate", async () => {

@@ -5,6 +5,7 @@ import { at, seedClient, seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ClientRateRepository } from './client-rate.repository';
 import { PrismaClientRateRepository } from './prisma-client-rate.repository';
+import { Prisma8ClientRateRepository } from './prisma8-client-rate.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
@@ -13,6 +14,10 @@ describe.each([
   [
     'prisma7',
     (): ClientRateRepository => new PrismaClientRateRepository(db.prisma7),
+  ],
+  [
+    'prisma8',
+    (): ClientRateRepository => new Prisma8ClientRateRepository(db.prisma8),
   ],
 ])('ClientRateRepository (%s)', (_impl, make) => {
   let repo: ClientRateRepository;
@@ -31,11 +36,26 @@ describe.each([
       updatedAt: at(minute),
     });
 
+  // The owner's rate on another client, created first: a write or read
+  // that loses its filter lands here.
+  let decoy: Awaited<ReturnType<typeof rate>>;
+
   beforeEach(async () => {
     repo = make();
     owner = (await seedUser(db.prisma8)).id;
     stranger = (await seedUser(db.prisma8)).id;
+    decoy = await rate(
+      (await seedClient(db.prisma8, owner)).id,
+      owner,
+      'decoy',
+    );
     client = (await seedClient(db.prisma8, owner)).id;
+  });
+
+  afterEach(async () => {
+    await expect(
+      db.prisma8.orm.public.ClientRate.first({ id: decoy.id }),
+    ).resolves.toEqual(decoy);
   });
 
   describe('findByClient', () => {
@@ -120,6 +140,13 @@ describe.each([
       expect(updated.updatedAt.getTime()).toBeGreaterThan(
         updated.createdAt.getTime(),
       );
+    });
+
+    it('changes the amount', async () => {
+      const { id } = await rate(client, owner, 'r');
+      await expect(
+        repo.update(id, owner, { id, amount: 50.25 }),
+      ).resolves.toMatchObject({ amount: 50.25, name: 'r' });
     });
 
     it("throws NotFound for another user's client and leaves the rate", async () => {

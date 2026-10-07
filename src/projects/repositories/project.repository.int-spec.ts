@@ -9,12 +9,17 @@ import {
 } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaProjectRepository } from './prisma-project.repository';
+import { Prisma8ProjectRepository } from './prisma8-project.repository';
 import { ProjectRepository } from './projects.repository';
 
 const db = useTestDb();
 
 describe.each([
   ['prisma7', (): ProjectRepository => new PrismaProjectRepository(db.prisma7)],
+  [
+    'prisma8',
+    (): ProjectRepository => new Prisma8ProjectRepository(db.prisma8),
+  ],
 ])('ProjectRepository (%s)', (_impl, make) => {
   let repo: ProjectRepository;
   let owner: number;
@@ -23,10 +28,23 @@ describe.each([
   const link = (projectId: number, occupationId: number) =>
     db.prisma8.orm.public.ProjectOccupation.create({ projectId, occupationId });
 
+  // A third user's project, created first: a write or read that loses its
+  // filter lands here.
+  let decoy: Awaited<ReturnType<typeof seedProject>>;
+
   beforeEach(async () => {
     repo = make();
+    decoy = await seedProject(db.prisma8, (await seedUser(db.prisma8)).id, {
+      title: 'decoy',
+    });
     owner = (await seedUser(db.prisma8)).id;
     stranger = (await seedUser(db.prisma8)).id;
+  });
+
+  afterEach(async () => {
+    await expect(
+      db.prisma8.orm.public.Project.first({ id: decoy.id }),
+    ).resolves.toEqual(decoy);
   });
 
   describe('findById', () => {
@@ -103,7 +121,7 @@ describe.each([
       await seedProject(db.prisma8, owner);
       await seedProject(db.prisma8, stranger);
       await expect(repo.findAll(owner, true)).resolves.toMatchObject({
-        total: 2,
+        total: 3,
       });
     });
 
@@ -139,6 +157,32 @@ describe.each([
         'game manual',
       ]);
       expect(search.total).toBe(2);
+    });
+  });
+
+  describe('search', () => {
+    it('matches LIKE wildcards in the search text literally', async () => {
+      await seedProject(db.prisma8, owner, { title: '100% done' });
+      await seedProject(db.prisma8, owner, { title: '1000 words' });
+      await seedProject(db.prisma8, owner, { title: 'a_b' });
+      await seedProject(db.prisma8, owner, { title: 'axb' });
+
+      const pct = await repo.findAll(
+        owner,
+        false,
+        undefined,
+        undefined,
+        '100%',
+      );
+      expect(pct.items.map((p) => p.title)).toEqual(['100% done']);
+      const under = await repo.findAll(
+        owner,
+        false,
+        undefined,
+        undefined,
+        'a_b',
+      );
+      expect(under.items.map((p) => p.title)).toEqual(['a_b']);
     });
   });
 

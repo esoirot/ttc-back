@@ -18,3 +18,6 @@ export function toDb(value: Date | null): DbTimestamp | null {
     ? null
     : (value.toISOString().replace('T', ' ').replace('Z', '') as DbTimestamp);
 }
+
+/** Current time for `updatedAt`, which Prisma 8 does not set on Postgres. */
+export const nowDb = (): DbTimestamp => toDb(new Date());

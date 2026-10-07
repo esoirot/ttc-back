@@ -4,11 +4,16 @@ import { seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { AdminPermission, Role } from '../entities/user.entity';
 import { PrismaUserRepository } from './prisma-user.repository';
+import { Prisma8UserRepository } from './prisma8-user.repository';
 import { UserRepository } from './users.repository';
 
 const db = useTestDb();
 const config = {
-  getOrThrow: () => process.env.APP_ENCRYPTION_KEY,
+  getOrThrow: (key: string) => {
+    if (key !== 'APP_ENCRYPTION_KEY')
+      throw new Error(`unexpected config ${key}`);
+    return process.env.APP_ENCRYPTION_KEY;
+  },
 } as unknown as ConfigService;
 
 const MISSING = 999999;
@@ -18,14 +23,26 @@ describe.each([
     'prisma7',
     (): UserRepository => new PrismaUserRepository(db.prisma7, config),
   ],
+  [
+    'prisma8',
+    (): UserRepository => new Prisma8UserRepository(db.prisma8, config),
+  ],
 ])('UserRepository (%s)', (_impl, make) => {
   let repo: UserRepository;
 
   const stored = async (id: number) =>
     (await db.prisma8.orm.public.User.first({ id }))!;
 
-  beforeEach(() => {
+  // Another user, created first: a write that loses its filter lands here.
+  let decoy: Awaited<ReturnType<typeof seedUser>>;
+
+  beforeEach(async () => {
     repo = make();
+    decoy = await seedUser(db.prisma8);
+  });
+
+  afterEach(async () => {
+    await expect(stored(decoy.id)).resolves.toEqual(decoy);
   });
 
   describe('create / findById / findAll', () => {
@@ -44,9 +61,16 @@ describe.each([
         id: user.id,
         email: 'new@test.io',
       });
-      await expect(repo.findAll()).resolves.toEqual([
-        expect.objectContaining({ id: user.id }),
-      ]);
+      await expect(
+        repo.findAll().then((all) => all.map((u) => u.id)),
+      ).resolves.toEqual([decoy.id, user.id]);
+    });
+
+    it('reads a null admin permission list as empty', async () => {
+      const { id } = await seedUser(db.prisma8, { adminPermissions: null });
+      await expect(repo.findById(id)).resolves.toMatchObject({
+        adminPermissions: [],
+      });
     });
 
     it('throws NotFound for an unknown id', async () => {
@@ -141,6 +165,7 @@ describe.each([
         googleCalendarAccessToken: 'g-access',
         googleCalendarRefreshToken: 'g-refresh',
         googleCalendarEmail: 'me@gmail.com',
+        googleCalendarTokenExpiresAt: new Date('2026-12-01T10:00:00.000Z'),
       });
 
       const row = await stored(id);
@@ -153,6 +178,7 @@ describe.each([
         googleCalendarAccessToken: 'g-access',
         googleCalendarRefreshToken: 'g-refresh',
         googleCalendarEmail: 'me@gmail.com',
+        googleCalendarTokenExpiresAt: new Date('2026-12-01T10:00:00.000Z'),
       });
     });
 
