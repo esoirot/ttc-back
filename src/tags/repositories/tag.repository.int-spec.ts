@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { seedTag, seedUser } from '../../prisma8/testing/seed';
 import { PrismaTagRepository } from './prisma-tag.repository';
+import { Prisma8TagRepository } from './prisma8-tag.repository';
 import { TagRepository } from './tag.repository';
 import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
 
@@ -9,6 +10,7 @@ const db = useTestDb();
 
 describe.each([
   ['prisma7', (): TagRepository => new PrismaTagRepository(db.prisma7)],
+  ['prisma8', (): TagRepository => new Prisma8TagRepository(db.prisma8)],
 ])('TagRepository (%s)', (_impl, make) => {
   let repo: TagRepository;
   let owner: number;
@@ -72,6 +74,15 @@ describe.each([
       });
     });
 
+    it("renames only that tag, not the user's others", async () => {
+      await seedTag(db.prisma8, owner, 'other');
+      const { id } = await seedTag(db.prisma8, owner, 'old');
+      await repo.update(id, owner, 'new');
+      await expect(
+        repo.findAll(owner).then((t) => t.map((x) => x.name)),
+      ).resolves.toEqual(['new', 'other']);
+    });
+
     it("throws NotFound for another user's tag and leaves it unchanged", async () => {
       const { id } = await seedTag(db.prisma8, other, 'keep');
       await expect(repo.update(id, owner, 'hacked')).rejects.toBeInstanceOf(
@@ -82,10 +93,13 @@ describe.each([
   });
 
   describe('delete', () => {
-    it("removes the user's tag", async () => {
+    it('removes only that tag', async () => {
+      await seedTag(db.prisma8, owner, 'kept');
       const { id } = await seedTag(db.prisma8, owner, 'gone');
       await repo.delete(id, owner);
-      await expect(repo.findAll(owner)).resolves.toEqual([]);
+      await expect(
+        repo.findAll(owner).then((t) => t.map((x) => x.name)),
+      ).resolves.toEqual(['kept']);
     });
 
     it("throws NotFound for another user's tag and keeps it", async () => {

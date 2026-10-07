@@ -38,6 +38,7 @@ pnpm run test               # unit (Jest, files: src/**/*.spec.ts)
 pnpm run test:watch
 pnpm run test:e2e           # config: test/jest-e2e.json
 pnpm run test:integration   # real Postgres (ttc_test), *.int-spec.ts
+pnpm run test:mutation --mutate <files>  # StrykerJS over the integration tests, incremental, one at a time (shared test DB)
 ```
 
 ## Working process
@@ -139,6 +140,8 @@ Until phase 4, every schema change is a Prisma 7 migration (`prisma7 migrate dev
 - Timestamps: the contract types every `timestamp(3)` column as `TimestampString(3)` (no `Temporal`, no polyfill). Convert at the repository boundary with `fromDb`/`toDb` (`src/prisma8/timestamp.ts`); the app keeps using `Date`. No automatic `updatedAt` on Postgres: set it on every update.
 - Relation field names in `prisma8/contract.prisma` match `prisma/schema.prisma` (`contacts`, `items`, `tags`...); keep them aligned.
 - Case-insensitive search: `.ilike(...)` (escape `%`/`_` in user input). Transactions: `db.transaction(async (tx) => ...)`. Decimals come back as strings: `Number(...)` where Prisma 7 code called `.toNumber()`.
+- Single-row `where(...).update()` / `.delete()` with a missing or empty filter silently hits one arbitrary row (the lowest id): in tests, never make the target the first row, so a dropped filter fails. One `Prisma8Module` (`@Global`) provides the single `Prisma8Service`; repositories inject it, modules don't list it.
+- Mutation testing: `stryker.config.json` points `tsconfigFile` at a missing file on purpose (TypeScript 7 has no JS compiler API; Stryker only needs it to rewrite tsconfig references) and loads `@stryker-mutator/jest-runner` explicitly (pnpm isolation).
 - Tests: `pnpm run test:integration` (`*.int-spec.ts`, real Postgres `ttc_test` from `.env.test`, migrated by `test/integration-setup.js`, which refuses any other database). Test kit in `src/prisma8/testing/`: `useTestDb()` (one Prisma 7 + one Prisma 8 client per file, tables emptied before each test), `seed*` helpers (written through Prisma 8), `seedTaskAccess` (owner / assignee / stranger), typed matchers (`anyNumber`, `anyDate`... — `expect.any` is `any` and fails lint). Each repository suite is a `describe.each` over implementations: phase C adds the Prisma 8 one next to `prisma7` and the same tests must pass. The runtime is ESM-only: `test/esm-transformer.js` compiles only ESM files from `node_modules` for Jest; the app itself loads it through Node's `require(esm)` (Node 22.12+).
 
 ### Rates system

@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "jest",
+  "jest": {
+    "configFile": "test/jest-integration.json",
+    "enableFindRelatedTests": true
+  },
+  "concurrency": 1,
+  "incremental": true,
+  "incrementalFile": ".stryker-tmp/incremental.json",
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress"],
+  "timeoutMS": 60000,
+  "tsconfigFile": "tsconfig.stryker-unused.json",
+  "_comment": "TypeScript 7 has no JS compiler API; Stryker only uses it to rewrite tsconfig references, so point it at a file that does not exist. Tests compile through SWC.",
+  "plugins": ["@stryker-mutator/jest-runner"]
+}
