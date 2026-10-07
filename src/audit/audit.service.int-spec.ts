@@ -17,7 +17,7 @@ async function eventually<T>(
   throw new Error('condition not reached');
 }
 
-describe.each([['prisma7', () => new AuditService(db.prisma7)]])(
+describe.each([['prisma8', () => new AuditService(db.prisma8)]])(
   'AuditService (%s)',
   (_impl, make) => {
     let service: AuditService;
@@ -57,6 +57,19 @@ describe.each([['prisma7', () => new AuditService(db.prisma7)]])(
         items: [],
         nextCursor: null,
       });
+    });
+
+    it('returns 50 entries per page by default', async () => {
+      for (let i = 0; i < 51; i++) {
+        await db.prisma8.orm.public.AuditLog.create({
+          userId: user.id,
+          action: `a${i}`,
+          resource: 'R',
+        });
+      }
+      const page = await service.findAll({});
+      expect(page.items).toHaveLength(50);
+      expect(page.nextCursor).toBe(page.items[49].id);
     });
 
     it('lists newest first, filters by user, pages with an id-below cursor', async () => {

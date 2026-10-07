@@ -114,6 +114,8 @@ export class Prisma8RateSheetRepository implements RateSheetRepository {
       }
       const row = await tx.orm.public.RateSheet.where({ id }).update({
         ...rest,
+        sourceLanguage: toVarchar(sourceLanguage),
+        targetLanguage: toVarchar(targetLanguage),
         pricePerWord:
           pricePerWord === undefined ? undefined : toNumeric(pricePerWord),
         matchRates: matchRates ? { ...matchRates } : undefined,

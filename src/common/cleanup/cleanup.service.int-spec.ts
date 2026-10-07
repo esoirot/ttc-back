@@ -7,7 +7,7 @@ const db = useTestDb();
 const day = 86_400_000;
 const ago = (days: number) => toDb(new Date(Date.now() - days * day));
 
-describe.each([['prisma7', () => new CleanupService(db.prisma7)]])(
+describe.each([['prisma8', () => new CleanupService(db.prisma8)]])(
   'CleanupService (%s)',
   (_impl, make) => {
     let service: CleanupService;

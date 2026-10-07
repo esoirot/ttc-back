@@ -9,7 +9,6 @@ import { UpdateTaskInput } from '../dto/update-task.input';
 import { TaskModel } from '../types/task.type';
 import { TaskConnectionModel, TaskRepository } from './task.repository';
 
-type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE' | 'PAID';
 type Row = NonNullable<
   Awaited<ReturnType<Prisma8Service['orm']['public']['Task']['first']>>
 >;
@@ -105,7 +104,7 @@ export class Prisma8TaskRepository implements TaskRepository {
       title: data.title,
       description: data.description,
       assigneeId: data.assigneeId,
-      status: (data.status as TaskStatus | undefined) ?? 'TODO',
+      status: data.status ?? 'TODO',
       dueDate: date(data.dueDate),
       wordCount: data.wordCount,
       startDate: date(data.startDate),
@@ -125,7 +124,7 @@ export class Prisma8TaskRepository implements TaskRepository {
     const { id: _id, dueDate, startDate, status, ...fields } = data;
     const row = await this.tasks.where({ id }).update({
       ...fields,
-      status: (status as TaskStatus | undefined) || undefined,
+      status: status || undefined,
       dueDate: date(dueDate),
       startDate: date(startDate),
       updatedAt: nowDb(),

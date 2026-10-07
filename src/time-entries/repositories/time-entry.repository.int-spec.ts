@@ -11,6 +11,7 @@ import {
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaTimeEntryRepository } from './prisma-time-entry.repository';
+import { Prisma8TimeEntryRepository } from './prisma8-time-entry.repository';
 import { TimeEntryRepository } from './time-entry.repository';
 import { anyString } from '../../prisma8/testing/matchers';
 
@@ -21,6 +22,10 @@ describe.each([
   [
     'prisma7',
     (): TimeEntryRepository => new PrismaTimeEntryRepository(db.prisma7),
+  ],
+  [
+    'prisma8',
+    (): TimeEntryRepository => new Prisma8TimeEntryRepository(db.prisma8),
   ],
 ])('TimeEntryRepository (%s)', (_impl, make) => {
   let repo: TimeEntryRepository;
@@ -386,6 +391,36 @@ describe.each([
       await expect(repo.findById(mine.id, owner)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('lookups for defaults', () => {
+    it("finds a subtask's task, null when unknown", async () => {
+      const s = await seedTaskAccess(db.prisma8);
+      const sub = await db.prisma8.orm.public.Subtask.create({
+        taskId: s.task,
+        title: 'x',
+        updatedAt: toDb(new Date()),
+      });
+      await expect(repo.findSubtaskTaskId(sub.id)).resolves.toBe(s.task);
+      await expect(repo.findSubtaskTaskId(999999)).resolves.toBeNull();
+    });
+
+    it("finds a project's lowest-id occupation, null when none", async () => {
+      const p = await seedProject(db.prisma8, owner);
+      const empty = await seedProject(db.prisma8, owner);
+      const first = await seedOccupation(db.prisma8, owner);
+      const second = await seedOccupation(db.prisma8, owner);
+      await db.prisma8.orm.public.ProjectOccupation.create({
+        projectId: p.id,
+        occupationId: second.id,
+      });
+      await db.prisma8.orm.public.ProjectOccupation.create({
+        projectId: p.id,
+        occupationId: first.id,
+      });
+      await expect(repo.findDefaultOccupationId(p.id)).resolves.toBe(first.id);
+      await expect(repo.findDefaultOccupationId(empty.id)).resolves.toBeNull();
     });
   });
 

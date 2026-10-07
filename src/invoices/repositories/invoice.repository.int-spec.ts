@@ -10,6 +10,7 @@ import { useTestDb } from '../../prisma8/testing/test-db';
 import { InvoiceStatus } from '../entities/invoice.entity';
 import { InvoiceRepository } from './invoice.repository';
 import { PrismaInvoiceRepository } from './prisma-invoice.repository';
+import { Prisma8InvoiceRepository } from './prisma8-invoice.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
@@ -17,6 +18,10 @@ const year = new Date().getFullYear();
 
 describe.each([
   ['prisma7', (): InvoiceRepository => new PrismaInvoiceRepository(db.prisma7)],
+  [
+    'prisma8',
+    (): InvoiceRepository => new Prisma8InvoiceRepository(db.prisma8),
+  ],
 ])('InvoiceRepository (%s)', (_impl, make) => {
   let repo: InvoiceRepository;
   let owner: number;

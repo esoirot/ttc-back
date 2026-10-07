@@ -12,9 +12,6 @@ import { ChargeModel, OccupationModel } from '../types/occupation.type';
 import { occupationFromDb } from './prisma8-occupation.mapper';
 import { OccupationsRepository } from './occupations.repository';
 
-type OccupationType = 'TRANSLATOR' | 'CORRECTOR' | 'CUSTOM';
-type ChargeType = 'FIXED' | 'VARIABLE';
-
 const chargeFromDb = ({
   _type,
   ...c
@@ -58,19 +55,15 @@ export class Prisma8OccupationsRepository implements OccupationsRepository {
   ) {
     if (languagePairs !== undefined) {
       await tx.orm.public.LanguagePair.where({ occupationId }).deleteAndCount();
-      if (languagePairs?.length) {
-        await tx.orm.public.LanguagePair.createAll(
-          languagePairs.map((p) => ({ ...p, occupationId })),
-        );
-      }
+      await tx.orm.public.LanguagePair.createAll(
+        (languagePairs ?? []).map((p) => ({ ...p, occupationId })),
+      );
     }
     if (customFields !== undefined) {
       await tx.orm.public.CustomField.where({ occupationId }).deleteAndCount();
-      if (customFields?.length) {
-        await tx.orm.public.CustomField.createAll(
-          customFields.map((f) => ({ ...f, occupationId })),
-        );
-      }
+      await tx.orm.public.CustomField.createAll(
+        (customFields ?? []).map((f) => ({ ...f, occupationId })),
+      );
     }
   }
 
@@ -96,13 +89,13 @@ export class Prisma8OccupationsRepository implements OccupationsRepository {
       const occupation = await tx.orm.public.Occupation.create({
         userId,
         name: data.name,
-        occupationType: (data.occupationType ?? 'CUSTOM') as OccupationType,
-        companyName: data.companyName ?? null,
-        legalForm: data.legalForm ?? null,
-        professionalEmail: data.professionalEmail ?? null,
-        professionalPhone: data.professionalPhone ?? null,
-        website: data.website ?? null,
-        timezone: data.timezone ?? null,
+        occupationType: data.occupationType ?? 'CUSTOM',
+        companyName: data.companyName,
+        legalForm: data.legalForm,
+        professionalEmail: data.professionalEmail,
+        professionalPhone: data.professionalPhone,
+        website: data.website,
+        timezone: data.timezone,
         updatedAt: nowDb(),
       });
       await this.writeLists(
@@ -153,7 +146,7 @@ export class Prisma8OccupationsRepository implements OccupationsRepository {
       occupationId: data.occupationId,
       name: data.name,
       amount: data.amount,
-      _type: data.type as ChargeType,
+      _type: data.type,
     });
     return chargeFromDb(charge);
   }
@@ -175,7 +168,7 @@ export class Prisma8OccupationsRepository implements OccupationsRepository {
     const charge = await this.db.orm.public.Charge.where({ id }).update({
       name: data.name ?? undefined,
       amount: data.amount ?? undefined,
-      _type: (data.type ?? undefined) as ChargeType | undefined,
+      _type: data.type ?? undefined,
     });
     return chargeFromDb(charge!);
   }

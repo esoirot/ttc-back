@@ -116,7 +116,6 @@ export class Prisma8SubtaskRepository implements SubtaskRepository {
         .groupBy('projectId')
         .aggregate((a) => ({ words: a.sum('wordCount') })),
       this.subtasks
-        .where((s) => s.wordCount.isNotNull())
         .where((s) =>
           s.task.some((t) =>
             and(

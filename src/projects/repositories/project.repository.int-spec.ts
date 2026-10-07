@@ -37,6 +37,10 @@ describe.each([
     decoy = await seedProject(db.prisma8, (await seedUser(db.prisma8)).id, {
       title: 'decoy',
     });
+    await db.prisma8.orm.public.ProjectOccupation.create({
+      projectId: decoy.id,
+      occupationId: (await seedOccupation(db.prisma8, decoy.userId!)).id,
+    });
     owner = (await seedUser(db.prisma8)).id;
     stranger = (await seedUser(db.prisma8)).id;
   });
@@ -45,6 +49,11 @@ describe.each([
     await expect(
       db.prisma8.orm.public.Project.first({ id: decoy.id }),
     ).resolves.toEqual(decoy);
+    await expect(
+      db.prisma8.orm.public.ProjectOccupation.where({
+        projectId: decoy.id,
+      }).all(),
+    ).resolves.toHaveLength(1);
   });
 
   describe('findById', () => {
@@ -108,6 +117,14 @@ describe.each([
       });
       expect(page2.items.map((p) => p.id)).toEqual([ids[2]]);
       expect(page2).toMatchObject({ total: 3, nextCursor: null });
+    });
+
+    it('has no next cursor when the page holds exactly the limit', async () => {
+      await seedProject(db.prisma8, owner);
+      await seedProject(db.prisma8, owner);
+      await expect(
+        repo.findAll(owner, false, undefined, { limit: 2 }),
+      ).resolves.toMatchObject({ nextCursor: null, total: 2 });
     });
 
     it('defaults to 20 per page', async () => {
@@ -211,6 +228,8 @@ describe.each([
         currency: 'EUR',
         hourlyRate: 45,
         fixedFee: null,
+        unitPrice: null,
+        perWordRate: null,
         wordCount: 1000,
         deadline: new Date('2026-12-31T00:00:00.000Z'),
       });
@@ -250,6 +269,44 @@ describe.each([
       expect(updated.updatedAt.getTime()).toBeGreaterThan(
         p.updatedAt.getTime(),
       );
+    });
+
+    it('stores every price on create, changes them on update, keeps them when absent', async () => {
+      const p = await repo.create(owner, {
+        title: 'P',
+        unitPrice: 1.5,
+        fixedFee: 100,
+        hourlyRate: 40,
+        perWordRate: 0.08,
+      });
+      expect(p).toMatchObject({
+        unitPrice: 1.5,
+        fixedFee: 100,
+        hourlyRate: 40,
+        perWordRate: 0.08,
+      });
+      await expect(
+        repo.update(p.id, owner, {
+          id: p.id,
+          unitPrice: 2,
+          fixedFee: 200,
+          hourlyRate: 50,
+          perWordRate: 0.1,
+        }),
+      ).resolves.toMatchObject({
+        unitPrice: 2,
+        fixedFee: 200,
+        hourlyRate: 50,
+        perWordRate: 0.1,
+      });
+      await expect(
+        repo.update(p.id, owner, { id: p.id, title: 'P2' }),
+      ).resolves.toMatchObject({
+        unitPrice: 2,
+        fixedFee: 200,
+        hourlyRate: 50,
+        perWordRate: 0.1,
+      });
     });
 
     it('replaces occupations only when occupationIds is given', async () => {

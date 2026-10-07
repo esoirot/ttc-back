@@ -188,6 +188,17 @@ describe.each([
       );
     });
 
+    it('changes the language pair', async () => {
+      const sheet = await repo.create(owner, input());
+      await expect(
+        repo.update(sheet.id, owner, {
+          id: sheet.id,
+          sourceLanguage: 'de',
+          targetLanguage: 'es',
+        }),
+      ).resolves.toMatchObject({ sourceLanguage: 'de', targetLanguage: 'es' });
+    });
+
     it('setting isDefault clears the previous default of the same client', async () => {
       await repo.create(owner, input({ name: 'first', clientId: client }));
       const second = await repo.create(

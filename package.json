@@ -129,7 +129,8 @@
     "moduleFileExtensions": [
       "js",
       "json",
-      "ts"
+      "ts",
+      "mjs"
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
@@ -137,6 +138,7 @@
       "<rootDir>/jest.setup.ts"
     ],
     "transform": {
+      "node_modules/.+\\.m?js$": "<rootDir>/../test/esm-transformer.js",
       "^.+\\.(t|j)s$": [
         "@swc/jest",
         {
@@ -174,6 +176,7 @@
       "!jest.setup.ts"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "transformIgnorePatterns": []
   }
 }

@@ -1,0 +1,45 @@
+import { rowFromBackup, rowToBackup } from './db-backup.prisma8';
+
+describe('backup row conversion (Prisma 8)', () => {
+  it('writes the Prisma 7 backup format: column names, ISO timestamps, canonical decimals', () => {
+    expect(
+      rowToBackup('ClientRate', {
+        id: 1,
+        _type: 'HOURLY',
+        amount: '42.5000',
+        createdAt: '2026-10-01 10:00:00.123',
+        updatedAt: '2026-10-01 10:00:00',
+        description: null,
+      }),
+    ).toEqual({
+      id: 1,
+      type: 'HOURLY',
+      amount: '42.5',
+      createdAt: '2026-10-01T10:00:00.123Z',
+      updatedAt: '2026-10-01T10:00:00.000Z',
+      description: null,
+    });
+  });
+
+  it('keeps whole decimals without a trailing dot', () => {
+    expect(rowToBackup('Client', { taxRate: '20.00' })).toEqual({
+      taxRate: '20',
+    });
+  });
+
+  it('reads a backup row back into Prisma 8 field names', () => {
+    expect(
+      rowFromBackup('ClientRate', {
+        id: 1,
+        type: 'HOURLY',
+        amount: '42.5',
+        createdAt: '2026-10-01T10:00:00.123Z',
+      }),
+    ).toEqual({
+      id: 1,
+      _type: 'HOURLY',
+      amount: '42.5',
+      createdAt: '2026-10-01T10:00:00.123Z',
+    });
+  });
+});

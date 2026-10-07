@@ -9,6 +9,7 @@ import {
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { DashboardRepository } from './dashboard.repository';
 import { PrismaDashboardRepository } from './prisma-dashboard.repository';
+import { Prisma8DashboardRepository } from './prisma8-dashboard.repository';
 
 const db = useTestDb();
 
@@ -22,6 +23,10 @@ describe.each([
   [
     'prisma7',
     (): DashboardRepository => new PrismaDashboardRepository(db.prisma7),
+  ],
+  [
+    'prisma8',
+    (): DashboardRepository => new Prisma8DashboardRepository(db.prisma8),
   ],
 ])('DashboardRepository (%s)', (_impl, make) => {
   let repo: DashboardRepository;

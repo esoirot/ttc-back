@@ -162,6 +162,23 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
     return first?.startTime ?? null;
   }
 
+  async findSubtaskTaskId(subtaskId: number): Promise<number | null> {
+    const sub = await this.prisma.subtask.findUnique({
+      where: { id: subtaskId },
+      select: { taskId: true },
+    });
+    return sub?.taskId ?? null;
+  }
+
+  async findDefaultOccupationId(projectId: number): Promise<number | null> {
+    const first = await this.prisma.projectOccupation.findFirst({
+      where: { projectId },
+      orderBy: { occupationId: 'asc' },
+      select: { occupationId: true },
+    });
+    return first?.occupationId ?? null;
+  }
+
   async findActive(userId: number): Promise<TimeEntryModel | null> {
     const entry = await this.prisma.timeEntry.findFirst({
       where: { userId, endTime: null },

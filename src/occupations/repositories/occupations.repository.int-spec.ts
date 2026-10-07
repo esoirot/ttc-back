@@ -29,10 +29,50 @@ describe.each([
   let owner: number;
   let stranger: number;
 
+  // A third user's occupation with a pair, a field and a charge, created
+  // first: a write that loses its filter lands here.
+  const decoySnapshot = async (id: number) => ({
+    occupation: await db.prisma8.orm.public.Occupation.first({ id }),
+    pairs: await db.prisma8.orm.public.LanguagePair.where({
+      occupationId: id,
+    }).all(),
+    fields: await db.prisma8.orm.public.CustomField.where({
+      occupationId: id,
+    }).all(),
+    charges: await db.prisma8.orm.public.Charge.where({
+      occupationId: id,
+    }).all(),
+  });
+  let decoy: { id: number; before: Awaited<ReturnType<typeof decoySnapshot>> };
+
   beforeEach(async () => {
     repo = make();
+    const id = (
+      await seedOccupation(db.prisma8, (await seedUser(db.prisma8)).id, 'decoy')
+    ).id;
+    await db.prisma8.orm.public.LanguagePair.create({
+      occupationId: id,
+      fromLanguage: 'en',
+      toLanguage: 'de',
+    });
+    await db.prisma8.orm.public.CustomField.create({
+      occupationId: id,
+      key: 'k',
+      value: 'v',
+    });
+    await db.prisma8.orm.public.Charge.create({
+      occupationId: id,
+      name: 'decoy',
+      amount: 1,
+      _type: 'FIXED',
+    });
+    decoy = { id, before: await decoySnapshot(id) };
     owner = (await seedUser(db.prisma8)).id;
     stranger = (await seedUser(db.prisma8)).id;
+  });
+
+  afterEach(async () => {
+    await expect(decoySnapshot(decoy.id)).resolves.toEqual(decoy.before);
   });
 
   describe('create', () => {
@@ -40,6 +80,10 @@ describe.each([
       const occupation = await repo.create(owner, {
         name: 'Translator',
         companyName: 'ACME',
+        legalForm: 'SASU',
+        professionalEmail: 'pro@acme.io',
+        professionalPhone: '+33 1',
+        website: 'https://acme.io',
         timezone: 'Europe/Paris',
         languagePairs: [{ fromLanguage: 'en', toLanguage: 'fr' }],
         customFields: [{ key: 'siret', value: '123' }],
@@ -49,7 +93,10 @@ describe.each([
         name: 'Translator',
         occupationType: 'CUSTOM',
         companyName: 'ACME',
-        legalForm: null,
+        legalForm: 'SASU',
+        professionalEmail: 'pro@acme.io',
+        professionalPhone: '+33 1',
+        website: 'https://acme.io',
         timezone: 'Europe/Paris',
         objectiveQ1: null,
         charges: [],

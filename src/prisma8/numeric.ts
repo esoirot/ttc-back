@@ -15,7 +15,10 @@ export function toNumeric<P extends number, S extends number>(
   value: number | null,
 ): Numeric<P, S> | null;
 export function toNumeric<P extends number, S extends number>(
-  value: number | null,
-): Numeric<P, S> | null {
-  return value === null ? null : (plain.format(value) as Numeric<P, S>);
+  value: number | null | undefined,
+): Numeric<P, S> | null | undefined;
+export function toNumeric<P extends number, S extends number>(
+  value: number | null | undefined,
+): Numeric<P, S> | null | undefined {
+  return value == null ? value : (plain.format(value) as Numeric<P, S>);
 }

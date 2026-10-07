@@ -13,16 +13,14 @@ import {
   ProjectRepository,
 } from './projects.repository';
 
-type ProjectStatus = ProjectModel['status'] &
-  (
-    | 'DRAFT'
-    | 'ACTIVE'
-    | 'COMPLETED'
-    | 'CANCELLED'
-    | 'ARCHIVED'
-    | 'INVOICE_SENT'
-    | 'INVOICE_PAID'
-  );
+type ProjectStatus =
+  | 'DRAFT'
+  | 'ACTIVE'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'ARCHIVED'
+  | 'INVOICE_SENT'
+  | 'INVOICE_PAID';
 
 const numberOrNull = (d: string | null) => (d === null ? null : Number(d));
 const date = (d: Date | null | undefined) =>
@@ -58,7 +56,7 @@ export class Prisma8ProjectRepository implements ProjectRepository {
       createdAt: fromDb(p.createdAt),
       updatedAt: fromDb(p.updatedAt),
       occupations: occupations.map((o) => occupationFromDb(o.occupation)),
-    } as ProjectModel;
+    };
   }
 
   private async link(
@@ -66,7 +64,6 @@ export class Prisma8ProjectRepository implements ProjectRepository {
     projectId: number,
     occupationIds: number[],
   ) {
-    if (occupationIds.length === 0) return;
     await tx.orm.public.ProjectOccupation.createAll(
       occupationIds.map((occupationId) => ({ projectId, occupationId })),
     );
@@ -91,7 +88,9 @@ export class Prisma8ProjectRepository implements ProjectRepository {
     const cursor = pagination?.cursor;
     let base = this.withOccupations();
     if (!isAdmin) base = base.where({ userId });
-    if (status) base = base.where({ status: status as ProjectStatus });
+    base = base.where({
+      status: (status || undefined) as ProjectStatus | undefined,
+    });
     if (search)
       base = base.where((p) => p.title.ilike(containsPattern(search)));
 
@@ -132,14 +131,14 @@ export class Prisma8ProjectRepository implements ProjectRepository {
       const project = await tx.orm.public.Project.create({
         ...rest,
         userId,
-        unitPrice: unitPrice != null ? toNumeric(unitPrice) : undefined,
-        fixedFee: fixedFee != null ? toNumeric(fixedFee) : undefined,
-        hourlyRate: hourlyRate != null ? toNumeric(hourlyRate) : undefined,
-        perWordRate: perWordRate != null ? toNumeric(perWordRate) : undefined,
+        unitPrice: toNumeric<14, 8>(unitPrice),
+        fixedFee: toNumeric<10, 4>(fixedFee),
+        hourlyRate: toNumeric<10, 4>(hourlyRate),
+        perWordRate: toNumeric<10, 4>(perWordRate),
         deadline: date(deadline),
         startDate: date(startDate),
         currency: data.currency ?? 'EUR',
-        status: (data.status as ProjectStatus | undefined) ?? 'DRAFT',
+        status: data.status ?? 'DRAFT',
         updatedAt: nowDb(),
       });
       await this.link(tx, project.id, occupationIds ?? []);
@@ -168,13 +167,11 @@ export class Prisma8ProjectRepository implements ProjectRepository {
     await this.db.transaction(async (tx) => {
       await tx.orm.public.Project.where({ id }).update({
         ...rest,
-        status: (rest.status as ProjectStatus | undefined) || undefined,
-        unitPrice: unitPrice === undefined ? undefined : toNumeric(unitPrice),
-        fixedFee: fixedFee === undefined ? undefined : toNumeric(fixedFee),
-        hourlyRate:
-          hourlyRate === undefined ? undefined : toNumeric(hourlyRate),
-        perWordRate:
-          perWordRate === undefined ? undefined : toNumeric(perWordRate),
+        status: rest.status || undefined,
+        unitPrice: toNumeric<14, 8>(unitPrice),
+        fixedFee: toNumeric<10, 4>(fixedFee),
+        hourlyRate: toNumeric<10, 4>(hourlyRate),
+        perWordRate: toNumeric<10, 4>(perWordRate),
         deadline: date(deadline),
         startDate: date(startDate),
         updatedAt: nowDb(),

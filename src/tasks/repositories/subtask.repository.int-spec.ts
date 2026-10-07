@@ -33,9 +33,21 @@ describe.each([
       updatedAt: at(data.minute ?? 0),
     });
 
+  // Created first, on the other task: a write that loses its filter lands here.
+  let decoy: Awaited<ReturnType<typeof item>>;
+  const notDecoy = <T extends { id: number }>(rows: T[]) =>
+    rows.filter((r) => r.id !== decoy.id);
+
   beforeEach(async () => {
     repo = make();
     s = await seedTaskAccess(db.prisma8);
+    decoy = await item(s.otherTask, 'decoy');
+  });
+
+  afterEach(async () => {
+    await expect(
+      db.prisma8.orm.public.Subtask.first({ id: decoy.id }),
+    ).resolves.toEqual(decoy);
   });
 
   describe('findByTaskIds / findById', () => {
@@ -127,6 +139,14 @@ describe.each([
       );
     });
 
+    it('changes the due date', async () => {
+      const { id } = await item(s.task, 'dated');
+      const due = new Date('2026-12-24T00:00:00.000Z');
+      await expect(
+        repo.update(id, s.owner, { id, dueDate: due }),
+      ).resolves.toMatchObject({ dueDate: due });
+    });
+
     it('throws NotFound for a stranger', async () => {
       const { id } = await item(s.task, 'keep');
       await expect(
@@ -159,8 +179,8 @@ describe.each([
       await item(s.otherTask, 'd', { checklistTitle: 'Old' });
 
       await expect(repo.renameChecklist(s.task, 'Old', 'New')).resolves.toBe(2);
-      const titles = (
-        await repo.findByTaskIds([s.task, s.otherTask], s.owner)
+      const titles = notDecoy(
+        await repo.findByTaskIds([s.task, s.otherTask], s.owner),
       ).map((r) => [r.title, r.checklistTitle]);
       expect(titles.sort()).toEqual([
         ['a', 'New'],
@@ -176,8 +196,8 @@ describe.each([
       await item(s.otherTask, 'c', { checklistTitle: 'Gone' });
 
       await expect(repo.deleteByChecklist(s.task, 'Gone')).resolves.toBe(1);
-      const left = (
-        await repo.findByTaskIds([s.task, s.otherTask], s.owner)
+      const left = notDecoy(
+        await repo.findByTaskIds([s.task, s.otherTask], s.owner),
       ).map((r) => r.title);
       expect(left.sort()).toEqual(['b', 'c']);
     });

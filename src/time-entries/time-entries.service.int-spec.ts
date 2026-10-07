@@ -4,6 +4,7 @@ import { seedTaskAccess } from '../prisma8/testing/task-access';
 import { useTestDb } from '../prisma8/testing/test-db';
 import { toDb } from '../prisma8/timestamp';
 import { PrismaTimeEntryRepository } from './repositories/prisma-time-entry.repository';
+import { Prisma8TimeEntryRepository } from './repositories/prisma8-time-entry.repository';
 import { TimeEntriesService } from './time-entries.service';
 
 const db = useTestDb();
@@ -17,7 +18,14 @@ describe.each([
     () =>
       new TimeEntriesService(
         new PrismaTimeEntryRepository(db.prisma7),
-        db.prisma7,
+        activities,
+      ),
+  ],
+  [
+    'prisma8',
+    () =>
+      new TimeEntriesService(
+        new Prisma8TimeEntryRepository(db.prisma8),
         activities,
       ),
   ],

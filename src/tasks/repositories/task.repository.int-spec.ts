@@ -5,12 +5,14 @@ import { useTestDb } from '../../prisma8/testing/test-db';
 import { fromDb } from '../../prisma8/timestamp';
 import { TaskStatus } from '../entities/task.entity';
 import { PrismaTaskRepository } from './prisma-task.repository';
+import { Prisma8TaskRepository } from './prisma8-task.repository';
 import { TaskRepository } from './task.repository';
 
 const db = useTestDb();
 
 describe.each([
   ['prisma7', (): TaskRepository => new PrismaTaskRepository(db.prisma7)],
+  ['prisma8', (): TaskRepository => new Prisma8TaskRepository(db.prisma8)],
 ])('TaskRepository (%s)', (_impl, make) => {
   let repo: TaskRepository;
   let s: Awaited<ReturnType<typeof seedTaskAccess>>;
@@ -18,9 +20,24 @@ describe.each([
   const titles = (page: { items: { title: string }[] }) =>
     page.items.map((t) => t.title);
 
+  // Another user's task, created first: a write that loses its filter lands here.
+  let decoy: Awaited<ReturnType<typeof seedTask>>;
+
   beforeEach(async () => {
     repo = make();
+    const other = await seedUser(db.prisma8);
+    decoy = await seedTask(
+      db.prisma8,
+      (await seedProject(db.prisma8, other.id)).id,
+      { title: 'decoy' },
+    );
     s = await seedTaskAccess(db.prisma8);
+  });
+
+  afterEach(async () => {
+    await expect(
+      db.prisma8.orm.public.Task.first({ id: decoy.id }),
+    ).resolves.toEqual(decoy);
   });
 
   describe('findById', () => {
