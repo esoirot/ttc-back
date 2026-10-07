@@ -460,6 +460,16 @@ describe.each([
       expect(inv.currency).toBe('EUR');
     });
 
+    it("refuses someone else's project and creates nothing", async () => {
+      const theirs = await seedProject(db.prisma8, stranger, {
+        fixedFee: toNumeric(500),
+      });
+      await expect(
+        repo.generate(owner, 'INV-X', { projectId: theirs.id }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(repo.findAll(owner)).resolves.toMatchObject({ total: 0 });
+    });
+
     it('creates an empty draft when the project has no rates', async () => {
       const project = await seedProject(db.prisma8, owner);
       await seedTimeEntry(db.prisma8, owner, {

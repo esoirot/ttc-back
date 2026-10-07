@@ -169,8 +169,8 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     number: string,
     data: GenerateInvoiceInput,
   ): Promise<InvoiceModel> {
-    const project = await this.prisma.project.findUnique({
-      where: { id: data.projectId },
+    const project = await this.prisma.project.findFirst({
+      where: { id: data.projectId, userId },
       select: {
         fixedFee: true,
         hourlyRate: true,
@@ -179,12 +179,15 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         unitPrice: true,
       },
     });
+    if (!project) {
+      throw new NotFoundException(`Project ${data.projectId} not found`);
+    }
 
-    const fixedFee = project?.fixedFee?.toNumber() ?? null;
+    const fixedFee = project.fixedFee?.toNumber() ?? null;
     const hourlyRate =
-      project?.hourlyRate?.toNumber() ?? project?.unitPrice?.toNumber() ?? null;
-    const perWordRate = project?.perWordRate?.toNumber() ?? null;
-    const wordCount = project?.wordCount ?? 0;
+      project.hourlyRate?.toNumber() ?? project.unitPrice?.toNumber() ?? null;
+    const perWordRate = project.perWordRate?.toNumber() ?? null;
+    const wordCount = project.wordCount ?? 0;
 
     type ItemCreate = {
       projectId: number;
