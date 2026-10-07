@@ -240,7 +240,7 @@ namespace public {
     client    Client?                @relation(fields: [clientId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Invoice_clientId_fkey", index: false)
     user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Invoice_userId_fkey", index: false)
 
-    @@index([number], map: "Invoice_number_key", unique: true)
+    @@index([userId, number], map: "Invoice_userId_number_key", unique: true)
   }
 
   model RateSheet {

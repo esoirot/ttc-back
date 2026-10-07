@@ -36,12 +36,27 @@ describe.each([
   });
 
   describe('nextNumber', () => {
-    it("numbers per user and year from the user's own count", async () => {
+    it('numbers per user and year, from the highest number so far', async () => {
       await expect(repo.nextNumber(owner)).resolves.toBe(`INV-${year}-001`);
       await repo.create(owner, `INV-${year}-001`, {});
       await repo.create(owner, `INV-${year - 1}-007`, {});
       await expect(repo.nextNumber(owner)).resolves.toBe(`INV-${year}-002`);
       await expect(repo.nextNumber(stranger)).resolves.toBe(`INV-${year}-001`);
+    });
+
+    it('lets two users each have the same number', async () => {
+      await repo.create(owner, `INV-${year}-001`, {});
+      await expect(
+        repo.create(stranger, `INV-${year}-001`, {}),
+      ).resolves.toMatchObject({ userId: stranger, number: `INV-${year}-001` });
+    });
+
+    it('never reuses an existing number after a draft in the middle is deleted', async () => {
+      await repo.create(owner, `INV-${year}-001`, {});
+      const middle = await repo.create(owner, `INV-${year}-002`, {});
+      await repo.create(owner, `INV-${year}-003`, {});
+      await repo.delete(middle.id, owner);
+      await expect(repo.nextNumber(owner)).resolves.toBe(`INV-${year}-004`);
     });
   });
 

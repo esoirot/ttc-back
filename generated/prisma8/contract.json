@@ -6435,9 +6435,10 @@
               "indexes": [
                 {
                   "columns": [
+                    "userId",
                     "number"
                   ],
-                  "name": "Invoice_number_key",
+                  "name": "Invoice_userId_number_key",
                   "unique": true
                 }
               ],
@@ -9069,7 +9070,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "2df4c1e41bb145e1fb42e9c1f171263ea3565396d372e341e5ddfbd1d74dea6c"
+    "storageHash": "594c1cc6b56cd9c5de8c6ee73c3201f48df9a785818ced78b2802682008bb4ad"
   },
   "capabilities": {
     "postgres": {

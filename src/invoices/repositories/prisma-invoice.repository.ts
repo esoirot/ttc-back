@@ -83,11 +83,18 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async nextNumber(userId: number): Promise<string> {
-    const year = new Date().getFullYear();
-    const count = await this.prisma.invoice.count({
-      where: { userId, number: { startsWith: `INV-${year}-` } },
+    const prefix = `INV-${new Date().getFullYear()}-`;
+    const rows = await this.prisma.invoice.findMany({
+      where: { userId, number: { startsWith: prefix } },
+      select: { number: true },
     });
-    return `INV-${year}-${String(count + 1).padStart(3, '0')}`;
+    // Highest + 1, not count + 1: a deleted draft must not free a number
+    // that a later invoice still holds.
+    const highest = Math.max(
+      0,
+      ...rows.map((r) => Number(r.number.slice(prefix.length)) || 0),
+    );
+    return `${prefix}${String(highest + 1).padStart(3, '0')}`;
   }
 
   async findById(id: number, userId: number): Promise<InvoiceModel> {
