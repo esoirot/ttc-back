@@ -138,7 +138,7 @@ describe.each([
   });
 
   describe('findAll', () => {
-    it("lists the user's entries newest first, pages with an id cursor", async () => {
+    it("lists the user's entries newest first", async () => {
       const oldest = await entry(owner, '2026-10-01T08:00:00.000Z');
       const newest = await entry(owner, '2026-10-03T08:00:00.000Z');
       const middle = await entry(owner, '2026-10-02T08:00:00.000Z');
@@ -149,12 +149,35 @@ describe.each([
         middle.id,
         oldest.id,
       ]);
-      const page1 = await repo.findAll(owner, {}, { limit: 1 });
-      expect(page1).toMatchObject({ total: 3, nextCursor: newest.id });
-      // Current behaviour: the cursor keeps ids greater than the last one, whatever their start time.
-      await expect(
-        repo.findAll(owner, {}, { cursor: oldest.id }).then(ids),
-      ).resolves.toEqual([newest.id, middle.id]);
+    });
+
+    it('pages through every entry exactly once, in order, ties broken by newest id', async () => {
+      const created = [
+        await entry(owner, '2026-10-01T08:00:00.000Z'),
+        await entry(owner, '2026-10-03T08:00:00.000Z'),
+        await entry(owner, '2026-10-02T08:00:00.000Z'),
+        await entry(owner, '2026-10-03T08:00:00.000Z'),
+        await entry(owner, '2026-10-01T09:00:00.000Z'),
+      ];
+      const expected = await repo.findAll(owner, {}).then(ids);
+      expect(expected).toEqual([
+        created[3].id,
+        created[1].id,
+        created[2].id,
+        created[4].id,
+        created[0].id,
+      ]);
+
+      const seen: number[] = [];
+      let cursor: number | undefined;
+      for (let i = 0; i < 10; i++) {
+        const page = await repo.findAll(owner, {}, { limit: 2, cursor });
+        expect(page.total).toBe(5);
+        seen.push(...ids(page));
+        if (page.nextCursor === null) break;
+        cursor = page.nextCursor;
+      }
+      expect(seen).toEqual(expected);
     });
 
     it('filters by date range, inclusive', async () => {

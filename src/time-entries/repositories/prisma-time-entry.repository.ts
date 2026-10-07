@@ -113,14 +113,34 @@ export class PrismaTimeEntryRepository implements TimeEntryRepository {
           }
         : {}),
     };
+    // Keyset paging on the sort order (startTime desc, id desc): continue
+    // strictly after the cursor entry's position.
+    const after =
+      cursor !== undefined
+        ? await this.prisma.timeEntry.findFirst({
+            where: { id: cursor, userId },
+            select: { startTime: true },
+          })
+        : null;
     const where = {
       ...baseWhere,
-      ...(cursor !== undefined ? { id: { gt: cursor } } : {}),
+      ...(after
+        ? {
+            AND: [
+              {
+                OR: [
+                  { startTime: { lt: after.startTime } },
+                  { startTime: after.startTime, id: { lt: cursor } },
+                ],
+              },
+            ],
+          }
+        : {}),
     };
     const rows = await this.prisma.timeEntry.findMany({
       where,
       include: TAG_INCLUDE,
-      orderBy: { startTime: 'desc' },
+      orderBy: [{ startTime: 'desc' }, { id: 'desc' }],
       take: limit + 1,
     });
     const total = await this.prisma.timeEntry.count({ where: baseWhere });
