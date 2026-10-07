@@ -19,6 +19,7 @@ import { GenerateInvoiceInput } from '../dto/generate-invoice.input';
 import {
   InvoiceStatus as PrismaInvoiceStatus,
   InvoicingStatus,
+  Prisma,
 } from '../../generated/prisma/client';
 import { InvoiceStatus } from '../entities/invoice.entity';
 
@@ -76,6 +77,21 @@ function invoiceToModel(inv: {
     ...inv,
     items: inv.items?.map(itemToModel),
   };
+}
+
+/** Time entries billed by removed invoice lines become billable again. */
+export async function releaseTimeEntries(
+  tx: Pick<Prisma.TransactionClient, 'timeEntry'>,
+  items: { timeEntryId: number | null }[],
+): Promise<void> {
+  const ids = items.flatMap((i) =>
+    i.timeEntryId === null ? [] : [i.timeEntryId],
+  );
+  if (ids.length === 0) return;
+  await tx.timeEntry.updateMany({
+    where: { id: { in: ids } },
+    data: { invoicingStatus: InvoicingStatus.NO },
+  });
 }
 
 @Injectable()
@@ -314,9 +330,13 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     if (!inv) throw new NotFoundException(`Invoice ${id} not found`);
     if (inv.status !== 'DRAFT')
       throw new BadRequestException('Only DRAFT invoices can be deleted');
-    const deleted = await this.prisma.invoice.delete({
-      where: { id },
-      include: { items: true },
+    const deleted = await this.prisma.$transaction(async (tx) => {
+      const removed = await tx.invoice.delete({
+        where: { id },
+        include: { items: true },
+      });
+      await releaseTimeEntries(tx, removed.items);
+      return removed;
     });
     return invoiceToModel(deleted);
   }
@@ -398,7 +418,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       where: { id, invoice: { userId } },
     });
     if (!item) throw new NotFoundException(`InvoiceItem ${id} not found`);
-    await this.prisma.invoiceItem.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.invoiceItem.delete({ where: { id } });
+      await releaseTimeEntries(tx, [item]);
+    });
     return true;
   }
 }

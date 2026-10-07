@@ -348,6 +348,27 @@ describe.each([
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
+    it('releases the time entries of a deleted draft', async () => {
+      const inv = await invoice(alice.id, 'I-1');
+      const entry = await seedTimeEntry(db.prisma8, alice.id, {
+        invoicingStatus: 'INVOICED',
+      });
+      await db.prisma8.orm.public.InvoiceItem.create({
+        invoiceId: inv.id,
+        timeEntryId: entry.id,
+        description: 'x',
+        quantity: toNumeric(1),
+        unitPrice: toNumeric(1),
+        total: toNumeric(1),
+      });
+
+      await repo.deleteInvoice(inv.id);
+
+      await expect(
+        db.prisma8.orm.public.TimeEntry.first({ id: entry.id }),
+      ).resolves.toMatchObject({ invoicingStatus: 'NO' });
+    });
+
     it('deletes drafts only', async () => {
       const draft = await invoice(alice.id, 'I-1');
       const sent = await invoice(alice.id, 'I-2', { status: 'SENT' });

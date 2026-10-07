@@ -200,6 +200,24 @@ describe.each([
   });
 
   describe('delete', () => {
+    it('releases the time entries of a deleted draft', async () => {
+      const project = await seedProject(db.prisma8, owner, {
+        hourlyRate: toNumeric(50),
+      });
+      const entry = await seedTimeEntry(db.prisma8, owner, {
+        projectId: project.id,
+        durationSeconds: 3600,
+      });
+      const draft = await repo.generate(owner, 'INV-G', {
+        projectId: project.id,
+      });
+      await expect(entryStatus(entry.id)).resolves.toBe('INVOICED');
+
+      await repo.delete(draft.id, owner);
+
+      await expect(entryStatus(entry.id)).resolves.toBe('NO');
+    });
+
     it('deletes a draft only, NotFound for someone else', async () => {
       const draft = await repo.create(owner, 'INV-D', {});
       const sent = await repo.create(owner, 'INV-S', {});
@@ -341,7 +359,7 @@ describe.each([
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('removes an item but leaves its time entry invoiced', async () => {
+    it('removes an item and releases its time entry for billing again', async () => {
       const inv = await repo.create(owner, 'INV-I', {});
       const entry = await seedTimeEntry(db.prisma8, owner);
       const item = await repo.addItem(
@@ -351,11 +369,12 @@ describe.each([
       await expect(repo.removeItem(item.id, stranger)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+      await expect(entryStatus(entry.id)).resolves.toBe('INVOICED');
       await expect(repo.removeItem(item.id, owner)).resolves.toBe(true);
       await expect(repo.findById(inv.id, owner)).resolves.toMatchObject({
         items: [],
       });
-      await expect(entryStatus(entry.id)).resolves.toBe('INVOICED');
+      await expect(entryStatus(entry.id)).resolves.toBe('NO');
     });
   });
 
