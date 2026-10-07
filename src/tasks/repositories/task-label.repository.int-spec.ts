@@ -3,6 +3,7 @@ import { at } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaTaskLabelRepository } from './prisma-task-label.repository';
+import { Prisma8TaskLabelRepository } from './prisma8-task-label.repository';
 import { TaskLabelRepository } from './task-label.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
@@ -12,6 +13,10 @@ describe.each([
   [
     'prisma7',
     (): TaskLabelRepository => new PrismaTaskLabelRepository(db.prisma7),
+  ],
+  [
+    'prisma8',
+    (): TaskLabelRepository => new Prisma8TaskLabelRepository(db.prisma8),
   ],
 ])('TaskLabelRepository (%s)', (_impl, make) => {
   let repo: TaskLabelRepository;
@@ -24,12 +29,26 @@ describe.each([
       createdAt: at(minute),
     });
 
+  // Created first, so a write that loses its filter lands here.
+  let decoy: Awaited<ReturnType<typeof label>>;
+
   beforeEach(async () => {
     repo = make();
     s = await seedTaskAccess(db.prisma8);
+    decoy = await label(s.otherTask, 'decoy');
+  });
+
+  afterEach(async () => {
+    await expect(
+      db.prisma8.orm.public.TaskLabel.first({ id: decoy.id }),
+    ).resolves.toEqual(decoy);
   });
 
   describe('findByTaskIds', () => {
+    it('returns nothing for no ids', async () => {
+      await expect(repo.findByTaskIds([], s.owner)).resolves.toEqual([]);
+    });
+
     it('returns labels of the requested tasks, oldest first', async () => {
       await label(s.task, 'second', 2);
       await label(s.task, 'first', 1);

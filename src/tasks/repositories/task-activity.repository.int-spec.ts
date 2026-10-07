@@ -2,6 +2,7 @@ import { at, seedTimeEntry, seedUser } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaTaskActivityRepository } from './prisma-task-activity.repository';
+import { Prisma8TaskActivityRepository } from './prisma8-task-activity.repository';
 import { TaskActivityRepository } from './task-activity.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
@@ -11,6 +12,10 @@ describe.each([
   [
     'prisma7',
     (): TaskActivityRepository => new PrismaTaskActivityRepository(db.prisma7),
+  ],
+  [
+    'prisma8',
+    (): TaskActivityRepository => new Prisma8TaskActivityRepository(db.prisma8),
   ],
 ])('TaskActivityRepository (%s)', (_impl, make) => {
   let repo: TaskActivityRepository;
@@ -42,6 +47,10 @@ describe.each([
   });
 
   describe('findByTaskIds', () => {
+    it('returns nothing for no ids', async () => {
+      await expect(repo.findByTaskIds([], s.owner)).resolves.toEqual([]);
+    });
+
     it('returns the activity of the requested tasks, oldest first, with its author', async () => {
       await activity({ taskId: s.task, userId: s.owner, type: 'UPDATED' }, 2);
       await activity({ taskId: s.task, userId: s.owner, type: 'CREATED' }, 1);
@@ -77,9 +86,19 @@ describe.each([
   });
 
   describe('findByTimeEntryIds', () => {
+    it('returns nothing for no ids', async () => {
+      await expect(repo.findByTimeEntryIds([], s.owner)).resolves.toEqual([]);
+    });
+
     it("returns only activity of the user's own time entries, oldest first", async () => {
       const mine = await seedTimeEntry(db.prisma8, s.owner);
       const theirs = await seedTimeEntry(db.prisma8, s.stranger);
+      const notRequested = await seedTimeEntry(db.prisma8, s.owner);
+      await activity({
+        timeEntryId: notRequested.id,
+        userId: s.owner,
+        type: 'STARTED',
+      });
       await activity(
         { timeEntryId: mine.id, userId: s.owner, type: 'STOPPED' },
         2,
@@ -119,6 +138,16 @@ describe.each([
         type: 'STATUS_CHANGED',
       });
       expect(JSON.parse(row.payload!)).toEqual({ from: 'TODO', to: 'DONE' });
+    });
+
+    it('links the time entry when given', async () => {
+      const e = await seedTimeEntry(db.prisma8, s.owner);
+      await expect(
+        repo.log({ timeEntryId: e.id, userId: s.owner, type: 'STARTED' }),
+      ).resolves.toMatchObject({
+        taskId: null,
+        timeEntryId: e.id,
+      });
     });
 
     it('stores a null payload and null links when omitted', async () => {

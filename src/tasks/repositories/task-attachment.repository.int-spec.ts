@@ -2,6 +2,7 @@ import { at } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { PrismaTaskAttachmentRepository } from './prisma-task-attachment.repository';
+import { Prisma8TaskAttachmentRepository } from './prisma8-task-attachment.repository';
 import { TaskAttachmentRepository } from './task-attachment.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
@@ -12,6 +13,11 @@ describe.each([
     'prisma7',
     (): TaskAttachmentRepository =>
       new PrismaTaskAttachmentRepository(db.prisma7),
+  ],
+  [
+    'prisma8',
+    (): TaskAttachmentRepository =>
+      new Prisma8TaskAttachmentRepository(db.prisma8),
   ],
 ])('TaskAttachmentRepository (%s)', (_impl, make) => {
   let repo: TaskAttachmentRepository;
@@ -25,12 +31,26 @@ describe.each([
       createdAt: at(minute),
     });
 
+  // Created first, so a write that loses its filter lands here.
+  let decoy: Awaited<ReturnType<typeof attachment>>;
+
   beforeEach(async () => {
     repo = make();
     s = await seedTaskAccess(db.prisma8);
+    decoy = await attachment(s.otherTask, 'https://decoy');
+  });
+
+  afterEach(async () => {
+    await expect(
+      db.prisma8.orm.public.TaskAttachment.first({ id: decoy.id }),
+    ).resolves.toEqual(decoy);
   });
 
   describe('findByTaskIds', () => {
+    it('returns nothing for no ids', async () => {
+      await expect(repo.findByTaskIds([], s.owner)).resolves.toEqual([]);
+    });
+
     it('returns attachments of the requested tasks, oldest first', async () => {
       await attachment(s.task, 'https://b', 2);
       await attachment(s.task, 'https://a', 1);

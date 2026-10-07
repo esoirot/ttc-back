@@ -6,7 +6,7 @@ import { ProspectCronService } from './prospect-cron.service';
 import { ClientRepository } from './repositories/client.repository';
 import { PrismaClientRepository } from './repositories/prisma-client.repository';
 import { ClientStatusHistoryRepository } from './repositories/client-status-history.repository';
-import { PrismaClientStatusHistoryRepository } from './repositories/prisma-client-status-history.repository';
+import { Prisma8ClientStatusHistoryRepository } from './repositories/prisma8-client-status-history.repository';
 import { PrismaService } from '../prisma.service';
 import { AuditModule } from '../audit/audit.module';
 
@@ -20,10 +20,9 @@ import { AuditModule } from '../audit/audit.module';
     PrismaService,
     PrismaClientRepository,
     { provide: ClientRepository, useClass: PrismaClientRepository },
-    PrismaClientStatusHistoryRepository,
     {
       provide: ClientStatusHistoryRepository,
-      useClass: PrismaClientStatusHistoryRepository,
+      useClass: Prisma8ClientStatusHistoryRepository,
     },
   ],
   exports: [ClientsService, ClientStatusHistoryService],

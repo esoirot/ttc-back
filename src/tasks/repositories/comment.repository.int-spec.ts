@@ -4,12 +4,17 @@ import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { CommentRepository } from './comment.repository';
 import { PrismaCommentRepository } from './prisma-comment.repository';
+import { Prisma8CommentRepository } from './prisma8-comment.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
 describe.each([
   ['prisma7', (): CommentRepository => new PrismaCommentRepository(db.prisma7)],
+  [
+    'prisma8',
+    (): CommentRepository => new Prisma8CommentRepository(db.prisma8),
+  ],
 ])('CommentRepository (%s)', (_impl, make) => {
   let repo: CommentRepository;
   let s: Awaited<ReturnType<typeof seedTaskAccess>>;
@@ -28,12 +33,26 @@ describe.each([
       updatedAt: at(minute),
     });
 
+  // Created first, so a write that loses its filter lands here.
+  let decoy: Awaited<ReturnType<typeof comment>>;
+
   beforeEach(async () => {
     repo = make();
     s = await seedTaskAccess(db.prisma8);
+    decoy = await comment(s.otherTask, s.assignee, 'decoy');
+  });
+
+  afterEach(async () => {
+    await expect(
+      db.prisma8.orm.public.TaskComment.first({ id: decoy.id }),
+    ).resolves.toEqual(decoy);
   });
 
   describe('findByTaskIds', () => {
+    it('returns nothing for no ids', async () => {
+      await expect(repo.findByTaskIds([], s.owner)).resolves.toEqual([]);
+    });
+
     it('returns comments of the requested tasks, oldest first', async () => {
       await comment(s.task, s.owner, 'second', 2);
       await comment(s.task, s.assignee, 'first', 1);

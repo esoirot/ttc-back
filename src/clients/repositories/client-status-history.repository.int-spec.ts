@@ -2,6 +2,7 @@ import { at, seedClient, seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ClientStatusHistoryRepository } from './client-status-history.repository';
 import { PrismaClientStatusHistoryRepository } from './prisma-client-status-history.repository';
+import { Prisma8ClientStatusHistoryRepository } from './prisma8-client-status-history.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
@@ -11,6 +12,11 @@ describe.each([
     'prisma7',
     (): ClientStatusHistoryRepository =>
       new PrismaClientStatusHistoryRepository(db.prisma7),
+  ],
+  [
+    'prisma8',
+    (): ClientStatusHistoryRepository =>
+      new Prisma8ClientStatusHistoryRepository(db.prisma8),
   ],
 ])('ClientStatusHistoryRepository (%s)', (_impl, make) => {
   let repo: ClientStatusHistoryRepository;
@@ -39,8 +45,14 @@ describe.each([
   });
 
   describe('findByClientIds', () => {
+    it('returns nothing for no ids', async () => {
+      await expect(repo.findByClientIds([], owner)).resolves.toEqual([]);
+    });
+
     it("returns the history of the user's clients, oldest first, with its author", async () => {
       const foreign = (await seedClient(db.prisma8, stranger)).id;
+      const notRequested = (await seedClient(db.prisma8, owner)).id;
+      await history(notRequested, owner, 'CREATED');
       await history(client, owner, 'CONTACTED', 2);
       await history(client, owner, 'CREATED', 1);
       await history(foreign, stranger, 'CREATED');
