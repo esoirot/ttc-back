@@ -12,7 +12,11 @@ import { CreateCompanyContactInput } from '../dto/create-company-contact.input';
 import { UpdateClientInput } from '../dto/update-client.input';
 import { UpdateCompanyContactInput } from '../dto/update-company-contact.input';
 import { ClientModel, CompanyContactModel } from '../types/client.type';
-import { ClientConnectionModel, ClientRepository } from './client.repository';
+import {
+  ClientConnectionModel,
+  ClientFilters,
+  ClientRepository,
+} from './client.repository';
 
 type Status = ClientModel['status'];
 type Industry = NonNullable<
@@ -133,12 +137,18 @@ export class Prisma8ClientRepository implements ClientRepository {
     userId: number,
     isAdmin: boolean,
     pagination?: { limit?: number; cursor?: number },
-    search?: string,
-    clientType?: string,
-    excludeStatus?: string,
-    status?: string,
-    industry?: string,
+    filters: ClientFilters = {},
   ): Promise<ClientConnectionModel> {
+    const {
+      search,
+      companyName,
+      firstName,
+      lastName,
+      clientType,
+      status,
+      excludeStatus,
+      industry,
+    } = filters;
     const limit = pagination?.limit ?? 20;
     const cursor = pagination?.cursor;
     let base = this.full().where({
@@ -158,8 +168,16 @@ export class Prisma8ClientRepository implements ClientRepository {
         ),
       );
     }
+    if (companyName)
+      base = base.where((c) => c.name.ilike(containsPattern(companyName)));
+    if (firstName)
+      base = base.where((c) => c.firstName.ilike(containsPattern(firstName)));
+    if (lastName)
+      base = base.where((c) => c.lastName.ilike(containsPattern(lastName)));
     if (excludeStatus)
       base = base.where((c) => c.status.neq(excludeStatus as Status));
+    if (clientType === 'INDIVIDUAL')
+      return this.byPersonName(base, limit, cursor);
     const page =
       cursor !== undefined ? base.where((c) => c.id.gt(cursor)) : base;
     const rows = await page
@@ -175,6 +193,35 @@ export class Prisma8ClientRepository implements ClientRepository {
       items,
       nextCursor: hasMore ? items[items.length - 1].id : null,
       total,
+    };
+  }
+
+  /**
+   * People listed by last name, then first name (no last name last, as
+   * Postgres sorts NULLs after values). Paged in memory from the cursor's
+   * position: a keyset cursor can't step past NULL last names, and a user's
+   * individual clients are few.
+   */
+  private async byPersonName(
+    base: ReturnType<Prisma8ClientRepository['full']>,
+    limit: number,
+    cursor: number | undefined,
+  ): Promise<ClientConnectionModel> {
+    const rows = await base
+      .orderBy([
+        (c) => c.lastName.asc(),
+        (c) => c.firstName.asc(),
+        (c) => c.id.asc(),
+      ])
+      .all();
+    const start =
+      cursor === undefined ? 0 : rows.findIndex((r) => r.id === cursor) + 1;
+    const items = rows.slice(start, start + limit).map((r) => this.toModel(r));
+    return {
+      items,
+      nextCursor:
+        start + limit < rows.length ? items[items.length - 1].id : null,
+      total: rows.length,
     };
   }
 

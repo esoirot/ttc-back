@@ -262,6 +262,7 @@ type Client {
   lastName: String
   legalForm: String
   legalName: String
+  linkedinUrl: String
   name: String!
   notes: String
   occupations: [Occupation!]!
@@ -324,6 +325,7 @@ enum ClientStatus {
   FOLLOW_UP_1
   FOLLOW_UP_2
   FOLLOW_UP_3
+  FORMER_CLIENT
   RECONTACT_LATER
   TALKING
   TO_CONTACT
@@ -412,6 +414,7 @@ input CreateClientInput {
   lastName: String
   legalForm: String
   legalName: String
+  linkedinUrl: String
   name: String!
   notes: String
   occupationIds: [Int!]
@@ -516,6 +519,7 @@ input CreateTagInput {
 }
 
 input CreateTaskInput {
+  color: String
   description: String
   dueDate: DateTime
   projectId: Int!
@@ -947,7 +951,7 @@ type Query {
   backupCodeCount: Int!
   client(id: Int!): Client!
   clientRates(clientId: Int!): [ClientRate!]!
-  clients(clientType: ClientType, excludeStatus: ClientStatus, pagination: PaginationInput, search: String, status: ClientStatus): ClientConnection!
+  clients(clientType: ClientType, excludeStatus: ClientStatus, industry: ClientIndustry, pagination: PaginationInput, search: String, status: ClientStatus): ClientConnection!
   dashboard: DashboardData!
   firstTimeEntryStart(projectId: Int): DateTime
   invoice(id: Int!): Invoice!
@@ -1045,6 +1049,7 @@ type Task {
   activities: [TaskActivity!]!
   attachments: [TaskAttachment!]!
   checklistTitles: [String!]!
+  color: String
   comments: [TaskComment!]!
   createdAt: DateTime!
   description: String
@@ -1244,6 +1249,7 @@ input UpdateClientInput {
   lastName: String
   legalForm: String
   legalName: String
+  linkedinUrl: String
   name: String
   notes: String
   occupationIds: [Int!]
@@ -1381,6 +1387,7 @@ input UpdateTagInput {
 }
 
 input UpdateTaskInput {
+  color: String
   description: String
   dueDate: DateTime
   id: Int!

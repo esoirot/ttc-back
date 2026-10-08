@@ -203,77 +203,31 @@ describe('ClientsService', () => {
   });
 
   describe('findAll', () => {
-    it('delegates to repository', async () => {
-      const connection = { edges: [], pageInfo: { hasNextPage: false } };
+    it('passes the page and every filter to the repository', async () => {
+      const connection = { items: [], nextCursor: null, total: 0 };
       repo.findAll.mockResolvedValue(connection);
+      const filters = {
+        search: 'ACME',
+        lastName: 'Curie',
+        industry: ClientIndustry.LEGAL,
+        status: ClientStatus.CLIENT,
+      };
 
-      const result = await service.findAll(
-        1,
-        false,
-        { limit: 10 },
-        'ACME',
-        undefined,
-      );
+      await expect(
+        service.findAll(1, false, { limit: 10 }, filters),
+      ).resolves.toBe(connection);
       expect(repo.findAll).toHaveBeenCalledWith(
         1,
         false,
         { limit: 10 },
-        'ACME',
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-      );
-      expect(result).toEqual(connection);
-    });
-
-    it('passes the industry filter to repository', async () => {
-      repo.findAll.mockResolvedValue({ items: [], nextCursor: null, total: 0 });
-
-      await service.findAll(
-        1,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        ClientIndustry.LEGAL,
-      );
-      expect(repo.findAll).toHaveBeenCalledWith(
-        1,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        ClientIndustry.LEGAL,
+        filters,
       );
     });
 
-    it('passes excludeStatus and status filters to repository', async () => {
+    it('defaults to no filters', async () => {
       repo.findAll.mockResolvedValue({ items: [], nextCursor: null, total: 0 });
-
-      await service.findAll(
-        1,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        ClientStatus.CLIENT,
-        ClientStatus.TO_CONTACT,
-      );
-      expect(repo.findAll).toHaveBeenCalledWith(
-        1,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        ClientStatus.CLIENT,
-        ClientStatus.TO_CONTACT,
-        undefined,
-      );
+      await service.findAll(1, true);
+      expect(repo.findAll).toHaveBeenCalledWith(1, true, undefined, {});
     });
   });
 

@@ -12,6 +12,19 @@ export interface ClientConnectionModel {
 
 type PaginationArgs = { limit?: number; cursor?: number };
 
+export type ClientFilters = {
+  /** Company name, or a person's first or last name (pickers, prospect board). */
+  search?: string;
+  /** The Clients page's per-tab fields, each on its own column. */
+  companyName?: string;
+  firstName?: string;
+  lastName?: string;
+  clientType?: string;
+  status?: string;
+  excludeStatus?: string;
+  industry?: string;
+};
+
 export abstract class ClientRepository {
   abstract findById(id: number, userId: number): Promise<ClientModel>;
   abstract findByHubspotId(
@@ -25,11 +38,7 @@ export abstract class ClientRepository {
     userId: number,
     isAdmin: boolean,
     pagination?: PaginationArgs,
-    search?: string,
-    clientType?: string,
-    excludeStatus?: string,
-    status?: string,
-    industry?: string,
+    filters?: ClientFilters,
   ): Promise<ClientConnectionModel>;
   abstract create(
     userId: number,

@@ -529,6 +529,7 @@ namespace public {
     OTHER = "OTHER"
     TOURISM = "TOURISM"
     LUXE = "LUXE"
+    TRANSLATION_AGENCY = "TRANSLATION_AGENCY"
   }
 
   native_enum ClientStatus {

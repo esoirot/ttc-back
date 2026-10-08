@@ -32,6 +32,7 @@ export enum ClientIndustry {
   REAL_ESTATE = 'REAL_ESTATE',
   TOURISM = 'TOURISM',
   LUXE = 'LUXE',
+  TRANSLATION_AGENCY = 'TRANSLATION_AGENCY',
   OTHER = 'OTHER',
 }
 

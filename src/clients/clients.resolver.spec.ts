@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsResolver } from './clients.resolver';
 import { ClientsService } from './clients.service';
-import { ClientIndustry, ClientStatus, Client } from './entities/client.entity';
+import {
+  ClientIndustry,
+  ClientStatus,
+  ClientType,
+  Client,
+} from './entities/client.entity';
 import { mockClient } from '../__test-helpers__/mock-factories';
 import type { GqlContext } from '../auth/types/gql-context.type';
 
@@ -48,97 +53,61 @@ describe('ClientsResolver', () => {
     expect(resolver).toBeDefined();
   });
 
-  it('findAll — passes isAdmin=false for USER', async () => {
-    const conn = { edges: [] };
-    service.findAll.mockResolvedValue(conn);
+  const noFilters = {
+    search: undefined,
+    companyName: undefined,
+    firstName: undefined,
+    lastName: undefined,
+    clientType: undefined,
+    status: undefined,
+    excludeStatus: undefined,
+    industry: undefined,
+  };
 
-    await resolver.findAll(
-      user,
-      undefined,
-      'ACME',
-      undefined,
-      undefined,
-      undefined,
-    );
-    expect(service.findAll).toHaveBeenCalledWith(
-      1,
-      false,
-      undefined,
-      'ACME',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
+  it('findAll — passes isAdmin=false for USER', async () => {
+    service.findAll.mockResolvedValue({ items: [] });
+    await resolver.findAll(user, undefined, 'ACME');
+    expect(service.findAll).toHaveBeenCalledWith(1, false, undefined, {
+      ...noFilters,
+      search: 'ACME',
+    });
   });
 
   it('findAll — passes isAdmin=true for ADMIN', async () => {
-    service.findAll.mockResolvedValue({ edges: [] });
-
-    await resolver.findAll(
-      adminUser,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
-    expect(service.findAll).toHaveBeenCalledWith(
-      2,
-      true,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
+    service.findAll.mockResolvedValue({ items: [] });
+    await resolver.findAll(adminUser);
+    expect(service.findAll).toHaveBeenCalledWith(2, true, undefined, noFilters);
   });
 
-  it('findAll — passes excludeStatus and status filters through', async () => {
-    service.findAll.mockResolvedValue({ edges: [] });
+  it('findAll — passes every filter through by name', async () => {
+    service.findAll.mockResolvedValue({ items: [] });
 
     await resolver.findAll(
       user,
-      undefined,
-      undefined,
-      undefined,
+      { limit: 5 },
+      'q',
+      ClientType.INDIVIDUAL,
       ClientStatus.CLIENT,
-      ClientStatus.CLIENT,
+      ClientStatus.TO_CONTACT,
+      ClientIndustry.LEGAL,
+      'Acme',
+      'Marie',
+      'Curie',
     );
     expect(service.findAll).toHaveBeenCalledWith(
       1,
       false,
-      undefined,
-      undefined,
-      undefined,
-      ClientStatus.CLIENT,
-      ClientStatus.CLIENT,
-      undefined,
-    );
-  });
-
-  it('findAll — passes the industry filter through', async () => {
-    service.findAll.mockResolvedValue({ edges: [] });
-
-    await resolver.findAll(
-      user,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      ClientIndustry.LEGAL,
-    );
-    expect(service.findAll).toHaveBeenCalledWith(
-      1,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      ClientIndustry.LEGAL,
+      { limit: 5 },
+      {
+        search: 'q',
+        clientType: ClientType.INDIVIDUAL,
+        excludeStatus: ClientStatus.CLIENT,
+        status: ClientStatus.TO_CONTACT,
+        industry: ClientIndustry.LEGAL,
+        companyName: 'Acme',
+        firstName: 'Marie',
+        lastName: 'Curie',
+      },
     );
   });
 

@@ -140,51 +140,36 @@ describe('ClientsResolver (e2e)', () => {
     expect(body.data?.clients.items).toHaveLength(1);
   });
 
-  it('clients — passes isAdmin=false for USER', async () => {
+  it('clients — passes isAdmin=false for USER, no filters', async () => {
     await gql(`{ clients { items { id } total nextCursor } }`);
     expect(service.findAll).toHaveBeenCalledWith(
       1,
       false,
       undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
+      expect.objectContaining({ search: undefined, industry: undefined }),
     );
   });
 
-  it('clients — passes the industry filter through', async () => {
+  it('clients — passes industry, status and the per-tab name filters through', async () => {
     await gql(
-      `query($industry: ClientIndustry) { clients(industry: $industry) { items { id } total nextCursor } }`,
-      { industry: 'LEGAL' },
+      `query($industry: ClientIndustry, $status: ClientStatus) {
+        clients(industry: $industry, status: $status, companyName: "Acme", lastName: "Curie", firstName: "Marie") {
+          items { id } total nextCursor
+        }
+      }`,
+      { industry: 'LEGAL', status: 'CLIENT' },
     );
     expect(service.findAll).toHaveBeenCalledWith(
       1,
       false,
       undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      'LEGAL',
-    );
-  });
-
-  it('clients — passes status and excludeStatus filters through', async () => {
-    await gql(
-      `query($status: ClientStatus, $excludeStatus: ClientStatus) { clients(status: $status, excludeStatus: $excludeStatus) { items { id } total nextCursor } }`,
-      { status: 'CLIENT', excludeStatus: undefined },
-    );
-    expect(service.findAll).toHaveBeenCalledWith(
-      1,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      'CLIENT',
-      undefined,
+      expect.objectContaining({
+        industry: 'LEGAL',
+        status: 'CLIENT',
+        companyName: 'Acme',
+        lastName: 'Curie',
+        firstName: 'Marie',
+      }),
     );
   });
 

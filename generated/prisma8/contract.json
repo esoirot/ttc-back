@@ -5276,7 +5276,8 @@
                 "REAL_ESTATE",
                 "OTHER",
                 "TOURISM",
-                "LUXE"
+                "LUXE",
+                "TRANSLATION_AGENCY"
               ],
               "typeName": "ClientIndustry"
             },
@@ -8944,7 +8945,8 @@
                 "REAL_ESTATE",
                 "OTHER",
                 "TOURISM",
-                "LUXE"
+                "LUXE",
+                "TRANSLATION_AGENCY"
               ]
             },
             "ClientStatus": {
@@ -9037,7 +9039,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b17559345c1650aa2fdd923dab62fbf7c6b3a7e139fb8ab5bb16a06aa65ebe87"
+    "storageHash": "508b4261cd40679046ee84df40df2ed8d6e24364a87516997fa8b6f712f7abca"
   },
   "capabilities": {
     "postgres": {

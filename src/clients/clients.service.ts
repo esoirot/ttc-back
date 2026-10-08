@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ClientRepository,
   ClientConnectionModel,
+  ClientFilters,
 } from './repositories/client.repository';
 import { AuditService } from '../audit/audit.service';
 import { ClientStatusHistoryService } from './client-status-history.service';
@@ -10,11 +11,7 @@ import { CreateClientInput } from './dto/create-client.input';
 import { UpdateClientInput } from './dto/update-client.input';
 import { CreateCompanyContactInput } from './dto/create-company-contact.input';
 import { UpdateCompanyContactInput } from './dto/update-company-contact.input';
-import {
-  ClientIndustry,
-  ClientType,
-  ClientStatus,
-} from './entities/client.entity';
+import { ClientStatus } from './entities/client.entity';
 
 @Injectable()
 export class ClientsService {
@@ -28,22 +25,9 @@ export class ClientsService {
     userId: number,
     isAdmin: boolean,
     pagination?: { limit?: number; cursor?: number },
-    search?: string,
-    clientType?: ClientType,
-    excludeStatus?: ClientStatus,
-    status?: ClientStatus,
-    industry?: ClientIndustry,
+    filters: ClientFilters = {},
   ): Promise<ClientConnectionModel> {
-    return this.repo.findAll(
-      userId,
-      isAdmin,
-      pagination,
-      search,
-      clientType,
-      excludeStatus,
-      status,
-      industry,
-    );
+    return this.repo.findAll(userId, isAdmin, pagination, filters);
   }
 
   findOne(id: number, userId: number): Promise<ClientModel> {

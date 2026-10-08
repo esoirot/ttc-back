@@ -8,7 +8,11 @@ import {
   seedUser,
 } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
-import { ClientStatus, ClientType } from '../entities/client.entity';
+import {
+  ClientIndustry,
+  ClientStatus,
+  ClientType,
+} from '../entities/client.entity';
 import { ClientRepository } from './client.repository';
 import { Prisma8ClientRepository } from './prisma8-client.repository';
 
@@ -169,11 +173,90 @@ describe.each([
         lastName: 'Acmeville',
       });
       const search = (q: string) =>
-        repo.findAll(owner, false, undefined, q).then(ids);
+        repo.findAll(owner, false, undefined, { search: q }).then(ids);
 
       await expect(search('curie')).resolves.toEqual([marie.id]);
       await expect(search('MARIE')).resolves.toEqual([marie.id]);
       await expect(search('acme')).resolves.toEqual([acme.id, pierre.id]);
+    });
+
+    it('filters companies by name, people by last and first name', async () => {
+      const acme = await seedClient(db.prisma8, owner, { name: 'Acme' });
+      await seedClient(db.prisma8, owner, { name: 'Globex' });
+      const person = (firstName: string, lastName: string) =>
+        seedClient(db.prisma8, owner, {
+          name: `${firstName} ${lastName}`,
+          clientType: 'INDIVIDUAL',
+          firstName,
+          lastName,
+        });
+      const marieCurie = await person('Marie', 'Curie');
+      const pierreCurie = await person('Pierre', 'Curie');
+      await person('Marie', 'Dupont');
+      const find = (filters: Parameters<ClientRepository['findAll']>[3]) =>
+        repo.findAll(owner, false, undefined, filters).then(ids);
+
+      await expect(find({ companyName: 'ACM' })).resolves.toEqual([acme.id]);
+      await expect(find({ lastName: 'curie' })).resolves.toEqual([
+        marieCurie.id,
+        pierreCurie.id,
+      ]);
+      await expect(
+        find({ lastName: 'curie', firstName: 'MARIE' }),
+      ).resolves.toEqual([marieCurie.id]);
+    });
+
+    it('lists individuals by last name then first name, no last name last, across pages', async () => {
+      const person = (firstName: string, lastName: string | null) =>
+        seedClient(db.prisma8, owner, {
+          name: firstName,
+          clientType: 'INDIVIDUAL',
+          firstName,
+          lastName,
+        });
+      const carl = await person('Carl', null);
+      const anne = await person('Anne', 'Martin');
+      const zoe = await person('Zoé', 'Abel');
+      const bob = await person('Bob', 'Abel');
+      const dan = await person('Dan', null);
+      await seedClient(db.prisma8, owner, { name: 'A company' });
+
+      const seen: number[] = [];
+      let cursor: number | undefined;
+      for (let i = 0; i < 10; i++) {
+        const page = await repo.findAll(
+          owner,
+          false,
+          { limit: 2, cursor },
+          { clientType: 'INDIVIDUAL' },
+        );
+        seen.push(...ids(page));
+        expect(page.total).toBe(5);
+        if (page.nextCursor === null) break;
+        cursor = page.nextCursor;
+      }
+      expect(seen).toEqual([bob.id, zoe.id, anne.id, carl.id, dan.id]);
+    });
+
+    it('has no next cursor when the last page of people holds exactly the limit', async () => {
+      for (const lastName of ['Abel', 'Brun'])
+        await seedClient(db.prisma8, owner, {
+          name: lastName,
+          clientType: 'INDIVIDUAL',
+          firstName: 'X',
+          lastName,
+        });
+      await expect(
+        repo.findAll(owner, false, { limit: 2 }, { clientType: 'INDIVIDUAL' }),
+      ).resolves.toMatchObject({ nextCursor: null, total: 2 });
+    });
+
+    it('stores the Translation agency industry', async () => {
+      const client = await repo.create(owner, {
+        name: 'Lingua',
+        industry: ClientIndustry.TRANSLATION_AGENCY,
+      });
+      expect(client.industry).toBe('TRANSLATION_AGENCY');
     });
 
     it('filters by industry, together with the other filters', async () => {
@@ -193,16 +276,10 @@ describe.each([
 
       await expect(
         repo
-          .findAll(
-            owner,
-            false,
-            undefined,
-            'law',
-            undefined,
-            undefined,
-            undefined,
-            'LEGAL',
-          )
+          .findAll(owner, false, undefined, {
+            search: 'law',
+            industry: 'LEGAL',
+          })
           .then(ids),
       ).resolves.toEqual([legal.id]);
     });
@@ -217,21 +294,11 @@ describe.each([
 
       // The Clients page asks for status CLIENT, /prospects for "not CLIENT".
       await expect(
-        repo
-          .findAll(
-            owner,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            'CLIENT',
-          )
-          .then(ids),
+        repo.findAll(owner, false, undefined, { status: 'CLIENT' }).then(ids),
       ).resolves.toEqual([current.id]);
       await expect(
         repo
-          .findAll(owner, false, undefined, undefined, undefined, 'CLIENT')
+          .findAll(owner, false, undefined, { excludeStatus: 'CLIENT' })
           .then(ids),
       ).resolves.toEqual([former.id]);
     });
@@ -248,29 +315,21 @@ describe.each([
       const other = await seedClient(db.prisma8, owner, { name: 'Other' });
 
       await expect(
-        repo.findAll(owner, false, undefined, 'ACME').then(ids),
+        repo.findAll(owner, false, undefined, { search: 'ACME' }).then(ids),
       ).resolves.toEqual([acme.id, jane.id]);
       await expect(
         repo
-          .findAll(owner, false, undefined, undefined, 'INDIVIDUAL')
+          .findAll(owner, false, undefined, { clientType: 'INDIVIDUAL' })
           .then(ids),
       ).resolves.toEqual([jane.id]);
       await expect(
         repo
-          .findAll(
-            owner,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            'TO_CONTACT',
-          )
+          .findAll(owner, false, undefined, { status: 'TO_CONTACT' })
           .then(ids),
       ).resolves.toEqual([acme.id]);
       await expect(
         repo
-          .findAll(owner, false, undefined, undefined, undefined, 'TO_CONTACT')
+          .findAll(owner, false, undefined, { excludeStatus: 'TO_CONTACT' })
           .then(ids),
       ).resolves.toEqual([jane.id, other.id]);
     });
