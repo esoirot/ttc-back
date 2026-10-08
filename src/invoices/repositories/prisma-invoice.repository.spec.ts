@@ -38,7 +38,7 @@ function makeInvoiceRow(overrides: Record<string, unknown> = {}) {
 describe('PrismaInvoiceRepository', () => {
   let repo: PrismaInvoiceRepository;
   let prisma: {
-    project: { findUnique: jest.Mock };
+    project: { findFirst: jest.Mock };
     timeEntry: {
       findMany: jest.Mock;
       findFirst: jest.Mock;
@@ -52,7 +52,7 @@ describe('PrismaInvoiceRepository', () => {
 
   beforeEach(() => {
     prisma = {
-      project: { findUnique: jest.fn() },
+      project: { findFirst: jest.fn() },
       timeEntry: {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn(),
@@ -68,7 +68,7 @@ describe('PrismaInvoiceRepository', () => {
 
   describe('generate', () => {
     it('only selects billable entries with invoicingStatus NO for hourly line items', async () => {
-      prisma.project.findUnique.mockResolvedValue({
+      prisma.project.findFirst.mockResolvedValue({
         fixedFee: null,
         hourlyRate: { toNumber: () => 50 },
         perWordRate: null,
@@ -90,7 +90,7 @@ describe('PrismaInvoiceRepository', () => {
     });
 
     it('marks every consumed time entry INVOICED in the same transaction as invoice creation', async () => {
-      prisma.project.findUnique.mockResolvedValue({
+      prisma.project.findFirst.mockResolvedValue({
         fixedFee: null,
         hourlyRate: { toNumber: () => 50 },
         perWordRate: null,
@@ -113,7 +113,7 @@ describe('PrismaInvoiceRepository', () => {
     });
 
     it('does not touch timeEntry when no entries are consumed', async () => {
-      prisma.project.findUnique.mockResolvedValue({
+      prisma.project.findFirst.mockResolvedValue({
         fixedFee: { toNumber: () => 300 },
         hourlyRate: null,
         perWordRate: null,

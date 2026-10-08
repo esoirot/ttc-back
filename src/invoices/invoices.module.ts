@@ -3,8 +3,7 @@ import { InvoicesService } from './invoices.service';
 import { InvoicesResolver } from './invoices.resolver';
 import { InvoicesController } from './invoices.controller';
 import { InvoiceRepository } from './repositories/invoice.repository';
-import { PrismaInvoiceRepository } from './repositories/prisma-invoice.repository';
-import { PrismaService } from '../prisma.service';
+import { Prisma8InvoiceRepository } from './repositories/prisma8-invoice.repository';
 import { AuditModule } from '../audit/audit.module';
 import { ClientsModule } from '../clients/clients.module';
 import { UsersModule } from '../users/users.module';
@@ -14,9 +13,7 @@ import { UsersModule } from '../users/users.module';
   providers: [
     InvoicesResolver,
     InvoicesService,
-    PrismaService,
-    PrismaInvoiceRepository,
-    { provide: InvoiceRepository, useClass: PrismaInvoiceRepository },
+    { provide: InvoiceRepository, useClass: Prisma8InvoiceRepository },
   ],
   controllers: [InvoicesController],
 })

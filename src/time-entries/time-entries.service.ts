@@ -7,14 +7,12 @@ import { TimeEntryModel } from './types/time-entry.type';
 import { CreateTimeEntryInput } from './dto/create-time-entry.input';
 import { StartTimerInput } from './dto/start-timer.input';
 import { UpdateTimeEntryInput } from './dto/update-time-entry.input';
-import { PrismaService } from '../prisma.service';
 import { ActivitiesService } from '../tasks/activities.service';
 
 @Injectable()
 export class TimeEntriesService {
   constructor(
     private readonly repo: TimeEntryRepository,
-    private readonly prisma: PrismaService,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -75,12 +73,7 @@ export class TimeEntriesService {
     projectId: number | undefined,
   ): Promise<number | null> {
     if (!projectId) return null;
-    const first = await this.prisma.projectOccupation.findFirst({
-      where: { projectId },
-      orderBy: { occupationId: 'asc' },
-      select: { occupationId: true },
-    });
-    return first?.occupationId ?? null;
+    return this.repo.findDefaultOccupationId(projectId);
   }
 
   async create(
@@ -88,10 +81,8 @@ export class TimeEntriesService {
     input: CreateTimeEntryInput,
   ): Promise<TimeEntryModel> {
     if (input.subtaskId && !input.taskId) {
-      const sub = await this.prisma.subtask.findUnique({
-        where: { id: input.subtaskId },
-      });
-      if (sub) input.taskId = sub.taskId;
+      input.taskId =
+        (await this.repo.findSubtaskTaskId(input.subtaskId)) ?? undefined;
     }
     if (input.occupationId === undefined) {
       input.occupationId = await this.resolveDefaultOccupationId(
@@ -106,10 +97,8 @@ export class TimeEntriesService {
     input: StartTimerInput,
   ): Promise<TimeEntryModel> {
     if (input.subtaskId && !input.taskId) {
-      const sub = await this.prisma.subtask.findUnique({
-        where: { id: input.subtaskId },
-      });
-      if (sub) input.taskId = sub.taskId;
+      input.taskId =
+        (await this.repo.findSubtaskTaskId(input.subtaskId)) ?? undefined;
     }
     if (input.occupationId === undefined) {
       input.occupationId = await this.resolveDefaultOccupationId(

@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TimeEntriesService } from './time-entries.service';
 import { TimeEntryRepository } from './repositories/time-entry.repository';
-import { PrismaService } from '../prisma.service';
 import { ActivitiesService } from '../tasks/activities.service';
 import { mockTimeEntry } from '../__test-helpers__/mock-factories';
 
@@ -19,14 +18,12 @@ describe('TimeEntriesService', () => {
     resumeEntry: jest.Mock;
     delete: jest.Mock;
     existsByClockifyEntryId: jest.Mock;
+    findSubtaskTaskId: jest.Mock;
+    findDefaultOccupationId: jest.Mock;
   };
   let activitiesService: {
     logForTimeEntry: jest.Mock;
     findByTimeEntry: jest.Mock;
-  };
-  let prisma: {
-    subtask: { findUnique: jest.Mock };
-    projectOccupation: { findFirst: jest.Mock };
   };
 
   beforeEach(async () => {
@@ -42,21 +39,18 @@ describe('TimeEntriesService', () => {
       resumeEntry: jest.fn(),
       delete: jest.fn(),
       existsByClockifyEntryId: jest.fn(),
+      findSubtaskTaskId: jest.fn().mockResolvedValue(null),
+      findDefaultOccupationId: jest.fn().mockResolvedValue(null),
     };
     activitiesService = {
       logForTimeEntry: jest.fn().mockResolvedValue(undefined),
       findByTimeEntry: jest.fn(),
-    };
-    prisma = {
-      subtask: { findUnique: jest.fn() },
-      projectOccupation: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TimeEntriesService,
         { provide: TimeEntryRepository, useValue: repo },
-        { provide: PrismaService, useValue: prisma },
         { provide: ActivitiesService, useValue: activitiesService },
       ],
     }).compile();
@@ -88,7 +82,7 @@ describe('TimeEntriesService', () => {
     });
 
     it("defaults occupationId to the project's lowest-id occupation when omitted", async () => {
-      prisma.projectOccupation.findFirst.mockResolvedValue({ occupationId: 3 });
+      repo.findDefaultOccupationId.mockResolvedValue(3);
       repo.create.mockResolvedValue(mockTimeEntry());
 
       await service.create(1, {
@@ -97,11 +91,7 @@ describe('TimeEntriesService', () => {
         endTime: new Date('2024-01-01T10:00:00Z'),
       });
 
-      expect(prisma.projectOccupation.findFirst).toHaveBeenCalledWith({
-        where: { projectId: 7 },
-        orderBy: { occupationId: 'asc' },
-        select: { occupationId: true },
-      });
+      expect(repo.findDefaultOccupationId).toHaveBeenCalledWith(7);
       expect(repo.create).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ occupationId: 3 }),
@@ -116,7 +106,7 @@ describe('TimeEntriesService', () => {
         endTime: new Date('2024-01-01T10:00:00Z'),
       });
 
-      expect(prisma.projectOccupation.findFirst).not.toHaveBeenCalled();
+      expect(repo.findDefaultOccupationId).not.toHaveBeenCalled();
       expect(repo.create).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ occupationId: null }),
@@ -124,7 +114,7 @@ describe('TimeEntriesService', () => {
     });
 
     it('leaves occupationId null when the project has no occupations', async () => {
-      prisma.projectOccupation.findFirst.mockResolvedValue(null);
+      repo.findDefaultOccupationId.mockResolvedValue(null);
       repo.create.mockResolvedValue(mockTimeEntry());
 
       await service.create(1, {
@@ -149,7 +139,7 @@ describe('TimeEntriesService', () => {
         endTime: new Date('2024-01-01T10:00:00Z'),
       });
 
-      expect(prisma.projectOccupation.findFirst).not.toHaveBeenCalled();
+      expect(repo.findDefaultOccupationId).not.toHaveBeenCalled();
       expect(repo.create).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ occupationId: 42 }),
@@ -158,6 +148,19 @@ describe('TimeEntriesService', () => {
   });
 
   describe('startTimer', () => {
+    it('keeps an explicit task even when a subtask is given', async () => {
+      repo.findSubtaskTaskId.mockResolvedValue(99);
+      repo.startTimer.mockResolvedValue(mockTimeEntry({ endTime: null }));
+
+      await service.startTimer(1, { taskId: 5, subtaskId: 7 });
+
+      expect(repo.findSubtaskTaskId).not.toHaveBeenCalled();
+      expect(repo.startTimer).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ taskId: 5 }),
+      );
+    });
+
     it('delegates to repository', async () => {
       const entry = mockTimeEntry({ endTime: null });
       repo.startTimer.mockResolvedValue(entry);
@@ -171,16 +174,12 @@ describe('TimeEntriesService', () => {
     });
 
     it("defaults occupationId to the project's lowest-id occupation when omitted", async () => {
-      prisma.projectOccupation.findFirst.mockResolvedValue({ occupationId: 3 });
+      repo.findDefaultOccupationId.mockResolvedValue(3);
       repo.startTimer.mockResolvedValue(mockTimeEntry({ endTime: null }));
 
       await service.startTimer(1, { projectId: 7 });
 
-      expect(prisma.projectOccupation.findFirst).toHaveBeenCalledWith({
-        where: { projectId: 7 },
-        orderBy: { occupationId: 'asc' },
-        select: { occupationId: true },
-      });
+      expect(repo.findDefaultOccupationId).toHaveBeenCalledWith(7);
       expect(repo.startTimer).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ occupationId: 3 }),
@@ -192,7 +191,7 @@ describe('TimeEntriesService', () => {
 
       await service.startTimer(1, { projectId: 7, occupationId: 42 });
 
-      expect(prisma.projectOccupation.findFirst).not.toHaveBeenCalled();
+      expect(repo.findDefaultOccupationId).not.toHaveBeenCalled();
       expect(repo.startTimer).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ occupationId: 42 }),
@@ -500,6 +499,16 @@ describe('TimeEntriesService', () => {
       expect(repo.create).not.toHaveBeenCalled();
     });
 
+    it('skips a zero-length entry', async () => {
+      repo.existsByClockifyEntryId.mockResolvedValue(false);
+
+      const result = await service.importEntries(1, [
+        makeEntry('empty', '2024-01-01T10:00:00Z', '2024-01-01T10:00:00Z'),
+      ]);
+
+      expect(result).toEqual({ imported: 0, skipped: 1 });
+    });
+
     it('returns zeros when entries array is empty', async () => {
       const result = await service.importEntries(1, []);
       expect(result).toEqual({ imported: 0, skipped: 0 });
@@ -523,6 +532,48 @@ describe('TimeEntriesService', () => {
           endTime: new Date('2024-01-01T10:30:00Z'),
         }),
       );
+    });
+  });
+
+  describe('read pass-throughs', () => {
+    it('return what the repository returns, for the same arguments', async () => {
+      const page = { items: [], nextCursor: null, total: 0 };
+      const sums = new Map([[1, 60]]);
+      repo.findAll.mockResolvedValue(page);
+      const r = repo as unknown as Record<string, jest.Mock>;
+      for (const m of [
+        'sumDurationByTaskIds',
+        'sumDurationByProjectIds',
+        'sumWordsProcessedByTaskIds',
+        'sumWordsProcessedByProjectIds',
+      ]) {
+        r[m] = jest.fn().mockResolvedValue(sums);
+      }
+
+      await expect(
+        service.findAll(1, { projectId: 2 }, { limit: 5 }),
+      ).resolves.toBe(page);
+      expect(repo.findAll).toHaveBeenCalledWith(
+        1,
+        { projectId: 2 },
+        { limit: 5 },
+      );
+      await expect(service.getTotalDurationByTaskIds([3], 1)).resolves.toBe(
+        sums,
+      );
+      expect(r.sumDurationByTaskIds).toHaveBeenCalledWith([3], 1);
+      await expect(service.getTotalDurationByProjectIds([4], 1)).resolves.toBe(
+        sums,
+      );
+      expect(r.sumDurationByProjectIds).toHaveBeenCalledWith([4], 1);
+      await expect(
+        service.getTotalWordsProcessedByTaskIds([5], 1),
+      ).resolves.toBe(sums);
+      expect(r.sumWordsProcessedByTaskIds).toHaveBeenCalledWith([5], 1);
+      await expect(
+        service.getTotalWordsProcessedByProjectIds([6], 1),
+      ).resolves.toBe(sums);
+      expect(r.sumWordsProcessedByProjectIds).toHaveBeenCalledWith([6], 1);
     });
   });
 });

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { AdminRepository } from './admin.repository';
+import { releaseTimeEntries } from '../../invoices/repositories/prisma-invoice.repository';
 import {
   AdminStatsModel,
   AdminClientModel,
@@ -548,7 +549,13 @@ export class PrismaAdminRepository implements AdminRepository {
     if (invoice.status !== 'DRAFT') {
       throw new BadRequestException('Only DRAFT invoices can be deleted');
     }
-    await this.prisma.invoice.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      const removed = await tx.invoice.delete({
+        where: { id },
+        include: { items: true },
+      });
+      await releaseTimeEntries(tx, removed.items);
+    });
     return { id };
   }
 

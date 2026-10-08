@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common';
 import { AdminResolver } from './admin.resolver';
 import { AdminService } from './admin.service';
 import { AdminRepository } from './repositories/admin.repository';
-import { PrismaAdminRepository } from './repositories/prisma-admin.repository';
-import { PrismaService } from '../prisma.service';
+import { Prisma8AdminRepository } from './repositories/prisma8-admin.repository';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
@@ -11,8 +10,7 @@ import { AuditModule } from '../audit/audit.module';
   providers: [
     AdminResolver,
     AdminService,
-    { provide: AdminRepository, useClass: PrismaAdminRepository },
-    PrismaService,
+    { provide: AdminRepository, useClass: Prisma8AdminRepository },
   ],
 })
 export class AdminModule {}

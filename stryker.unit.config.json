@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "jest",
+  "jest": {
+    "enableFindRelatedTests": true
+  },
+  "concurrency": 4,
+  "incremental": true,
+  "incrementalFile": ".stryker-tmp/incremental-unit.json",
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress"],
+  "timeoutMS": 60000,
+  "tsconfigFile": "tsconfig.stryker-unused.json",
+  "plugins": ["@stryker-mutator/jest-runner"]
+}

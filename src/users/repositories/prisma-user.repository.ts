@@ -79,10 +79,12 @@ export class PrismaUserRepository implements UserRepository {
 
   async update(id: number, data: UpdateUserInput): Promise<UserModel> {
     try {
-      return await this.prisma.user.update({
-        where: { id },
-        data,
-      });
+      return this.decryptUser(
+        await this.prisma.user.update({
+          where: { id },
+          data,
+        }),
+      );
     } catch {
       throw new NotFoundException(`User with id ${id} not found`);
     }
@@ -94,10 +96,12 @@ export class PrismaUserRepository implements UserRepository {
         ...data,
         clockifyApiKey: this.encryptField(data.clockifyApiKey),
       };
-      return await this.prisma.user.update({
-        where: { id },
-        data: encrypted,
-      });
+      return this.decryptUser(
+        await this.prisma.user.update({
+          where: { id },
+          data: encrypted,
+        }),
+      );
     } catch {
       throw new NotFoundException(`User with id ${id} not found`);
     }
@@ -110,10 +114,12 @@ export class PrismaUserRepository implements UserRepository {
         hubspotAccessToken: this.encryptField(data.hubspotAccessToken),
         hubspotRefreshToken: this.encryptField(data.hubspotRefreshToken),
       };
-      return await this.prisma.user.update({
-        where: { id },
-        data: encrypted,
-      });
+      return this.decryptUser(
+        await this.prisma.user.update({
+          where: { id },
+          data: encrypted,
+        }),
+      );
     } catch {
       throw new NotFoundException(`User with id ${id} not found`);
     }
@@ -133,10 +139,12 @@ export class PrismaUserRepository implements UserRepository {
           data.googleCalendarRefreshToken,
         ),
       };
-      return await this.prisma.user.update({
-        where: { id },
-        data: encrypted,
-      });
+      return this.decryptUser(
+        await this.prisma.user.update({
+          where: { id },
+          data: encrypted,
+        }),
+      );
     } catch {
       throw new NotFoundException(`User with id ${id} not found`);
     }
@@ -144,9 +152,11 @@ export class PrismaUserRepository implements UserRepository {
 
   async delete(id: number): Promise<UserModel> {
     try {
-      return await this.prisma.user.delete({
-        where: { id },
-      });
+      return this.decryptUser(
+        await this.prisma.user.delete({
+          where: { id },
+        }),
+      );
     } catch {
       throw new NotFoundException(`User with id ${id} not found`);
     }

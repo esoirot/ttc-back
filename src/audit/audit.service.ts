@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/client.js';
-import { PrismaService } from '../prisma.service.js';
+import { Prisma8Service } from '../prisma8/prisma8.service.js';
+import { fromDb } from '../prisma8/timestamp.js';
 
 type AuditLogPayload = object;
 
@@ -18,7 +18,7 @@ type AuditLogEntry = {
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly db: Prisma8Service) {}
 
   log(
     userId: number,
@@ -26,23 +26,14 @@ export class AuditService {
     resource: string,
     payload?: AuditLogPayload,
   ): void {
-    void this.prisma.auditLog
-      .create({
-        data: {
-          userId,
-          action,
-          resource,
-          ...(payload !== undefined
-            ? {
-                payload:
-                  payload as unknown as Prisma.NullableJsonNullValueInput,
-              }
-            : {}),
-        },
-      })
-      .catch((err: unknown) => {
-        this.logger.error('Audit log write failed', String(err));
-      });
+    void this.db.orm.public.AuditLog.create({
+      userId,
+      action,
+      resource,
+      payload: payload as never,
+    }).catch((err: unknown) => {
+      this.logger.error('Audit log write failed', String(err));
+    });
   }
 
   async findAll(opts: {
@@ -51,18 +42,22 @@ export class AuditService {
     limit?: number;
   }): Promise<{ items: AuditLogEntry[]; nextCursor: number | null }> {
     const limit = opts.limit ?? 50;
-    const rows = await this.prisma.auditLog.findMany({
-      where: {
-        ...(opts.userId !== undefined ? { userId: opts.userId } : {}),
-        ...(opts.cursor !== undefined ? { id: { lt: opts.cursor } } : {}),
-      },
-      orderBy: { id: 'desc' },
-      take: limit + 1,
-      include: { user: { select: { email: true } } },
-    });
+    let query = this.db.orm.public.AuditLog.where({ userId: opts.userId });
+    if (opts.cursor !== undefined) {
+      const cursor = opts.cursor;
+      query = query.where((l) => l.id.lt(cursor));
+    }
+    const rows = await query
+      .include('user', (u) => u.select('email'))
+      .orderBy((l) => l.id.desc())
+      .limit(limit + 1)
+      .all();
     const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const nextCursor = hasMore ? (items[items.length - 1]?.id ?? null) : null;
-    return { items, nextCursor };
+    const items = (hasMore ? rows.slice(0, limit) : rows).map((r) => ({
+      ...r,
+      createdAt: fromDb(r.createdAt),
+      user: r.user!,
+    }));
+    return { items, nextCursor: hasMore ? items[items.length - 1].id : null };
   }
 }

@@ -417,7 +417,7 @@ model Invoice {
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   clientId  Int?
   client    Client?       @relation(fields: [clientId], references: [id])
-  number    String        @unique
+  number    String
   status    InvoiceStatus @default(DRAFT)
   currency  String        @default("EUR")
   issuedAt  DateTime?
@@ -427,6 +427,7 @@ model Invoice {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   items     InvoiceItem[]
+  @@unique([userId, number])
 }
 
 model InvoiceItem {

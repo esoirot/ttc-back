@@ -19,6 +19,7 @@ import { GenerateInvoiceInput } from '../dto/generate-invoice.input';
 import {
   InvoiceStatus as PrismaInvoiceStatus,
   InvoicingStatus,
+  Prisma,
 } from '../../generated/prisma/client';
 import { InvoiceStatus } from '../entities/invoice.entity';
 
@@ -78,16 +79,38 @@ function invoiceToModel(inv: {
   };
 }
 
+/** Time entries billed by removed invoice lines become billable again. */
+export async function releaseTimeEntries(
+  tx: Pick<Prisma.TransactionClient, 'timeEntry'>,
+  items: { timeEntryId: number | null }[],
+): Promise<void> {
+  const ids = items.flatMap((i) =>
+    i.timeEntryId === null ? [] : [i.timeEntryId],
+  );
+  if (ids.length === 0) return;
+  await tx.timeEntry.updateMany({
+    where: { id: { in: ids } },
+    data: { invoicingStatus: InvoicingStatus.NO },
+  });
+}
+
 @Injectable()
 export class PrismaInvoiceRepository implements InvoiceRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async nextNumber(userId: number): Promise<string> {
-    const year = new Date().getFullYear();
-    const count = await this.prisma.invoice.count({
-      where: { userId, number: { startsWith: `INV-${year}-` } },
+    const prefix = `INV-${new Date().getFullYear()}-`;
+    const rows = await this.prisma.invoice.findMany({
+      where: { userId, number: { startsWith: prefix } },
+      select: { number: true },
     });
-    return `INV-${year}-${String(count + 1).padStart(3, '0')}`;
+    // Highest + 1, not count + 1: a deleted draft must not free a number
+    // that a later invoice still holds.
+    const highest = Math.max(
+      0,
+      ...rows.map((r) => Number(r.number.slice(prefix.length)) || 0),
+    );
+    return `${prefix}${String(highest + 1).padStart(3, '0')}`;
   }
 
   async findById(id: number, userId: number): Promise<InvoiceModel> {
@@ -162,8 +185,8 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     number: string,
     data: GenerateInvoiceInput,
   ): Promise<InvoiceModel> {
-    const project = await this.prisma.project.findUnique({
-      where: { id: data.projectId },
+    const project = await this.prisma.project.findFirst({
+      where: { id: data.projectId, userId },
       select: {
         fixedFee: true,
         hourlyRate: true,
@@ -172,12 +195,15 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         unitPrice: true,
       },
     });
+    if (!project) {
+      throw new NotFoundException(`Project ${data.projectId} not found`);
+    }
 
-    const fixedFee = project?.fixedFee?.toNumber() ?? null;
+    const fixedFee = project.fixedFee?.toNumber() ?? null;
     const hourlyRate =
-      project?.hourlyRate?.toNumber() ?? project?.unitPrice?.toNumber() ?? null;
-    const perWordRate = project?.perWordRate?.toNumber() ?? null;
-    const wordCount = project?.wordCount ?? 0;
+      project.hourlyRate?.toNumber() ?? project.unitPrice?.toNumber() ?? null;
+    const perWordRate = project.perWordRate?.toNumber() ?? null;
+    const wordCount = project.wordCount ?? 0;
 
     type ItemCreate = {
       projectId: number;
@@ -304,9 +330,13 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     if (!inv) throw new NotFoundException(`Invoice ${id} not found`);
     if (inv.status !== 'DRAFT')
       throw new BadRequestException('Only DRAFT invoices can be deleted');
-    const deleted = await this.prisma.invoice.delete({
-      where: { id },
-      include: { items: true },
+    const deleted = await this.prisma.$transaction(async (tx) => {
+      const removed = await tx.invoice.delete({
+        where: { id },
+        include: { items: true },
+      });
+      await releaseTimeEntries(tx, removed.items);
+      return removed;
     });
     return invoiceToModel(deleted);
   }
@@ -388,7 +418,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       where: { id, invoice: { userId } },
     });
     if (!item) throw new NotFoundException(`InvoiceItem ${id} not found`);
-    await this.prisma.invoiceItem.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.invoiceItem.delete({ where: { id } });
+      await releaseTimeEntries(tx, [item]);
+    });
     return true;
   }
 }

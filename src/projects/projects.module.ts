@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { ProjectsResolver } from './projects.resolver';
 import { ProjectRepository } from './repositories/projects.repository';
-import { PrismaProjectRepository } from './repositories/prisma-project.repository';
-import { PrismaService } from '../prisma.service';
+import { Prisma8ProjectRepository } from './repositories/prisma8-project.repository';
 import { AuditModule } from '../audit/audit.module';
 import { ClientsModule } from '../clients/clients.module';
 
@@ -12,9 +11,7 @@ import { ClientsModule } from '../clients/clients.module';
   providers: [
     ProjectsResolver,
     ProjectsService,
-    PrismaService,
-    PrismaProjectRepository,
-    { provide: ProjectRepository, useClass: PrismaProjectRepository },
+    { provide: ProjectRepository, useClass: Prisma8ProjectRepository },
   ],
   exports: [ProjectsService],
 })

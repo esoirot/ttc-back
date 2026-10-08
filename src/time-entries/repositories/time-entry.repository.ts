@@ -30,6 +30,10 @@ export abstract class TimeEntryRepository {
     pagination?: PaginationArgs,
   ): Promise<TimeEntryConnectionModel>;
   abstract findActive(userId: number): Promise<TimeEntryModel | null>;
+  /** The task a subtask belongs to, null when the subtask does not exist. */
+  abstract findSubtaskTaskId(subtaskId: number): Promise<number | null>;
+  /** A project's lowest-id occupation: the default for its new entries. */
+  abstract findDefaultOccupationId(projectId: number): Promise<number | null>;
   abstract findFirstStartTime(
     userId: number,
     projectId?: number,

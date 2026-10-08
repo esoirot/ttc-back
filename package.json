@@ -26,7 +26,9 @@
     "test:cov": "CI=true jest --coverage",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "test:e2e": "CI=true jest --config ./test/jest-e2e.json",
-    "prisma:miggen": "prisma7 migrate deploy --config prisma7.config.ts && prisma7 generate --config prisma7.config.ts",
+    "test:integration": "CI=true jest --config ./test/jest-integration.json",
+    "test:mutation": "stryker run",
+    "prisma:miggen": "prisma7 migrate deploy --config prisma7.config.ts && prisma7 generate --config prisma7.config.ts && prisma db sign --no-advance-ref",
     "db:dump": "tsx --env-file .env src/scripts/pg-dump.ts",
     "db:export": "tsx --env-file .env src/scripts/export-db.ts",
     "db:import": "tsx --env-file .env src/scripts/import-db.ts",
@@ -89,6 +91,8 @@
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.27",
     "@prisma/prisma7": "7.10.0",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/jest-runner": "^10.0.0",
     "@swc/core": "^1.15.43",
     "@swc/jest": "^0.2.39",
     "@types/bcrypt": "^6.0.0",
@@ -125,7 +129,8 @@
     "moduleFileExtensions": [
       "js",
       "json",
-      "ts"
+      "ts",
+      "mjs"
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
@@ -133,6 +138,7 @@
       "<rootDir>/jest.setup.ts"
     ],
     "transform": {
+      "node_modules/.+\\.m?js$": "<rootDir>/../test/esm-transformer.js",
       "^.+\\.(t|j)s$": [
         "@swc/jest",
         {
@@ -170,6 +176,7 @@
       "!jest.setup.ts"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "transformIgnorePatterns": []
   }
 }

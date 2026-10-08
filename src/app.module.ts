@@ -43,10 +43,12 @@ import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
 import { GraphqlLoadersModule } from './common/graphql/loaders.module';
 import { LoadersService } from './common/graphql/loaders.service';
 import type { RequestUser } from './auth/types/gql-context.type';
+import { Prisma8Module } from './prisma8/prisma8.module';
 
 @Module({
   imports: [
     SentryModule.forRoot(),
+    Prisma8Module,
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({

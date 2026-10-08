@@ -2,9 +2,8 @@ import 'dotenv/config';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'csv-parse/sync';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client';
+import { Prisma8Service } from '../prisma8/prisma8.service';
+import { nowDb } from '../prisma8/timestamp';
 import {
   CsvRow,
   parseCompanyRow,
@@ -47,11 +46,12 @@ ${rows}
 }
 
 async function main() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+  const db = new Prisma8Service();
 
   try {
-    const firstUser = await prisma.user.findFirst({ orderBy: { id: 'asc' } });
+    const firstUser = await db.orm.public.User.orderBy((u) =>
+      u.id.asc(),
+    ).first();
     if (!firstUser) {
       console.error(
         'no user found in database, cannot assign imported clients',
@@ -64,8 +64,10 @@ async function main() {
 
     for (const row of companyRows) {
       const { legacyId, data } = parseCompanyRow(row);
-      const client = await prisma.client.create({
-        data: { ...data, userId: firstUser.id },
+      const client = await db.orm.public.Client.create({
+        ...data,
+        userId: firstUser.id,
+        updatedAt: nowDb(),
       });
       legacyIdToClientId.set(legacyId, client.id);
     }
@@ -86,12 +88,16 @@ async function main() {
         );
         continue;
       }
-      await prisma.companyContact.create({ data: { ...data, clientId } });
+      await db.orm.public.CompanyContact.create({
+        ...data,
+        clientId,
+        updatedAt: nowDb(),
+      });
       importedContacts++;
     }
     console.log(`imported ${importedContacts} contacts`);
   } finally {
-    await prisma.$disconnect();
+    await db.onModuleDestroy();
   }
 }
 
