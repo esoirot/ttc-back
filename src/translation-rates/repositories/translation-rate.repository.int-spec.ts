@@ -221,4 +221,47 @@ describe.each([
       await expect(repo.findAll(stranger)).resolves.toHaveLength(1);
     });
   });
+
+  describe("references to other users' records", () => {
+    let theirs: [string, number][];
+    const fields = {
+      type: TranslationRateType.PER_WORD,
+      name: 'Intruder',
+      amount: 0.1,
+      currency: 'EUR',
+    };
+
+    beforeEach(async () => {
+      theirs = [
+        ['clientId', (await seedClient(db.prisma8, stranger)).id],
+        ['occupationId', (await seedOccupation(db.prisma8, stranger)).id],
+      ];
+    });
+
+    it("create refuses another user's client or occupation", async () => {
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.create(owner, { ...fields, [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(
+        db.prisma8.orm.public.TranslationRate.where({ userId: owner }).all(),
+      ).resolves.toEqual([]);
+    });
+
+    it('update refuses them and leaves the rate as it was', async () => {
+      const own = await repo.create(owner, fields);
+      const before = await db.prisma8.orm.public.TranslationRate.first({
+        id: own.id,
+      });
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.update(own.id, owner, { id: own.id, [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(
+        db.prisma8.orm.public.TranslationRate.first({ id: own.id }),
+      ).resolves.toEqual(before);
+    });
+  });
 });

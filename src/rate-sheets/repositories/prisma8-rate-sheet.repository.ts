@@ -1,3 +1,4 @@
+import { assertOwned } from '../../prisma8/ownership';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma8Service, Prisma8Tx } from '../../prisma8/prisma8.service';
 import { toNumeric } from '../../prisma8/numeric';
@@ -58,10 +59,19 @@ export class Prisma8RateSheetRepository implements RateSheetRepository {
     return toModel(row);
   }
 
+  private async assertRefs(
+    userId: number,
+    data: { clientId?: number | null; occupationId?: number | null },
+  ) {
+    await assertOwned(this.db.orm, userId, 'Client', data.clientId);
+    await assertOwned(this.db.orm, userId, 'Occupation', data.occupationId);
+  }
+
   async create(
     userId: number,
     data: CreateRateSheetInput,
   ): Promise<RateSheetModel> {
+    await this.assertRefs(userId, data);
     const clientId = data.clientId ?? null;
     return this.db.transaction(async (tx) => {
       let isDefault = data.isDefault ?? false;
@@ -99,6 +109,7 @@ export class Prisma8RateSheetRepository implements RateSheetRepository {
     return this.db.transaction(async (tx) => {
       const existing = await tx.orm.public.RateSheet.first({ id, userId });
       if (!existing) throw new NotFoundException(`RateSheet ${id} not found`);
+      await this.assertRefs(userId, data);
       const {
         id: _id,
         pricePerWord,

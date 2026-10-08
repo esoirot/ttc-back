@@ -1,3 +1,4 @@
+import { assertOwned } from '../../prisma8/ownership';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma8Service } from '../../prisma8/prisma8.service';
 import { fromDb, nowDb } from '../../prisma8/timestamp';
@@ -61,10 +62,19 @@ export class Prisma8TranslationRateRepository implements TranslationRateReposito
     return translationRateFromDb(rate);
   }
 
+  private async assertRefs(
+    userId: number,
+    data: { clientId?: number | null; occupationId?: number | null },
+  ) {
+    await assertOwned(this.db.orm, userId, 'Client', data.clientId);
+    await assertOwned(this.db.orm, userId, 'Occupation', data.occupationId);
+  }
+
   async create(
     userId: number,
     data: CreateTranslationRateInput,
   ): Promise<TranslationRateModel> {
+    await this.assertRefs(userId, data);
     const row = await this.rates.create({
       userId,
       occupationId: data.occupationId ?? null,
@@ -87,6 +97,7 @@ export class Prisma8TranslationRateRepository implements TranslationRateReposito
     data: UpdateTranslationRateInput,
   ): Promise<TranslationRateModel> {
     await this.findById(id, userId);
+    await this.assertRefs(userId, data);
     const row = await this.rates.where({ id }).update({
       _type: data.type || undefined,
       name: data.name,

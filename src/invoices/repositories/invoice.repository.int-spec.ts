@@ -591,4 +591,59 @@ describe.each([
       ).resolves.toMatchObject({ items: [] });
     });
   });
+
+  describe("references to other users' records", () => {
+    let theirClient: number;
+    let theirProject: number;
+    const invoicesOf = (userId: number) =>
+      db.prisma8.orm.public.Invoice.where({ userId }).all();
+
+    beforeEach(async () => {
+      theirClient = (await seedClient(db.prisma8, stranger)).id;
+      theirProject = (await seedProject(db.prisma8, stranger)).id;
+    });
+
+    it("create and generate refuse another user's client", async () => {
+      await expect(
+        repo.create(owner, 'INV-X', { clientId: theirClient }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      const own = await seedProject(db.prisma8, owner);
+      await expect(
+        repo.generate(owner, 'INV-G', {
+          projectId: own.id,
+          clientId: theirClient,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(invoicesOf(owner)).resolves.toEqual([]);
+    });
+
+    it("update refuses another user's client and leaves the invoice as it was", async () => {
+      const inv = await repo.create(owner, 'INV-1', {});
+      const before = await db.prisma8.orm.public.Invoice.first({ id: inv.id });
+      await expect(
+        repo.update(inv.id, owner, { id: inv.id, clientId: theirClient }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        db.prisma8.orm.public.Invoice.first({ id: inv.id }),
+      ).resolves.toEqual(before);
+    });
+
+    it("addItem refuses another user's project and adds nothing", async () => {
+      const inv = await repo.create(owner, 'INV-1', {});
+      await expect(
+        repo.addItem(
+          {
+            invoiceId: inv.id,
+            projectId: theirProject,
+            quantity: 1,
+            unitPrice: 1,
+          },
+          owner,
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        db.prisma8.orm.public.InvoiceItem.where({ invoiceId: inv.id }).all(),
+      ).resolves.toEqual([]);
+    });
+  });
 });

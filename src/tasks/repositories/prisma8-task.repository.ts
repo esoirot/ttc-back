@@ -1,3 +1,4 @@
+import { assertOwned } from '../../prisma8/ownership';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { taskVisibleTo } from '../../prisma8/access';
 import { countOf } from '../../prisma8/count';
@@ -98,7 +99,8 @@ export class Prisma8TaskRepository implements TaskRepository {
     );
   }
 
-  async create(data: CreateTaskInput): Promise<TaskModel> {
+  async create(data: CreateTaskInput, userId: number): Promise<TaskModel> {
+    await assertOwned(this.db.orm, userId, 'Project', data.projectId);
     const row = await this.tasks.create({
       projectId: data.projectId,
       title: data.title,

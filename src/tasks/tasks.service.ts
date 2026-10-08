@@ -45,7 +45,7 @@ export class TasksService {
 
   async create(input: CreateTaskInput, userId: number): Promise<TaskModel> {
     assertWordCount(input.wordCount);
-    const task = await this.repo.create(input);
+    const task = await this.repo.create(input, userId);
     await this.activitiesService.log(task.id, userId, 'CREATED');
     return task;
   }

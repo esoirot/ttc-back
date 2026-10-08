@@ -168,4 +168,20 @@ describe.each([
       ]);
     });
   });
+
+  it("create refuses another user's client and adds nothing", async () => {
+    const theirs = (await seedClient(db.prisma8, stranger)).id;
+    await expect(
+      repo.create(owner, {
+        clientId: theirs,
+        type: RateType.HOURLY,
+        name: 'Intruder',
+        amount: 1,
+        currency: 'EUR',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      db.prisma8.orm.public.ClientRate.where({ clientId: theirs }).all(),
+    ).resolves.toEqual([]);
+  });
 });

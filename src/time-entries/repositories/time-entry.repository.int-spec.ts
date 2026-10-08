@@ -481,8 +481,17 @@ describe.each([
         projectId: p.id,
         occupationId: first.id,
       });
-      await expect(repo.findDefaultOccupationId(p.id)).resolves.toBe(first.id);
-      await expect(repo.findDefaultOccupationId(empty.id)).resolves.toBeNull();
+      await expect(repo.findDefaultOccupationId(p.id, owner)).resolves.toBe(
+        first.id,
+      );
+      await expect(
+        repo.findDefaultOccupationId(empty.id, owner),
+      ).resolves.toBeNull();
+      // Occupations are personal: someone else logging on the project
+      // (an assignee) never gets the owner's.
+      await expect(
+        repo.findDefaultOccupationId(p.id, stranger),
+      ).resolves.toBeNull();
     });
   });
 
@@ -551,6 +560,95 @@ describe.each([
       await expect(
         repo.sumDurationByProjectIds([p.id], stranger),
       ).resolves.toEqual(new Map());
+    });
+  });
+
+  describe("references to other users' records", () => {
+    // The owner's project, task, subtask, occupation and tag; the stranger
+    // owns none of them, the assignee only works on the task.
+    let s: Awaited<ReturnType<typeof seedTaskAccess>>;
+    let theirs: [string, number | number[]][];
+    let subtaskId: number;
+    let occupationId: number;
+    const span = {
+      startTime: t('2026-10-07T08:00:00.000Z'),
+      endTime: t('2026-10-07T09:00:00.000Z'),
+    };
+
+    beforeEach(async () => {
+      s = await seedTaskAccess(db.prisma8);
+      subtaskId = (
+        await db.prisma8.orm.public.Subtask.create({
+          taskId: s.task,
+          title: 'Section',
+          updatedAt: toDb(new Date()),
+        })
+      ).id;
+      occupationId = (await seedOccupation(db.prisma8, s.owner)).id;
+      theirs = [
+        ['projectId', s.project],
+        // No task in it: nobody can be its assignee.
+        ['projectId', (await seedProject(db.prisma8, s.owner)).id],
+        ['taskId', s.task],
+        ['subtaskId', subtaskId],
+        ['occupationId', occupationId],
+        ['tagIds', [(await seedTag(db.prisma8, s.owner, 'theirs')).id]],
+      ];
+    });
+
+    const entriesOf = (userId: number) =>
+      db.prisma8.orm.public.TimeEntry.where({ userId }).all();
+
+    it("create refuses another user's project, task, subtask, occupation or tag", async () => {
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.create(s.stranger, { ...span, [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(entriesOf(s.stranger)).resolves.toEqual([]);
+    });
+
+    it('startTimer refuses them too', async () => {
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.startTimer(s.stranger, { [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(entriesOf(s.stranger)).resolves.toEqual([]);
+    });
+
+    it('update refuses them and leaves the entry as it was', async () => {
+      const own = await entry(s.stranger, '2026-10-07T08:00:00.000Z');
+      const before = await snapshot(own.id);
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.update(own.id, s.stranger, { id: own.id, [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(snapshot(own.id)).resolves.toEqual(before);
+    });
+
+    it('lets the assignee log time on their task, its subtask and its project', async () => {
+      await expect(
+        repo.create(s.assignee, {
+          ...span,
+          projectId: s.project,
+          taskId: s.task,
+          subtaskId,
+        }),
+      ).resolves.toMatchObject({ projectId: s.project, taskId: s.task });
+      await expect(
+        repo.startTimer(s.assignee, { projectId: s.project, taskId: s.task }),
+      ).resolves.toMatchObject({ taskId: s.task });
+    });
+
+    it("keeps the assignee off the project's other tasks and the owner's occupation", async () => {
+      await expect(
+        repo.create(s.assignee, { ...span, taskId: s.otherTask }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        repo.create(s.assignee, { ...span, occupationId }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });
