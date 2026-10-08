@@ -154,6 +154,88 @@ describe.each([
       ).resolves.toMatchObject({ nextCursor: null, total: 2 });
     });
 
+    it("searches a company's name or a person's first or last name", async () => {
+      const acme = await seedClient(db.prisma8, owner, { name: 'Acme' });
+      const marie = await seedClient(db.prisma8, owner, {
+        name: 'M. C.',
+        clientType: 'INDIVIDUAL',
+        firstName: 'Marie',
+        lastName: 'Curie',
+      });
+      const pierre = await seedClient(db.prisma8, owner, {
+        name: 'P.',
+        clientType: 'INDIVIDUAL',
+        firstName: 'Pierre',
+        lastName: 'Acmeville',
+      });
+      const search = (q: string) =>
+        repo.findAll(owner, false, undefined, q).then(ids);
+
+      await expect(search('curie')).resolves.toEqual([marie.id]);
+      await expect(search('MARIE')).resolves.toEqual([marie.id]);
+      await expect(search('acme')).resolves.toEqual([acme.id, pierre.id]);
+    });
+
+    it('filters by industry, together with the other filters', async () => {
+      const legal = await seedClient(db.prisma8, owner, {
+        name: 'Law firm',
+        industry: 'LEGAL',
+      });
+      await seedClient(db.prisma8, owner, {
+        name: 'Law school',
+        industry: 'EDUCATION',
+      });
+      await seedClient(db.prisma8, owner, { name: 'No industry' });
+      await seedClient(db.prisma8, stranger, {
+        name: 'Their firm',
+        industry: 'LEGAL',
+      });
+
+      await expect(
+        repo
+          .findAll(
+            owner,
+            false,
+            undefined,
+            'law',
+            undefined,
+            undefined,
+            undefined,
+            'LEGAL',
+          )
+          .then(ids),
+      ).resolves.toEqual([legal.id]);
+    });
+
+    it('keeps former clients off the client list and on the prospect board', async () => {
+      const current = await seedClient(db.prisma8, owner, { name: 'Current' });
+      const former = await seedClient(db.prisma8, owner, { name: 'Former' });
+      await repo.update(former.id, owner, {
+        id: former.id,
+        status: ClientStatus.FORMER_CLIENT,
+      });
+
+      // The Clients page asks for status CLIENT, /prospects for "not CLIENT".
+      await expect(
+        repo
+          .findAll(
+            owner,
+            false,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            'CLIENT',
+          )
+          .then(ids),
+      ).resolves.toEqual([current.id]);
+      await expect(
+        repo
+          .findAll(owner, false, undefined, undefined, undefined, 'CLIENT')
+          .then(ids),
+      ).resolves.toEqual([former.id]);
+    });
+
     it('filters by name search, type, status and excluded status', async () => {
       const acme = await seedClient(db.prisma8, owner, {
         name: 'Acme Corp',
@@ -191,6 +273,28 @@ describe.each([
           .findAll(owner, false, undefined, undefined, undefined, 'TO_CONTACT')
           .then(ids),
       ).resolves.toEqual([jane.id, other.id]);
+    });
+  });
+
+  describe('linkedinUrl', () => {
+    it('stores, changes and clears the LinkedIn URL', async () => {
+      const url = 'https://www.linkedin.com/company/acme';
+      const client = await repo.create(owner, {
+        name: 'Acme',
+        linkedinUrl: url,
+      });
+      expect(client.linkedinUrl).toBe(url);
+      await expect(
+        repo.update(client.id, owner, {
+          id: client.id,
+          linkedinUrl: 'https://www.linkedin.com/in/jane',
+        }),
+      ).resolves.toMatchObject({
+        linkedinUrl: 'https://www.linkedin.com/in/jane',
+      });
+      await expect(
+        repo.update(client.id, owner, { id: client.id, linkedinUrl: '' }),
+      ).resolves.toMatchObject({ linkedinUrl: '' });
     });
   });
 

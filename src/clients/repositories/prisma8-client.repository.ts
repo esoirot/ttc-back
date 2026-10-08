@@ -1,5 +1,6 @@
 import { assertOwned } from '../../prisma8/ownership';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { or } from '@prisma/orm-postgres/orm-client';
 import { occupationFromDb } from '../../occupations/repositories/prisma8-occupation.mapper';
 import { countOf } from '../../prisma8/count';
 import { containsPattern } from '../../prisma8/like';
@@ -14,6 +15,11 @@ import { ClientModel, CompanyContactModel } from '../types/client.type';
 import { ClientConnectionModel, ClientRepository } from './client.repository';
 
 type Status = ClientModel['status'];
+type Industry = NonNullable<
+  NonNullable<
+    Awaited<ReturnType<Prisma8Service['orm']['public']['Client']['first']>>
+  >['industry']
+>;
 type ClientType = ClientModel['clientType'];
 
 type ContactRow = Omit<CompanyContactModel, 'createdAt' | 'updatedAt'> & {
@@ -131,6 +137,7 @@ export class Prisma8ClientRepository implements ClientRepository {
     clientType?: string,
     excludeStatus?: string,
     status?: string,
+    industry?: string,
   ): Promise<ClientConnectionModel> {
     const limit = pagination?.limit ?? 20;
     const cursor = pagination?.cursor;
@@ -138,8 +145,19 @@ export class Prisma8ClientRepository implements ClientRepository {
       userId: isAdmin ? undefined : userId,
       clientType: (clientType || undefined) as ClientType | undefined,
       status: (status || undefined) as Status | undefined,
+      industry: (industry || undefined) as Industry | undefined,
     });
-    if (search) base = base.where((c) => c.name.ilike(containsPattern(search)));
+    if (search) {
+      // A company's name, or a person's first or last name.
+      const pattern = containsPattern(search);
+      base = base.where((c) =>
+        or(
+          c.name.ilike(pattern),
+          c.firstName.ilike(pattern),
+          c.lastName.ilike(pattern),
+        ),
+      );
+    }
     if (excludeStatus)
       base = base.where((c) => c.status.neq(excludeStatus as Status));
     const page =

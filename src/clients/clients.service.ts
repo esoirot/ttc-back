@@ -10,7 +10,11 @@ import { CreateClientInput } from './dto/create-client.input';
 import { UpdateClientInput } from './dto/update-client.input';
 import { CreateCompanyContactInput } from './dto/create-company-contact.input';
 import { UpdateCompanyContactInput } from './dto/update-company-contact.input';
-import { ClientType, ClientStatus } from './entities/client.entity';
+import {
+  ClientIndustry,
+  ClientType,
+  ClientStatus,
+} from './entities/client.entity';
 
 @Injectable()
 export class ClientsService {
@@ -28,6 +32,7 @@ export class ClientsService {
     clientType?: ClientType,
     excludeStatus?: ClientStatus,
     status?: ClientStatus,
+    industry?: ClientIndustry,
   ): Promise<ClientConnectionModel> {
     return this.repo.findAll(
       userId,
@@ -37,6 +42,7 @@ export class ClientsService {
       clientType,
       excludeStatus,
       status,
+      industry,
     );
   }
 

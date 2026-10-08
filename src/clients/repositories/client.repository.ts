@@ -29,6 +29,7 @@ export abstract class ClientRepository {
     clientType?: string,
     excludeStatus?: string,
     status?: string,
+    industry?: string,
   ): Promise<ClientConnectionModel>;
   abstract create(
     userId: number,

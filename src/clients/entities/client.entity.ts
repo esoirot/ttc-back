@@ -46,6 +46,8 @@ export enum ClientStatus {
   RECONTACT_LATER = 'RECONTACT_LATER',
   TALKING = 'TALKING',
   CLIENT = 'CLIENT',
+  /** A past client to contact again: shown on the prospect board only. */
+  FORMER_CLIENT = 'FORMER_CLIENT',
 }
 
 registerEnumType(ClientStatus, { name: 'ClientStatus' });
@@ -135,6 +137,9 @@ export class Client {
 
   @Field(() => String, { nullable: true })
   website?: string;
+
+  @Field(() => String, { nullable: true })
+  linkedinUrl?: string;
 
   @Field(() => ClientIndustry, { nullable: true })
   industry?: ClientIndustry;
