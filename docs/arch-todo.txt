@@ -4,21 +4,24 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 
 ## P0 — verify / fix first (correctness & safety risk, grows with graph size)
 
-### 1. Audit GraphQL authorization on nested fields
+### 1. Audit GraphQL authorization on nested fields — PARTIAL
+- **Status (2026-10-08)**: `test/task-field-ownership.e2e-spec.ts` covers one hop only (`Task.subtasks`: owner sees them, another user gets none). The other 11 `@ResolveField()`s and the multi-hop `client → projects → tasks → timeEntries` case below are not covered yet.
 - **What**: confirm every `@ResolveField()` and every resolver re-checks ownership/tenant scope rather than trusting the parent query already filtered correctly.
 - **Where to look**: `clients.resolver.ts` (`statusHistory`), `projects.resolver.ts` (`totalTimeSeconds`), `tasks.resolver.ts` (`subtasks`, `comments`, `labels`, `activities`, `attachments`), `time-entries.resolver.ts`/`task-time.resolver.ts` (`activities`, `totalTimeSeconds`), all of `admin.resolver.ts`.
 - **Specific risk case**: `client(id) { projects { tasks { timeEntries { ... } } } }` — verify each hop re-derives scope from `req.user.id`, not just the top-level `client` id.
 - **How to verify**: write e2e spec — user A queries `client(id: <user B's client>) { projects { tasks { ... } } }`, assert empty/forbidden at every nesting level, not just top-level 403.
 - **Done when**: spec above exists and passes; any resolver found trusting the parent gets an explicit ownership check added.
 
-### 2. Fix confirmed N+1 in field resolvers
+### 2. Fix confirmed N+1 in field resolvers — DONE
+- **Status (2026-10-08)**: done in `2d51098`. `dataloader` behind `src/common/graphql/loaders.service.ts` + `batch-loader.util.ts`; field resolvers use it: `Client.statusHistory`, `Project` time/word totals, `Task.subtasks/comments/labels/activities/attachments`, `Task` time/word totals, `TimeEntry.activities`.
 - **What**: `ProjectsResolver.totalTimeSeconds` and `TasksResolver`'s `subtasks`/`comments`/`labels`/`activities`/`attachments` each issue one DB query per parent row — no batching anywhere in `src/` (`DataLoader` absent).
 - **Where**: `src/projects/projects.resolver.ts`, `src/tasks/tasks.resolver.ts`.
 - **Fix**: introduce `dataloader` (or NestJS-idiomatic per-request batching via a request-scoped loader provider) for these fields; batch `findByTask`/`aggregate` calls keyed by parent id per request tick.
 - **Test first**: spec that issues a `tasks { subtasks { id } comments { id } }` query over N tasks and asserts DB call count doesn't scale linearly with N (mock/spy repository call count, not just result correctness).
 - **Done when**: field-resolver DB call count is O(1) per field per request, not O(N).
 
-### 3. Add GraphQL query depth/complexity/pagination guards
+### 3. Add GraphQL query depth/complexity/pagination guards — DEPTH DONE, CARDINALITY REVIEW OPEN
+- **Status (2026-10-08)**: `graphql-depth-limit` in `app.module.ts` (`GRAPHQL_MAX_DEPTH`, default 10), tested by `test/graphql-depth-limit.e2e-spec.ts` (over-depth rejected, at-limit allowed). The bare-array cardinality review below is not written down yet.
 - **What**: nothing currently stops a client building an expensive nested query over `Client → Project → Task → {Subtask, Comment, Activity, Attachment, TimeEntry}`.
 - **Where**: `AppModule`'s `GraphQLModule.forRoot(...)` config (same place `orphanedTypes` is registered).
 - **Fix**: add `graphql-depth-limit` (or equivalent) as a validation rule; confirm every list-returning query/field with unbounded cardinality (`tasks`, `timeEntries`, `subtasks`, `comments`, etc.) has cursor pagination or a hard cap — several already return `*Connection` types (`ProjectConnection`, `TaskConnection`, `TimeEntryConnection`, `InvoiceConnection`, `ClientConnection`) which is good; flag ones returning bare `[X]` with no bound (e.g. `Task.subtasks`, `Task.comments`, `RateSheet[]`, `TranslationRate[]`) for review — bare arrays are fine at low cardinality per-parent but should be checked against realistic max (e.g. max subtasks per task).
@@ -35,7 +38,8 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 - **How to scope**: read `clockify.service.ts`, `hubspot.service.ts`, `google-calendar.service.ts` first to confirm exactly which lines are duplicated (credential decrypt via `crypto.util.ts`, token refresh) before extracting — don't extract a shape from assumption.
 - **Done when**: duplicated credential-lookup/decrypt code exists in one place; each controller's endpoint semantics (import, dedup, transform) stay in their own service, untouched.
 
-### 6. Share SSE realtime infrastructure between Timer and Auth events
+### 6. Share SSE realtime infrastructure between Timer and Auth events — DONE
+- **Status (2026-10-08)**: done in `2d51098`. `src/common/realtime/` (`redis-pubsub.util.ts`, `realtime-channel-registry.ts`, `sse-stream.util.ts`) used by `TimerEventsService` and `AuthEventsService`; see the CLAUDE.md realtime note.
 - **What**: `TimerEventsService` and `AuthEventsService` each independently instantiate their own `ioredis` publisher + subscriber pair and their own channel-lifecycle state machine — confirmed duplicate implementations of the same pattern, not shared infra behind two controllers.
 - **Where**: `src/timer-events/timer-events.service.ts`, `src/auth/auth-events.service.ts`.
 - **Fix**: extract a shared module (e.g. `src/common/realtime/`) providing: Redis pub/sub connection pair, channel-subscription lifecycle (the `subscribing → active → cleaning → deleted` state machine already documented in `timer-events.service.ts`'s comments), and SSE serialization helpers. Both services consume the shared module, keep their own channel-naming/event-payload logic.
@@ -56,6 +60,5 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 
 ## Suggested order of execution
 
-1 → 2 → 3 (P0, correctness/safety, do before the graph grows further)
-6 → 5 (P1, in this order: infra dedup first since it's isolated/low-risk, then the larger provider-credential extraction — item 4 skipped, UNUSED)
+Remaining (2026-10-08): 1 (finish the nested-field authorization specs) → 3 (cardinality review of bare-array fields) → 5 (provider credential extraction). Items 2, 6, 7 done; 4 skipped (UNUSED).
 7 (P2, whenever — 10-minute fix, no dependency on anything else)
