@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import { and, or } from '@prisma/orm-postgres/orm-client';
+import { and } from '@prisma/orm-postgres/orm-client';
 import type { Prisma8Service } from './prisma8.service';
 import { taskVisibleTo } from './access';
 
@@ -75,29 +75,4 @@ export async function assertSubtasksVisible(
     .select('id')
     .all();
   requireAll('Subtask', list, rows);
-}
-
-/**
- * Projects the user owns, or has a task assigned in: an assignee logs time
- * against the project of the task they work on.
- */
-export async function assertProjectsUsable(
-  orm: Orm,
-  userId: number,
-  ids: Ids,
-): Promise<void> {
-  const list = wanted(ids);
-  if (list.length === 0) return;
-  const rows = await orm.public.Project.where((p) =>
-    and(
-      p.id.in(list),
-      or(
-        p.userId.eq(userId),
-        p.tasks.some((t) => t.assigneeId.eq(userId)),
-      ),
-    ),
-  )
-    .select('id')
-    .all();
-  requireAll('Project', list, rows);
 }

@@ -37,7 +37,7 @@ describe.each([
   beforeEach(async () => {
     repo = make();
     s = await seedTaskAccess(db.prisma8);
-    decoy = await comment(s.otherTask, s.assignee, 'decoy');
+    decoy = await comment(s.otherTask, s.owner, 'decoy');
   });
 
   afterEach(async () => {
@@ -53,7 +53,7 @@ describe.each([
 
     it('returns comments of the requested tasks, oldest first', async () => {
       await comment(s.task, s.owner, 'second', 2);
-      await comment(s.task, s.assignee, 'first', 1);
+      await comment(s.task, s.owner, 'first', 1);
       await comment(s.otherTask, s.owner, 'not requested');
 
       const rows = await repo.findByTaskIds([s.task], s.owner);
@@ -62,18 +62,15 @@ describe.each([
       expect(rows[0]).toEqual({
         id: anyNumber,
         taskId: s.task,
-        authorId: s.assignee,
+        authorId: s.owner,
         body: 'first',
         createdAt: new Date('2026-01-01T00:01:00.000Z'),
         updatedAt: new Date('2026-01-01T00:01:00.000Z'),
       });
     });
 
-    it('is visible to the assignee but not to a stranger', async () => {
+    it('is not visible to a stranger', async () => {
       await comment(s.task, s.owner, 'x');
-      await expect(
-        repo.findByTaskIds([s.task], s.assignee),
-      ).resolves.toHaveLength(1);
       await expect(repo.findByTaskIds([s.task], s.stranger)).resolves.toEqual(
         [],
       );
@@ -83,10 +80,10 @@ describe.each([
   describe('create', () => {
     it('stores the comment for its author', async () => {
       await expect(
-        repo.create({ taskId: s.task, body: 'hello' }, s.assignee),
+        repo.create({ taskId: s.task, body: 'hello' }, s.owner),
       ).resolves.toMatchObject({
         taskId: s.task,
-        authorId: s.assignee,
+        authorId: s.owner,
         body: 'hello',
       });
     });
@@ -109,7 +106,7 @@ describe.each([
     it('forbids anyone but the author', async () => {
       const { id } = await comment(s.task, s.owner, 'mine');
       await expect(
-        repo.update(id, { id, body: 'x' }, s.assignee),
+        repo.update(id, { id, body: 'x' }, s.stranger),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
@@ -132,7 +129,7 @@ describe.each([
 
     it('forbids anyone but the author and keeps the comment', async () => {
       const { id } = await comment(s.task, s.owner, 'keep');
-      await expect(repo.delete(id, s.assignee)).rejects.toBeInstanceOf(
+      await expect(repo.delete(id, s.stranger)).rejects.toBeInstanceOf(
         ForbiddenException,
       );
       await expect(repo.findByTaskIds([s.task], s.owner)).resolves.toHaveLength(

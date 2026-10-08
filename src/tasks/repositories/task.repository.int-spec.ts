@@ -40,12 +40,11 @@ describe.each([
   });
 
   describe('findById', () => {
-    it('returns the task to the owner and the assignee', async () => {
-      const task = await repo.findById(s.task, s.assignee);
+    it('returns the task to the project owner', async () => {
+      const task = await repo.findById(s.task, s.owner);
       expect(task).toMatchObject({
         id: s.task,
         projectId: s.project,
-        assigneeId: s.assignee,
         status: 'TODO',
         description: null,
         dueDate: null,
@@ -54,9 +53,6 @@ describe.each([
         checklistTitles: [],
       });
       expect(task.createdAt).toBeInstanceOf(Date);
-      await expect(repo.findById(s.task, s.owner)).resolves.toMatchObject({
-        id: s.task,
-      });
     });
 
     it('throws NotFound for a stranger', async () => {
@@ -178,84 +174,21 @@ describe.each([
       expect(page.total).toBe(2);
     });
 
-    it('is only for the project owner, not the assignee', async () => {
+    it('is only for the project owner', async () => {
       await expect(
         repo.findByProject(s.project, s.owner),
       ).resolves.toMatchObject({ total: 2 });
       await expect(
-        repo.findByProject(s.project, s.assignee),
+        repo.findByProject(s.project, s.stranger),
       ).resolves.toMatchObject({ items: [], total: 0 });
     });
   });
 
-  describe('findByAssignee', () => {
-    it("returns the assignee's tasks across projects, defaulting to 50 per page", async () => {
-      const other = await seedUser(db.prisma8);
-      const p2 = await seedProject(db.prisma8, other.id);
-      await seedTask(db.prisma8, p2.id, {
-        title: 'elsewhere',
-        assigneeId: s.assignee,
-        status: 'DONE',
-      });
-
-      const page = await repo.findByAssignee(s.assignee);
-
-      expect(page.items.map((t) => t.status)).toEqual(['TODO', 'DONE']);
-      expect(page).toMatchObject({ total: 2, nextCursor: null });
-    });
-
-    it('pages with an id cursor', async () => {
-      const ids = [s.task];
-      for (let i = 0; i < 2; i++)
-        ids.push(
-          (await seedTask(db.prisma8, s.project, { assigneeId: s.assignee }))
-            .id,
-        );
-
-      const page1 = await repo.findByAssignee(s.assignee, { limit: 2 });
-      expect(page1).toMatchObject({ total: 3, nextCursor: ids[1] });
-      const page2 = await repo.findByAssignee(s.assignee, {
-        limit: 2,
-        cursor: ids[1],
-      });
-      expect(page2.items.map((t) => t.id)).toEqual([ids[2]]);
-    });
-  });
-
-  describe('findByAssignee paging', () => {
-    it('pages through every assigned task exactly once, in sort order', async () => {
-      const done = await seedTask(db.prisma8, s.project, {
-        assigneeId: s.assignee,
-        status: 'DONE',
-      });
-      const later = await seedTask(db.prisma8, s.project, {
-        assigneeId: s.assignee,
-        sortOrder: 5,
-      });
-      const expected = [s.task, later.id, done.id];
-
-      const seen: number[] = [];
-      let cursor: number | undefined;
-      for (let i = 0; i < 10; i++) {
-        const page = await repo.findByAssignee(s.assignee, {
-          limit: 1,
-          cursor,
-        });
-        seen.push(...page.items.map((t) => t.id));
-        if (page.nextCursor === null) break;
-        cursor = page.nextCursor;
-      }
-      expect(seen).toEqual(expected);
-    });
-  });
-
   describe('create', () => {
-    it("refuses a project the caller doesn't own, even as an assignee in it", async () => {
-      for (const user of [s.assignee, s.stranger]) {
-        await expect(
-          repo.create({ projectId: s.project, title: 'Intruder' }, user),
-        ).rejects.toBeInstanceOf(NotFoundException);
-      }
+    it("refuses a project the caller doesn't own", async () => {
+      await expect(
+        repo.create({ projectId: s.project, title: 'Intruder' }, s.stranger),
+      ).rejects.toBeInstanceOf(NotFoundException);
       await expect(
         db.prisma8.orm.public.Task.where({ title: 'Intruder' }).all(),
       ).resolves.toEqual([]);
@@ -269,7 +202,6 @@ describe.each([
             projectId: s.project,
             title: 'New',
             description: 'd',
-            assigneeId: s.assignee,
             dueDate: due,
             wordCount: 800,
           },
@@ -279,7 +211,6 @@ describe.each([
         projectId: s.project,
         title: 'New',
         description: 'd',
-        assigneeId: s.assignee,
         status: 'TODO',
         dueDate: due,
         wordCount: 800,
@@ -308,10 +239,10 @@ describe.each([
   });
 
   describe('update', () => {
-    it('lets owner and assignee change fields, moving updatedAt', async () => {
+    it('lets the owner change fields, moving updatedAt', async () => {
       const before = await repo.findById(s.task, s.owner);
       await new Promise((r) => setTimeout(r, 5));
-      const updated = await repo.update(s.task, s.assignee, {
+      const updated = await repo.update(s.task, s.owner, {
         id: s.task,
         status: TaskStatus.DONE,
         sortOrder: 3,
@@ -361,7 +292,7 @@ describe.each([
     });
 
     it('lets only the project owner delete, returning the task', async () => {
-      await expect(repo.delete(s.task, s.assignee)).rejects.toBeInstanceOf(
+      await expect(repo.delete(s.task, s.stranger)).rejects.toBeInstanceOf(
         NotFoundException,
       );
       await expect(repo.delete(s.task, s.owner)).resolves.toMatchObject({

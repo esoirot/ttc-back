@@ -140,7 +140,7 @@ REST is used everywhere GraphQL's single `POST /graphql` endpoint is a bad fit:
 
 **Users** (`users.resolver.ts`)
 
-- Query: `users`, `members`, `user`
+- Query: `users`, `user`
 - Mutation: `createUser`, `updateUser`, `removeUser`
 
 **Clients** (`clients.resolver.ts`)
@@ -157,7 +157,7 @@ REST is used everywhere GraphQL's single `POST /graphql` endpoint is a bad fit:
 
 **Tasks** (`tasks.resolver.ts`)
 
-- Query: `task`, `tasks` (by project), `myTasks`
+- Query: `task`, `tasks` (by project)
 - Mutation: `createTask`, `updateTask`, `deleteTask`, `createSubtask`, `updateSubtask`, `createChecklist`, `deleteChecklist`, `renameChecklist`, `deleteSubtask`, `createTaskComment`, `updateTaskComment`, `deleteTaskComment`, `createTaskLabel`, `deleteTaskLabel`
 - Field: `Task.subtasks`, `Task.comments`, `Task.labels`, `Task.activities`, `Task.attachments`
 

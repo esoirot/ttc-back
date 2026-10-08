@@ -88,24 +88,12 @@ export class Prisma8TaskRepository implements TaskRepository {
     return this.page(base, pagination?.limit ?? 20, pagination?.cursor);
   }
 
-  findByAssignee(
-    assigneeId: number,
-    pagination?: { limit?: number; cursor?: number },
-  ): Promise<TaskConnectionModel> {
-    return this.page(
-      this.tasks.where({ assigneeId }),
-      pagination?.limit ?? 50,
-      pagination?.cursor,
-    );
-  }
-
   async create(data: CreateTaskInput, userId: number): Promise<TaskModel> {
     await assertOwned(this.db.orm, userId, 'Project', data.projectId);
     const row = await this.tasks.create({
       projectId: data.projectId,
       title: data.title,
       description: data.description,
-      assigneeId: data.assigneeId,
       status: data.status ?? 'TODO',
       dueDate: date(data.dueDate),
       wordCount: data.wordCount,

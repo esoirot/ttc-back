@@ -173,7 +173,7 @@ Timer state (`TimerEventsController`) and session events (`AuthEventsController`
 - Mutation: `updateMe`, `register`, `login`, `logout`, `refreshToken`, `setupTwoFactor`, `enableTwoFactor`, `disableTwoFactor`, `verifyTwoFactor`, `verifyTwoFactorBackup`, `regenerateBackupCodes`, `adminDisableTwoFactor`, `changePassword`, `deleteAccount`, `requestPasswordReset`, `resetPassword`
 
 **Users** (`users.resolver.ts`)
-- Query: `users`, `members`, `user`
+- Query: `users`, `user`
 - Mutation: `createUser`, `updateUser`, `removeUser`
 
 **Clients** (`clients.resolver.ts`)
@@ -187,7 +187,7 @@ Timer state (`TimerEventsController`) and session events (`AuthEventsController`
 - Field: `Project.totalTimeSeconds`
 
 **Tasks** (`tasks.resolver.ts`)
-- Query: `task`, `tasks` (by project), `myTasks`
+- Query: `task`, `tasks` (by project)
 - Mutation: `createTask`, `updateTask`, `deleteTask`, `createSubtask`, `updateSubtask`, `createChecklist`, `deleteChecklist`, `renameChecklist`, `deleteSubtask`, `createTaskComment`, `updateTaskComment`, `deleteTaskComment`, `createTaskLabel`, `deleteTaskLabel`
 - Field: `Task.subtasks`, `Task.comments`, `Task.labels`, `Task.activities`, `Task.attachments`
 

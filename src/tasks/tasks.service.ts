@@ -36,13 +36,6 @@ export class TasksService {
     return this.repo.findByProject(projectId, userId, pagination, search);
   }
 
-  findByAssignee(
-    assigneeId: number,
-    pagination?: { limit?: number; cursor?: number },
-  ): Promise<TaskConnectionModel> {
-    return this.repo.findByAssignee(assigneeId, pagination);
-  }
-
   async create(input: CreateTaskInput, userId: number): Promise<TaskModel> {
     assertWordCount(input.wordCount);
     const task = await this.repo.create(input, userId);
@@ -85,14 +78,6 @@ export class TasksService {
     ) {
       await this.activitiesService.log(id, userId, 'DUE_DATE_SET', {
         to: input.dueDate,
-      });
-    }
-    if (
-      input.assigneeId !== undefined &&
-      input.assigneeId !== before.assigneeId
-    ) {
-      await this.activitiesService.log(id, userId, 'ASSIGNED', {
-        to: input.assigneeId,
       });
     }
     return task;

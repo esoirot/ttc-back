@@ -42,9 +42,14 @@ describe('backup row conversion (Prisma 8)', () => {
     );
   });
 
-  it('passes through fields the contract does not describe', () => {
+  it('writes fields the contract does not describe as they are', () => {
     expect(rowToBackup('Client', { extra: 'x' })).toEqual({ extra: 'x' });
-    expect(rowFromBackup('Client', { extra: 'x' })).toEqual({ extra: 'x' });
+  });
+
+  it('skips backup columns the schema no longer has', () => {
+    expect(rowFromBackup('Client', { name: 'A', extra: 'x' })).toEqual({
+      name: 'A',
+    });
   });
 
   it('reads a backup row back into Prisma 8 field names', () => {

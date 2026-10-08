@@ -124,12 +124,11 @@ describe('UsersResolver (e2e)', () => {
     expect(body.data?.users).toHaveLength(1);
   });
 
-  it('members — returns list (no RolesGuard)', async () => {
+  it('has no members query: user lists are admin-only', async () => {
     const res = await gql(`{ members ${USER_FIELDS} }`);
-    expect(res.status).toBe(200);
-    const body = gqlBody<{ members: unknown[] }>(res);
-    expect(body.errors).toBeUndefined();
-    expect(body.data?.members).toHaveLength(1);
+    const body = gqlBody<{ members?: unknown[] }>(res);
+    expect(body.errors?.[0]?.message).toMatch(/Cannot query field "members"/);
+    expect(body.data?.members).toBeUndefined();
   });
 
   it('user(id) — returns single user', async () => {

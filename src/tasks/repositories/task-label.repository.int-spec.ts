@@ -61,11 +61,8 @@ describe.each([
       });
     });
 
-    it('is visible to the assignee but not to a stranger', async () => {
+    it('is not visible to a stranger', async () => {
       await label(s.task, 'x');
-      await expect(
-        repo.findByTaskIds([s.task], s.assignee),
-      ).resolves.toHaveLength(1);
       await expect(repo.findByTaskIds([s.task], s.stranger)).resolves.toEqual(
         [],
       );
@@ -91,19 +88,14 @@ describe.each([
   });
 
   describe('delete', () => {
-    it.each([['owner'], ['assignee']] as const)(
-      'lets the %s delete and returns the label',
-      async (who) => {
-        const { id } = await label(s.task, 'gone');
-        await expect(repo.delete(id, s[who])).resolves.toMatchObject({
-          id,
-          name: 'gone',
-        });
-        await expect(repo.findByTaskIds([s.task], s.owner)).resolves.toEqual(
-          [],
-        );
-      },
-    );
+    it('lets the owner delete and returns the label', async () => {
+      const { id } = await label(s.task, 'gone');
+      await expect(repo.delete(id, s.owner)).resolves.toMatchObject({
+        id,
+        name: 'gone',
+      });
+      await expect(repo.findByTaskIds([s.task], s.owner)).resolves.toEqual([]);
+    });
 
     it('throws NotFound for a stranger and keeps the label', async () => {
       const { id } = await label(s.task, 'keep');

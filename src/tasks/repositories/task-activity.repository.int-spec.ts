@@ -69,11 +69,8 @@ describe.each([
       });
     });
 
-    it('is visible to the assignee but not to a stranger', async () => {
+    it('is not visible to a stranger', async () => {
       await activity({ taskId: s.task, userId: s.owner, type: 'CREATED' });
-      await expect(
-        repo.findByTaskIds([s.task], s.assignee),
-      ).resolves.toHaveLength(1);
       await expect(repo.findByTaskIds([s.task], s.stranger)).resolves.toEqual(
         [],
       );

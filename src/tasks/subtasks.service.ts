@@ -33,7 +33,7 @@ export class SubtasksService {
   ): Promise<SubtaskModel> {
     assertWordCount(input.wordCount);
     // #18 — findById throws NotFoundException unless the caller owns the
-    // task's project or is its assignee.
+    // task's project.
     await this.taskRepo.findById(input.taskId, userId);
     const subtask = await this.repo.create(input);
     await this.activitiesService.log(input.taskId, userId, 'CHECKLIST_ADDED', {

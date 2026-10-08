@@ -9,7 +9,6 @@ import { taskVisibleTo } from '../../prisma8/access';
 import { countOf } from '../../prisma8/count';
 import {
   assertOwned,
-  assertProjectsUsable,
   assertSubtasksVisible,
   assertTasksVisible,
 } from '../../prisma8/ownership';
@@ -81,7 +80,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
     },
   ) {
     const orm = this.db.orm;
-    await assertProjectsUsable(orm, userId, data.projectId);
+    await assertOwned(orm, userId, 'Project', data.projectId);
     await assertTasksVisible(orm, userId, data.taskId);
     await assertSubtasksVisible(orm, userId, data.subtaskId);
     await assertOwned(orm, userId, 'Occupation', data.occupationId);

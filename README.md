@@ -147,7 +147,7 @@ pnpm run test:e2e       # end-to-end tests
 | `User`      | `users` (ADMIN), `user(id)` (ADMIN)                  | `createUser` (ADMIN), `updateUser` (ADMIN — includes `role`), `removeUser` (ADMIN)                          |
 | `Client`    | `clients`, `client(id)`                              | `createClient`, `updateClient`, `deleteClient`                                                              |
 | `Project`   | `projects(status?)`, `project(id)`                   | `createProject`, `updateProject`, `deleteProject`                                                           |
-| `Task`      | `tasks(projectId)`, `myTasks`                        | `createTask`, `updateTask`, `deleteTask`                                                                    |
+| `Task`      | `tasks(projectId)`                                   | `createTask`, `updateTask`, `deleteTask`                                                                    |
 | `TimeEntry` | `timeEntries(start?,end?,projectId?)`, `activeTimer` | `startTimer`, `stopTimer`, `createTimeEntry`, `updateTimeEntry`, `deleteTimeEntry`                          |
 | `Invoice`   | `invoices(status?)`, `invoice(id)`                   | `createInvoice`, `generateInvoice`, `updateInvoice`, `deleteInvoice`, `addInvoiceItem`, `removeInvoiceItem` |
 | `Rate`      | `rates(type?)`, `rate(id)`                           | `createRate`, `updateRate`, `deleteRate`                                                                    |

@@ -6,6 +6,7 @@ import {
   seedClient,
   seedOccupation,
   seedProject,
+  seedTask,
   seedUser,
 } from '../prisma8/testing/seed';
 import { isoTimestamp } from '../prisma8/testing/matchers';
@@ -140,6 +141,21 @@ describe('importBackup8', () => {
     expect(
       (JSON.parse(readFileSync(after.file, 'utf-8')) as BackupPayload).data,
     ).toEqual(payload.data);
+  });
+
+  it('restores an older backup that still has a dropped column', async () => {
+    const user = await seedUser(db.prisma8);
+    const project = await seedProject(db.prisma8, user.id);
+    await seedTask(db.prisma8, project.id);
+    const { file } = await runExport(prisma8BackupClient(db.prisma8), dir);
+    const { data } = JSON.parse(readFileSync(file, 'utf-8')) as BackupPayload;
+    // Task.assigneeId existed until the assignee feature was removed.
+    data.Task = data.Task.map((t) => ({ ...t, assigneeId: user.id }));
+
+    await resetDb();
+    await importBackup8(db.prisma8, data);
+
+    await expect(db.prisma8.orm.public.Task.all()).resolves.toHaveLength(1);
   });
 
   it('restores an older backup that lacks a newer table', async () => {

@@ -18,10 +18,6 @@ export abstract class TaskRepository {
     pagination?: PaginationArgs,
     search?: string,
   ): Promise<TaskConnectionModel>;
-  abstract findByAssignee(
-    assigneeId: number,
-    pagination?: PaginationArgs,
-  ): Promise<TaskConnectionModel>;
   abstract create(data: CreateTaskInput, userId: number): Promise<TaskModel>;
   abstract update(
     id: number,

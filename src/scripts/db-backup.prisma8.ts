@@ -50,12 +50,12 @@ export function rowFromBackup(model: string, row: Row): Row {
       field,
     ]),
   );
-  // Postgres reads ISO text (its Z ignored for `timestamp`) and decimal text as-is.
+  // Postgres reads ISO text (its Z ignored for `timestamp`) and decimal text
+  // as-is. Columns the schema has since dropped (an older backup) are skipped.
   return Object.fromEntries(
-    Object.entries(row).map(([column, value]) => [
-      fieldByColumn[column] ?? column,
-      value,
-    ]),
+    Object.entries(row)
+      .filter(([column]) => column in fieldByColumn)
+      .map(([column, value]) => [fieldByColumn[column], value]),
   );
 }
 

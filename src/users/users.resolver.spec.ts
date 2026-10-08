@@ -64,15 +64,6 @@ describe('UsersResolver', () => {
     expect(result).toEqual(users);
   });
 
-  it('findMembers — delegates to service.findAll', async () => {
-    const users = [makeUser()];
-    service.findAll.mockResolvedValue(users);
-
-    const result = await resolver.findMembers();
-    expect(service.findAll).toHaveBeenCalled();
-    expect(result).toEqual(users);
-  });
-
   it('findOne — delegates to service.findOne with id', async () => {
     const user = makeUser({ id: 3 });
     service.findOne.mockResolvedValue(user);

@@ -30,12 +30,6 @@ export class UsersResolver {
     return this.usersService.findAll();
   }
 
-  @UseGuards(GqlAuthGuard)
-  @Query(() => [User], { name: 'members' })
-  findMembers() {
-    return this.usersService.findAll();
-  }
-
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @RequirePermission(AdminPermission.MANAGE_USERS)

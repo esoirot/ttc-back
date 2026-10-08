@@ -74,15 +74,15 @@ describe.each([
       });
     });
 
-    it('is visible to the owner and assignee, NotFound / empty for a stranger', async () => {
+    it('is visible to the owner, NotFound / empty for a stranger', async () => {
       const { id } = await item(s.task, 'x');
-      await expect(
-        repo.findByTaskIds([s.task], s.assignee),
-      ).resolves.toHaveLength(1);
+      await expect(repo.findByTaskIds([s.task], s.owner)).resolves.toHaveLength(
+        1,
+      );
       await expect(repo.findByTaskIds([s.task], s.stranger)).resolves.toEqual(
         [],
       );
-      await expect(repo.findById(id, s.assignee)).resolves.toMatchObject({
+      await expect(repo.findById(id, s.owner)).resolves.toMatchObject({
         id,
       });
       await expect(repo.findById(id, s.stranger)).rejects.toBeInstanceOf(
@@ -121,7 +121,7 @@ describe.each([
   describe('update', () => {
     it('changes the given fields, can clear wordCount, moves updatedAt', async () => {
       const { id } = await item(s.task, 'old', { wordCount: 50, minute: 1 });
-      const updated = await repo.update(id, s.assignee, {
+      const updated = await repo.update(id, s.owner, {
         id,
         title: 'new',
         done: true,
@@ -219,7 +219,7 @@ describe.each([
 
       expect([...sums]).toEqual([[s.project, 1250]]);
       await expect(
-        repo.sumWordsByProjectIds([s.project], s.assignee),
+        repo.sumWordsByProjectIds([s.project], s.stranger),
       ).resolves.toEqual(new Map());
     });
   });
