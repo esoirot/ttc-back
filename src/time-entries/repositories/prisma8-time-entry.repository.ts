@@ -65,11 +65,9 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
 
   private async setTags(tx: Prisma8Tx, timeEntryId: number, tagIds: number[]) {
     await tx.orm.public.TimeEntryTag.where({ timeEntryId }).deleteAndCount();
-    if (tagIds.length) {
-      await tx.orm.public.TimeEntryTag.createAll(
-        tagIds.map((tagId) => ({ timeEntryId, tagId })),
-      );
-    }
+    await tx.orm.public.TimeEntryTag.createAll(
+      tagIds.map((tagId) => ({ timeEntryId, tagId })),
+    );
   }
 
   async findById(id: number, userId: number): Promise<TimeEntryModel> {
@@ -100,8 +98,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
       base = base.where({ taskId: filters.taskId });
     else if (filters.projectIds?.length)
       base = base.where((e) => e.projectId.in(filters.projectIds!));
-    else if (filters.projectId !== undefined)
-      base = base.where({ projectId: filters.projectId });
+    else base = base.where({ projectId: filters.projectId });
     if (filters.start) {
       const start = toDb(filters.start);
       base = base.where((e) => e.startTime.gte(start));
@@ -178,7 +175,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
         startTime: toDb(data.startTime),
         endTime: toDb(data.endTime),
         durationSeconds: seconds(data.startTime, data.endTime),
-        billable: data.billable ?? true,
+        billable: data.billable,
         clockifyEntryId: data.clockifyEntryId,
         occupationId: data.occupationId,
         wordsProcessed: data.wordsProcessed,
@@ -203,7 +200,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
         subtaskId: data.subtaskId,
         description: data.description,
         startTime: nowDb(),
-        billable: data.billable ?? true,
+        billable: data.billable,
         occupationId: data.occupationId,
         wordsProcessed: data.wordsProcessed,
         updatedAt: nowDb(),
@@ -278,11 +275,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
       )
       .groupBy('taskId')
       .aggregate((a) => ({ sum: a.sum(field) }));
-    return new Map(
-      rows.flatMap((r) =>
-        r.taskId === null ? [] : [[r.taskId, r.sum ?? 0] as const],
-      ),
-    );
+    return new Map(rows.map((r) => [r.taskId!, r.sum ?? 0]));
   }
 
   private async sumByProject(
@@ -299,11 +292,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
       )
       .groupBy('projectId')
       .aggregate((a) => ({ sum: a.sum(field) }));
-    return new Map(
-      rows.flatMap((r) =>
-        r.projectId === null ? [] : [[r.projectId, r.sum ?? 0] as const],
-      ),
-    );
+    return new Map(rows.map((r) => [r.projectId!, r.sum ?? 0]));
   }
 
   sumDurationByTaskIds(

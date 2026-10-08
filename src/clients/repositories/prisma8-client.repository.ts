@@ -69,19 +69,15 @@ export class Prisma8ClientRepository implements ClientRepository {
   ) {
     if (tagIds !== undefined) {
       await tx.orm.public.ClientTag.where({ clientId }).deleteAndCount();
-      if (tagIds.length) {
-        await tx.orm.public.ClientTag.createAll(
-          tagIds.map((tagId) => ({ clientId, tagId })),
-        );
-      }
+      await tx.orm.public.ClientTag.createAll(
+        tagIds.map((tagId) => ({ clientId, tagId })),
+      );
     }
     if (occupationIds !== undefined) {
       await tx.orm.public.ClientOccupation.where({ clientId }).deleteAndCount();
-      if (occupationIds.length) {
-        await tx.orm.public.ClientOccupation.createAll(
-          occupationIds.map((occupationId) => ({ clientId, occupationId })),
-        );
-      }
+      await tx.orm.public.ClientOccupation.createAll(
+        occupationIds.map((occupationId) => ({ clientId, occupationId })),
+      );
     }
   }
 
@@ -93,7 +89,7 @@ export class Prisma8ClientRepository implements ClientRepository {
       ...rest,
       clientType: clientType as ClientType | undefined,
       status: status as Status | undefined,
-      taxRate: taxRate === undefined ? undefined : toNumeric<5, 2>(taxRate),
+      taxRate: toNumeric<5, 2>(taxRate),
       contactedAt: contactedAt === undefined ? undefined : toDb(contactedAt),
     };
   }

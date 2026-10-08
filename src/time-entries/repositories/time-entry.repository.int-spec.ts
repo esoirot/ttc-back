@@ -46,10 +46,36 @@ describe.each([
   const ids = (page: { items: { id: number }[] }) =>
     page.items.map((e) => e.id);
 
+  // A third user's tagged entry, created first: a write that loses its
+  // filter lands here.
+  const snapshot = async (id: number) => ({
+    entry: await db.prisma8.orm.public.TimeEntry.first({ id }),
+    tags: await db.prisma8.orm.public.TimeEntryTag.where({
+      timeEntryId: id,
+    }).all(),
+  });
+  let decoy: { id: number; before: Awaited<ReturnType<typeof snapshot>> };
+
   beforeEach(async () => {
     repo = make();
+    const other = (await seedUser(db.prisma8)).id;
+    const id = (
+      await seedTimeEntry(db.prisma8, other, {
+        endTime: toDb(new Date()),
+        durationSeconds: 1,
+      })
+    ).id;
+    await db.prisma8.orm.public.TimeEntryTag.create({
+      timeEntryId: id,
+      tagId: (await seedTag(db.prisma8, other, 'decoy')).id,
+    });
+    decoy = { id, before: await snapshot(id) };
     owner = (await seedUser(db.prisma8)).id;
     stranger = (await seedUser(db.prisma8)).id;
+  });
+
+  afterEach(async () => {
+    await expect(snapshot(decoy.id)).resolves.toEqual(decoy.before);
   });
 
   describe('create / findById', () => {
@@ -178,11 +204,27 @@ describe.each([
       for (let i = 0; i < 10; i++) {
         const page = await repo.findAll(owner, {}, { limit: 2, cursor });
         expect(page.total).toBe(5);
+        expect(page.items.length).toBeLessThanOrEqual(2);
         seen.push(...ids(page));
         if (page.nextCursor === null) break;
         cursor = page.nextCursor;
       }
       expect(seen).toEqual(expected);
+    });
+
+    it('has no next cursor when the page holds exactly the limit', async () => {
+      await entry(owner, '2026-10-01T08:00:00.000Z');
+      await entry(owner, '2026-10-02T08:00:00.000Z');
+      await expect(
+        repo.findAll(owner, {}, { limit: 2 }),
+      ).resolves.toMatchObject({ nextCursor: null, total: 2 });
+    });
+
+    it('starts over from the first page for an unknown cursor', async () => {
+      const a = await entry(owner, '2026-10-01T08:00:00.000Z');
+      await expect(
+        repo.findAll(owner, {}, { cursor: 999999 }).then(ids),
+      ).resolves.toEqual([a.id]);
     });
 
     it('filters by date range, inclusive', async () => {
@@ -283,6 +325,15 @@ describe.each([
       await expect(repo.findActive(owner)).resolves.toBeNull();
     });
 
+    it("ignores another user's running timer", async () => {
+      await repo.startTimer(stranger, {});
+      await expect(repo.findActive(owner)).resolves.toBeNull();
+      await expect(repo.startTimer(owner, {})).resolves.toMatchObject({
+        userId: owner,
+        billable: true,
+      });
+    });
+
     it('throws NotFound when stopping without a running timer', async () => {
       await expect(repo.stopTimer(owner)).rejects.toBeInstanceOf(
         NotFoundException,
@@ -319,6 +370,22 @@ describe.each([
   });
 
   describe('update', () => {
+    it('moves the start time and recomputes the duration', async () => {
+      const e = await repo.create(owner, {
+        startTime: t('2026-10-07T08:00:00.000Z'),
+        endTime: t('2026-10-07T09:00:00.000Z'),
+      });
+      await expect(
+        repo.update(e.id, owner, {
+          id: e.id,
+          startTime: t('2026-10-07T08:30:00.000Z'),
+        }),
+      ).resolves.toMatchObject({
+        startTime: t('2026-10-07T08:30:00.000Z'),
+        durationSeconds: 1800,
+      });
+    });
+
     it('recomputes the duration from new or stored times and replaces tags when given', async () => {
       const t1 = await seedTag(db.prisma8, owner, 't1');
       const t2 = await seedTag(db.prisma8, owner, 't2');

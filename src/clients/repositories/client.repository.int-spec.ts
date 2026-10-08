@@ -26,10 +26,46 @@ describe.each([
   const ids = (page: { items: { id: number }[] }) =>
     page.items.map((c) => c.id);
 
+  // A third user's client with a tag, an occupation, a contact and a
+  // project, created first: a write that loses its filter lands here.
+  const snapshot = async (clientId: number) => ({
+    client: await db.prisma8.orm.public.Client.first({ id: clientId }),
+    tags: await db.prisma8.orm.public.ClientTag.where({ clientId }).all(),
+    occupations: await db.prisma8.orm.public.ClientOccupation.where({
+      clientId,
+    }).all(),
+    contacts: await db.prisma8.orm.public.CompanyContact.where({
+      clientId,
+    }).all(),
+    projects: await db.prisma8.orm.public.Project.where({ clientId }).all(),
+  });
+  let decoy: { id: number; before: Awaited<ReturnType<typeof snapshot>> };
+
   beforeEach(async () => {
     repo = make();
+    const other = (await seedUser(db.prisma8)).id;
+    const id = (await seedClient(db.prisma8, other, { name: 'decoy' })).id;
+    await db.prisma8.orm.public.ClientTag.create({
+      clientId: id,
+      tagId: (await seedTag(db.prisma8, other, 'decoy')).id,
+    });
+    await db.prisma8.orm.public.ClientOccupation.create({
+      clientId: id,
+      occupationId: (await seedOccupation(db.prisma8, other)).id,
+    });
+    await db.prisma8.orm.public.CompanyContact.create({
+      clientId: id,
+      firstName: 'Decoy',
+      updatedAt: toDb(new Date()),
+    });
+    await seedProject(db.prisma8, other, { clientId: id });
+    decoy = { id, before: await snapshot(id) };
     owner = (await seedUser(db.prisma8)).id;
     stranger = (await seedUser(db.prisma8)).id;
+  });
+
+  afterEach(async () => {
+    await expect(snapshot(decoy.id)).resolves.toEqual(decoy.before);
   });
 
   describe('create / findById', () => {
@@ -108,8 +144,16 @@ describe.each([
         nextCursor: null,
       });
       await expect(repo.findAll(owner, true)).resolves.toMatchObject({
-        total: 4,
+        total: 5,
       });
+    });
+
+    it('has no next cursor when the page holds exactly the limit', async () => {
+      await seedClient(db.prisma8, owner);
+      await seedClient(db.prisma8, owner);
+      await expect(
+        repo.findAll(owner, false, { limit: 2 }),
+      ).resolves.toMatchObject({ nextCursor: null, total: 2 });
     });
 
     it('filters by name search, type, status and excluded status', async () => {
@@ -182,6 +226,14 @@ describe.each([
       });
       expect(retagged.tags).toEqual([{ id: t2.id, name: 't2' }]);
       expect(retagged.occupations).toEqual([]);
+    });
+
+    it('changes the contacted date', async () => {
+      const c = await repo.create(owner, { name: 'C' });
+      const when = new Date('2026-09-01T09:30:00.000Z');
+      await expect(
+        repo.update(c.id, owner, { id: c.id, contactedAt: when }),
+      ).resolves.toMatchObject({ contactedAt: when });
     });
 
     it("throws NotFound for someone else's client", async () => {
