@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsResolver } from './clients.resolver';
 import { ClientsService } from './clients.service';
-import { ClientStatus, Client } from './entities/client.entity';
+import { ClientIndustry, ClientStatus, Client } from './entities/client.entity';
 import { mockClient } from '../__test-helpers__/mock-factories';
 import type { GqlContext } from '../auth/types/gql-context.type';
 
@@ -68,6 +68,7 @@ describe('ClientsResolver', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
     );
   });
 
@@ -85,6 +86,7 @@ describe('ClientsResolver', () => {
     expect(service.findAll).toHaveBeenCalledWith(
       2,
       true,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -112,6 +114,31 @@ describe('ClientsResolver', () => {
       undefined,
       ClientStatus.CLIENT,
       ClientStatus.CLIENT,
+      undefined,
+    );
+  });
+
+  it('findAll — passes the industry filter through', async () => {
+    service.findAll.mockResolvedValue({ edges: [] });
+
+    await resolver.findAll(
+      user,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ClientIndustry.LEGAL,
+    );
+    expect(service.findAll).toHaveBeenCalledWith(
+      1,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ClientIndustry.LEGAL,
     );
   });
 

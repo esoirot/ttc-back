@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b17559345c1650aa2fdd923dab62fbf7c6b3a7e139fb8ab5bb16a06aa65ebe87'>;
+  StorageHashBase<'16eb0fb1106e4412af5ddbd22dc6a125c6fd9b3300959374797cfdcd20628e18'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -301,7 +301,6 @@ export type FieldOutputTypes = {
       readonly lastName: CodecTypes['pg/text@1']['output'] | null;
       readonly legalForm: CodecTypes['pg/text@1']['output'] | null;
       readonly legalName: CodecTypes['pg/text@1']['output'] | null;
-      readonly linkedinUrl: CodecTypes['pg/text@1']['output'] | null;
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
       readonly paymentDelayDays: CodecTypes['pg/int4@1']['output'] | null;
@@ -689,7 +688,6 @@ export type FieldInputTypes = {
       readonly lastName: CodecTypes['pg/text@1']['input'] | null;
       readonly legalForm: CodecTypes['pg/text@1']['input'] | null;
       readonly legalName: CodecTypes['pg/text@1']['input'] | null;
-      readonly linkedinUrl: CodecTypes['pg/text@1']['input'] | null;
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
       readonly paymentDelayDays: CodecTypes['pg/int4@1']['input'] | null;
@@ -1077,7 +1075,6 @@ export type StorageColumnTypes = {
       readonly lastName: CodecTypes['pg/text@1']['output'] | null;
       readonly legalForm: CodecTypes['pg/text@1']['output'] | null;
       readonly legalName: CodecTypes['pg/text@1']['output'] | null;
-      readonly linkedinUrl: CodecTypes['pg/text@1']['output'] | null;
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
       readonly paymentDelayDays: CodecTypes['pg/int4@1']['output'] | null;
@@ -1465,7 +1462,6 @@ export type StorageColumnInputTypes = {
       readonly lastName: CodecTypes['pg/text@1']['input'] | null;
       readonly legalForm: CodecTypes['pg/text@1']['input'] | null;
       readonly legalName: CodecTypes['pg/text@1']['input'] | null;
-      readonly linkedinUrl: CodecTypes['pg/text@1']['input'] | null;
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
       readonly paymentDelayDays: CodecTypes['pg/int4@1']['input'] | null;
@@ -1857,7 +1853,6 @@ export namespace Models {
     lastName: CodecTypes['pg/text@1']['output'] | null;
     legalForm: CodecTypes['pg/text@1']['output'] | null;
     legalName: CodecTypes['pg/text@1']['output'] | null;
-    linkedinUrl: CodecTypes['pg/text@1']['output'] | null;
     name: CodecTypes['pg/text@1']['output'];
     notes: CodecTypes['pg/text@1']['output'] | null;
     paymentDelayDays: CodecTypes['pg/int4@1']['output'] | null;
@@ -2631,11 +2626,6 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly legalName: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
-                };
-                readonly linkedinUrl: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -5572,10 +5562,6 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly linkedinUrl: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
               readonly name: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -5769,7 +5755,6 @@ type ContractBase = Omit<
                 readonly lastName: { readonly column: 'lastName' };
                 readonly legalForm: { readonly column: 'legalForm' };
                 readonly legalName: { readonly column: 'legalName' };
-                readonly linkedinUrl: { readonly column: 'linkedinUrl' };
                 readonly name: { readonly column: 'name' };
                 readonly notes: { readonly column: 'notes' };
                 readonly paymentDelayDays: { readonly column: 'paymentDelayDays' };

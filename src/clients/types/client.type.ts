@@ -39,6 +39,7 @@ export type ClientModel = {
   taxRate: number | null;
   billingEndOfMonth: boolean;
   website: string | null;
+  linkedinUrl: string | null;
   industry: string | null;
   status:
     | 'TO_CONTACT'
@@ -48,7 +49,8 @@ export type ClientModel = {
     | 'FOLLOW_UP_3'
     | 'RECONTACT_LATER'
     | 'TALKING'
-    | 'CLIENT';
+    | 'CLIENT'
+    | 'FORMER_CLIENT';
   contactedAt: Date | null;
   tags: { id: number; name: string }[];
   createdAt: Date;

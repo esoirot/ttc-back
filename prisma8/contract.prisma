@@ -126,6 +126,7 @@ namespace public {
     taxRate           Numeric(5, 2)?
     industry          pg.enum(ClientIndustry)?
     website           String?
+    linkedinUrl       String?
     contactedAt       TimestampString(3)?
     status            pg.enum(ClientStatus)    @default("CLIENT")
     addressLine2      String?
@@ -539,6 +540,7 @@ namespace public {
     TALKING = "TALKING"
     CLIENT = "CLIENT"
     RECONTACT_LATER = "RECONTACT_LATER"
+    FORMER_CLIENT = "FORMER_CLIENT"
   }
 
   native_enum ClientType {

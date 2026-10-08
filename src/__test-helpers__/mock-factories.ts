@@ -148,6 +148,7 @@ export function mockClient(overrides: Partial<ClientModel> = {}): ClientModel {
     taxRate: null,
     billingEndOfMonth: false,
     website: null,
+    linkedinUrl: null,
     industry: null,
     status: 'CLIENT',
     contactedAt: null,

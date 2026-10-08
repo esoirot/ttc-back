@@ -150,6 +150,24 @@ describe('ClientsResolver (e2e)', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+    );
+  });
+
+  it('clients — passes the industry filter through', async () => {
+    await gql(
+      `query($industry: ClientIndustry) { clients(industry: $industry) { items { id } total nextCursor } }`,
+      { industry: 'LEGAL' },
+    );
+    expect(service.findAll).toHaveBeenCalledWith(
+      1,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'LEGAL',
     );
   });
 
@@ -166,6 +184,7 @@ describe('ClientsResolver (e2e)', () => {
       undefined,
       undefined,
       'CLIENT',
+      undefined,
     );
   });
 

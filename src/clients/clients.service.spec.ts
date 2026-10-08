@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsService } from './clients.service';
 import { ClientRepository } from './repositories/client.repository';
 import { ClientStatusHistoryService } from './client-status-history.service';
-import { ClientStatus } from './entities/client.entity';
+import { ClientStatus, ClientIndustry } from './entities/client.entity';
 import { AuditService } from '../audit/audit.service';
 import { mockClient } from '../__test-helpers__/mock-factories';
 
@@ -222,8 +222,34 @@ describe('ClientsService', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
       );
       expect(result).toEqual(connection);
+    });
+
+    it('passes the industry filter to repository', async () => {
+      repo.findAll.mockResolvedValue({ items: [], nextCursor: null, total: 0 });
+
+      await service.findAll(
+        1,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        ClientIndustry.LEGAL,
+      );
+      expect(repo.findAll).toHaveBeenCalledWith(
+        1,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        ClientIndustry.LEGAL,
+      );
     });
 
     it('passes excludeStatus and status filters to repository', async () => {
@@ -246,6 +272,7 @@ describe('ClientsService', () => {
         undefined,
         ClientStatus.CLIENT,
         ClientStatus.TO_CONTACT,
+        undefined,
       );
     });
   });

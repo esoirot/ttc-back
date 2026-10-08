@@ -445,6 +445,13 @@
                   "kind": "scalar"
                 }
               },
+              "linkedinUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": false,
                 "type": {
@@ -748,6 +755,9 @@
                 },
                 "legalName": {
                   "column": "legalName"
+                },
+                "linkedinUrl": {
+                  "column": "linkedinUrl"
                 },
                 "name": {
                   "column": "name"
@@ -5280,7 +5290,8 @@
                 "FOLLOW_UP_3",
                 "TALKING",
                 "CLIENT",
-                "RECONTACT_LATER"
+                "RECONTACT_LATER",
+                "FORMER_CLIENT"
               ],
               "typeName": "ClientStatus"
             },
@@ -5637,6 +5648,11 @@
                   "nullable": true
                 },
                 "legalName": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "linkedinUrl": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
@@ -8941,7 +8957,8 @@
                 "FOLLOW_UP_3",
                 "TALKING",
                 "CLIENT",
-                "RECONTACT_LATER"
+                "RECONTACT_LATER",
+                "FORMER_CLIENT"
               ]
             },
             "ClientType": {
@@ -9020,7 +9037,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1db313cea769f420991acfd7b28bc023ebbb117ddfea3a49ce01d220e37184f4"
+    "storageHash": "b17559345c1650aa2fdd923dab62fbf7c6b3a7e139fb8ab5bb16a06aa65ebe87"
   },
   "capabilities": {
     "postgres": {

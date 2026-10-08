@@ -76,6 +76,9 @@ export class CreateClientInput {
   @Field(() => String, { nullable: true })
   website?: string;
 
+  @Field(() => String, { nullable: true })
+  linkedinUrl?: string;
+
   @Field(() => ClientIndustry, { nullable: true })
   industry?: ClientIndustry;
 

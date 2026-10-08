@@ -21,7 +21,11 @@ import { UpdateCompanyContactInput } from './dto/update-company-contact.input';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationInput } from '../common/dto/pagination.input';
-import { ClientType, ClientStatus } from './entities/client.entity';
+import {
+  ClientIndustry,
+  ClientType,
+  ClientStatus,
+} from './entities/client.entity';
 import type { GqlContext } from '../auth/types/gql-context.type';
 
 type RequestUser = { id: number; role: string };
@@ -42,6 +46,8 @@ export class ClientsResolver {
     excludeStatus?: ClientStatus,
     @Args('status', { type: () => ClientStatus, nullable: true })
     status?: ClientStatus,
+    @Args('industry', { type: () => ClientIndustry, nullable: true })
+    industry?: ClientIndustry,
   ) {
     return this.clientsService.findAll(
       user.id,
@@ -51,6 +57,7 @@ export class ClientsResolver {
       clientType,
       excludeStatus,
       status,
+      industry,
     );
   }
 
