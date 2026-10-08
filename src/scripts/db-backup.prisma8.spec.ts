@@ -36,6 +36,12 @@ describe('backup row conversion (Prisma 8)', () => {
     );
   });
 
+  it('keeps empty timestamps and decimals as null', () => {
+    expect(rowToBackup('Client', { contactedAt: null, taxRate: null })).toEqual(
+      { contactedAt: null, taxRate: null },
+    );
+  });
+
   it('passes through fields the contract does not describe', () => {
     expect(rowToBackup('Client', { extra: 'x' })).toEqual({ extra: 'x' });
     expect(rowFromBackup('Client', { extra: 'x' })).toEqual({ extra: 'x' });

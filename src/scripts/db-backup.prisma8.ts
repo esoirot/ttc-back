@@ -32,7 +32,7 @@ export function rowToBackup(model: string, row: Row): Row {
     const codec = meta.fields[field]?.type.codecId;
     const column = meta.storage.fields[field]?.column ?? field;
     out[column] =
-      value === null || typeof value !== 'string'
+      typeof value !== 'string'
         ? value
         : codec === 'pg/timestamp-string@1'
           ? fromDb(value).toISOString()

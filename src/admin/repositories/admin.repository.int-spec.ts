@@ -42,6 +42,62 @@ describe.each([
   const ids = (page: { items: { id: number }[] }) =>
     page.items.map((i) => i.id);
 
+  // Writes target one row by id. A third user's rows, created before the
+  // test's own (lowest ids), must come through every write untouched.
+  let carol: { id: number };
+  const seedDecoys = async () => {
+    carol = await seedUser(db.prisma8);
+    const client = await seedClient(db.prisma8, carol.id);
+    const project = await seedProject(db.prisma8, carol.id, {
+      clientId: client.id,
+    });
+    const entry = await seedTimeEntry(db.prisma8, carol.id, {
+      projectId: project.id,
+      invoicingStatus: 'INVOICED',
+    });
+    const inv = await invoice(carol.id, 'C-1', { clientId: client.id });
+    await db.prisma8.orm.public.InvoiceItem.create({
+      invoiceId: inv.id,
+      projectId: project.id,
+      timeEntryId: entry.id,
+      description: 'decoy',
+      quantity: toNumeric(1),
+      unitPrice: toNumeric(1),
+      total: toNumeric(1),
+    });
+    const occupation = await seedOccupation(db.prisma8, carol.id);
+    await db.prisma8.orm.public.TranslationRate.create({
+      userId: carol.id,
+      occupationId: occupation.id,
+      _type: 'HOURLY',
+      name: 'Decoy',
+      amount: 1,
+      currency: 'EUR',
+      updatedAt: toDb(new Date()),
+    });
+  };
+  const decoyRows = async () => {
+    const o = db.prisma8.orm.public;
+    const userId = carol.id;
+    return {
+      clients: await o.Client.where({ userId }).all(),
+      projects: await o.Project.where({ userId }).all(),
+      invoices: await o.Invoice.include('items').where({ userId }).all(),
+      entries: await o.TimeEntry.where({ userId }).all(),
+      rates: await o.TranslationRate.where({ userId }).all(),
+    };
+  };
+  const withDecoys = () => {
+    let before: Awaited<ReturnType<typeof decoyRows>>;
+    beforeEach(async () => {
+      await seedDecoys();
+      before = await decoyRows();
+    });
+    afterEach(async () => {
+      await expect(decoyRows()).resolves.toEqual(before);
+    });
+  };
+
   beforeEach(async () => {
     repo = make();
     alice = await seedUser(db.prisma8, { name: 'Alice' });
@@ -152,7 +208,8 @@ describe.each([
         notes: 'Game',
         status: 'SENT',
       });
-      await invoice(bob.id, 'INV-002');
+      await invoice(bob.id, 'INV-002', { status: 'SENT' });
+      const c = await invoice(bob.id, 'GAME-3');
       await db.prisma8.orm.public.InvoiceItem.create({
         invoiceId: a.id,
         description: 'x',
@@ -174,13 +231,25 @@ describe.each([
         ],
       });
       await expect(
-        repo.findInvoices(undefined, 'INV-00'),
-      ).resolves.toMatchObject({ total: 2 });
+        repo.findInvoices(undefined, 'game').then(ids),
+      ).resolves.toEqual([a.id, c.id]);
+      await expect(repo.findInvoices()).resolves.toMatchObject({ total: 3 });
+    });
+
+    it('lists every client and project without a search', async () => {
+      await seedClient(db.prisma8, alice.id);
+      await seedClient(db.prisma8, bob.id);
+      await seedProject(db.prisma8, alice.id);
+      await expect(repo.findClients()).resolves.toMatchObject({ total: 2 });
+      await expect(repo.findProjects()).resolves.toMatchObject({ total: 1 });
     });
 
     it('pages time entries, optionally for one user', async () => {
       const e1 = await seedTimeEntry(db.prisma8, alice.id);
       const e2 = await seedTimeEntry(db.prisma8, bob.id);
+      await expect(repo.findTimeEntries({ limit: 2 })).resolves.toMatchObject({
+        nextCursor: null,
+      });
       await expect(repo.findTimeEntries().then(ids)).resolves.toEqual([
         e1.id,
         e2.id,
@@ -224,6 +293,8 @@ describe.each([
   });
 
   describe('clients', () => {
+    withDecoys();
+
     it('creates for any user, updates, and NotFound on unknown ids', async () => {
       const created = await repo.createClient({
         userId: bob.id,
@@ -270,6 +341,8 @@ describe.each([
   });
 
   describe('projects', () => {
+    withDecoys();
+
     it('creates for any user, updates, and NotFound on unknown ids', async () => {
       const created = await repo.createProject({
         userId: alice.id,
@@ -290,8 +363,13 @@ describe.each([
           id: created.id,
           status: ProjectStatus.ACTIVE,
           unitPrice: 25,
+          deadline: new Date('2026-12-01T00:00:00Z'),
         }),
-      ).resolves.toMatchObject({ status: 'ACTIVE', unitPrice: 25 });
+      ).resolves.toMatchObject({
+        status: 'ACTIVE',
+        unitPrice: 25,
+        deadline: new Date('2026-12-01T00:00:00Z'),
+      });
       await expect(
         repo.updateProject(MISSING, { id: MISSING, title: 'x' }),
       ).rejects.toBeInstanceOf(NotFoundException);
@@ -330,6 +408,8 @@ describe.each([
   });
 
   describe('invoices', () => {
+    withDecoys();
+
     it('updates any invoice without transition rules, NotFound on unknown ids', async () => {
       const inv = await invoice(alice.id, 'I-1');
       await expect(
@@ -337,10 +417,12 @@ describe.each([
           id: inv.id,
           status: InvoiceStatus.PAID,
           notes: 'admin',
+          dueDate: new Date('2026-11-01T00:00:00Z'),
         }),
       ).resolves.toMatchObject({
         status: 'PAID',
         notes: 'admin',
+        dueDate: new Date('2026-11-01T00:00:00Z'),
         paidAt: null,
         owner: { id: alice.id },
         items: [],
@@ -387,6 +469,8 @@ describe.each([
   });
 
   describe('time entries and rates', () => {
+    withDecoys();
+
     it('deletes a time entry, NotFound on unknown ids', async () => {
       const entry = await seedTimeEntry(db.prisma8, bob.id);
       await expect(repo.deleteTimeEntry(entry.id)).resolves.toEqual({

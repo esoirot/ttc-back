@@ -74,6 +74,20 @@ describe.each([
       occupationId: occupation.id,
     });
   });
+
+  it('lists rows by id, even after an update moved one in storage', async () => {
+    const user = await seedUser(db.prisma8);
+    const first = await seedClient(db.prisma8, user.id, { name: 'A' });
+    const second = await seedClient(db.prisma8, user.id, { name: 'B' });
+    await db.prisma8.orm.public.Client.where({ id: first.id }).update({
+      name: 'A2',
+    });
+
+    const { file } = await runExport(client(), dir);
+    const payload = JSON.parse(readFileSync(file, 'utf-8')) as BackupPayload;
+
+    expect(payload.data.Client.map((c) => c.id)).toEqual([first.id, second.id]);
+  });
 });
 
 describe('importBackup8', () => {
@@ -123,5 +137,18 @@ describe('importBackup8', () => {
     expect(
       (JSON.parse(readFileSync(after.file, 'utf-8')) as BackupPayload).data,
     ).toEqual(payload.data);
+  });
+
+  it('restores an older backup that lacks a newer table', async () => {
+    const user = await seedUser(db.prisma8);
+    await seedClient(db.prisma8, user.id);
+    const { file } = await runExport(prisma8BackupClient(db.prisma8), dir);
+    const { data } = JSON.parse(readFileSync(file, 'utf-8')) as BackupPayload;
+    delete data.Occupation;
+
+    await resetDb();
+    await importBackup8(db.prisma8, data);
+
+    await expect(db.prisma8.orm.public.Client.all()).resolves.toHaveLength(1);
   });
 });
