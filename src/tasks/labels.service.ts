@@ -22,7 +22,7 @@ export class LabelsService {
     userId: number,
   ): Promise<TaskLabelModel> {
     // #19 — findById throws NotFoundException unless the caller owns the
-    // task's project or is its assignee.
+    // task's project.
     await this.taskRepo.findById(input.taskId, userId);
     return this.repo.create(input);
   }

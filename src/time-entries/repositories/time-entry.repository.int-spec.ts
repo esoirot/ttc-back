@@ -487,8 +487,7 @@ describe.each([
       await expect(
         repo.findDefaultOccupationId(empty.id, owner),
       ).resolves.toBeNull();
-      // Occupations are personal: someone else logging on the project
-      // (an assignee) never gets the owner's.
+      // Occupations are personal: another user never gets the owner's.
       await expect(
         repo.findDefaultOccupationId(p.id, stranger),
       ).resolves.toBeNull();
@@ -496,14 +495,14 @@ describe.each([
   });
 
   describe('sums', () => {
-    it('sums every contributor per task, visible to owner and assignee', async () => {
+    it('sums entries per task, for the project owner only', async () => {
       const s = await seedTaskAccess(db.prisma8);
       await entry(s.owner, '2026-10-01T08:00:00.000Z', {
         taskId: s.task,
         durationSeconds: 100,
         wordsProcessed: 10,
       });
-      await entry(s.assignee, '2026-10-01T09:00:00.000Z', {
+      await entry(s.owner, '2026-10-01T09:00:00.000Z', {
         taskId: s.task,
         durationSeconds: 50,
         wordsProcessed: 5,
@@ -513,9 +512,6 @@ describe.each([
         durationSeconds: 7,
       });
 
-      await expect(
-        repo.sumDurationByTaskIds([s.task, s.otherTask], s.assignee),
-      ).resolves.toEqual(new Map([[s.task, 150]]));
       await expect(
         repo.sumDurationByTaskIds([s.task, s.otherTask], s.owner),
       ).resolves.toEqual(
@@ -565,7 +561,7 @@ describe.each([
 
   describe("references to other users' records", () => {
     // The owner's project, task, subtask, occupation and tag; the stranger
-    // owns none of them, the assignee only works on the task.
+    // owns none of them.
     let s: Awaited<ReturnType<typeof seedTaskAccess>>;
     let theirs: [string, number | number[]][];
     let subtaskId: number;
@@ -587,8 +583,6 @@ describe.each([
       occupationId = (await seedOccupation(db.prisma8, s.owner)).id;
       theirs = [
         ['projectId', s.project],
-        // No task in it: nobody can be its assignee.
-        ['projectId', (await seedProject(db.prisma8, s.owner)).id],
         ['taskId', s.task],
         ['subtaskId', subtaskId],
         ['occupationId', occupationId],
@@ -626,29 +620,6 @@ describe.each([
         ).rejects.toBeInstanceOf(NotFoundException);
       }
       await expect(snapshot(own.id)).resolves.toEqual(before);
-    });
-
-    it('lets the assignee log time on their task, its subtask and its project', async () => {
-      await expect(
-        repo.create(s.assignee, {
-          ...span,
-          projectId: s.project,
-          taskId: s.task,
-          subtaskId,
-        }),
-      ).resolves.toMatchObject({ projectId: s.project, taskId: s.task });
-      await expect(
-        repo.startTimer(s.assignee, { projectId: s.project, taskId: s.task }),
-      ).resolves.toMatchObject({ taskId: s.task });
-    });
-
-    it("keeps the assignee off the project's other tasks and the owner's occupation", async () => {
-      await expect(
-        repo.create(s.assignee, { ...span, taskId: s.otherTask }),
-      ).rejects.toBeInstanceOf(NotFoundException);
-      await expect(
-        repo.create(s.assignee, { ...span, occupationId }),
-      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

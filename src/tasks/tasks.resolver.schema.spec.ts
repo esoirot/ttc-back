@@ -107,7 +107,8 @@ describe('TasksResolver GraphQL schema', () => {
     const queries = schema.getQueryType()?.getFields() ?? {};
     expect(queries).toHaveProperty('task');
     expect(queries).toHaveProperty('tasks');
-    expect(queries).toHaveProperty('myTasks');
+    // Tasks have no assignee: only the project owner works on them.
+    expect(queries).not.toHaveProperty('myTasks');
 
     const mutations = schema.getMutationType()?.getFields() ?? {};
     for (const name of [
@@ -156,6 +157,12 @@ describe('TasksResolver GraphQL schema', () => {
         getFields: () => Record<string, unknown>;
       };
       expect(type.getFields()).toHaveProperty('wordCount');
+    }
+    for (const typeName of ['Task', 'CreateTaskInput', 'UpdateTaskInput']) {
+      const type = schema.getType(typeName) as unknown as {
+        getFields: () => Record<string, unknown>;
+      };
+      expect(type.getFields()).not.toHaveProperty('assigneeId');
     }
   });
 

@@ -22,7 +22,6 @@ describe('TasksResolver', () => {
   let tasksService: {
     findOne: jest.Mock;
     findByProject: jest.Mock;
-    findByAssignee: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -53,7 +52,6 @@ describe('TasksResolver', () => {
     tasksService = {
       findOne: jest.fn(),
       findByProject: jest.fn(),
-      findByAssignee: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -130,15 +128,6 @@ describe('TasksResolver', () => {
       { limit: 10 },
       'chapter',
     );
-  });
-
-  it('findMyTasks — delegates with current user id', async () => {
-    const conn = { edges: [] };
-    tasksService.findByAssignee.mockResolvedValue(conn);
-
-    const result = await resolver.findMyTasks(user);
-    expect(tasksService.findByAssignee).toHaveBeenCalledWith(7, undefined);
-    expect(result).toEqual(conn);
   });
 
   it('createTask — delegates with input and user id', async () => {

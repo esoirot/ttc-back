@@ -22,9 +22,6 @@ export class Task {
   @Field(() => Int)
   projectId!: number;
 
-  @Field(() => Int, { nullable: true })
-  assigneeId?: number | null;
-
   @Field()
   title!: string;
 

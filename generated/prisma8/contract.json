@@ -3245,13 +3245,6 @@
           },
           "Task": {
             "fields": {
-              "assigneeId": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
-                }
-              },
               "checklistTitles": {
                 "many": true,
                 "nullable": true,
@@ -3383,22 +3376,6 @@
                   "namespace": "public"
                 }
               },
-              "assignee": {
-                "cardinality": "N:1",
-                "nullable": true,
-                "on": {
-                  "localFields": [
-                    "assigneeId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "User",
-                  "namespace": "public"
-                }
-              },
               "attachments": {
                 "cardinality": "1:N",
                 "on": {
@@ -3493,9 +3470,6 @@
             },
             "storage": {
               "fields": {
-                "assigneeId": {
-                  "column": "assigneeId"
-                },
                 "checklistTitles": {
                   "column": "checklistTitles"
                 },
@@ -5097,21 +5071,6 @@
                 },
                 "to": {
                   "model": "TaskComment",
-                  "namespace": "public"
-                }
-              },
-              "tasks": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "assigneeId"
-                  ]
-                },
-                "to": {
-                  "model": "Task",
                   "namespace": "public"
                 }
               },
@@ -7638,11 +7597,6 @@
             },
             "Task": {
               "columns": {
-                "assigneeId": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
-                  "nullable": true
-                },
                 "checklistTitles": {
                   "codecId": "pg/text@1",
                   "many": true,
@@ -7756,25 +7710,6 @@
                 }
               },
               "foreignKeys": [
-                {
-                  "name": "Task_assigneeId_fkey",
-                  "onDelete": "setNull",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "assigneeId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Task"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "User"
-                  }
-                },
                 {
                   "name": "Task_projectId_fkey",
                   "onDelete": "cascade",
@@ -9070,7 +9005,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "594c1cc6b56cd9c5de8c6ee73c3201f48df9a785818ced78b2802682008bb4ad"
+    "storageHash": "ed5545fe8b201c15b947cea71571148fadd7524e7d91cd481b714a3fc5b7c37b"
   },
   "capabilities": {
     "postgres": {

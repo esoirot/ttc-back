@@ -66,11 +66,8 @@ describe.each([
       });
     });
 
-    it('is visible to the assignee but not to a stranger', async () => {
+    it('is not visible to a stranger', async () => {
       await attachment(s.task, 'https://x');
-      await expect(
-        repo.findByTaskIds([s.task], s.assignee),
-      ).resolves.toHaveLength(1);
       await expect(repo.findByTaskIds([s.task], s.stranger)).resolves.toEqual(
         [],
       );
@@ -78,12 +75,9 @@ describe.each([
   });
 
   describe('findById', () => {
-    it('returns the attachment to the owner and assignee, null to a stranger', async () => {
+    it('returns the attachment to the owner, null to a stranger', async () => {
       const { id } = await attachment(s.task, 'https://x');
       await expect(repo.findById(id, s.owner)).resolves.toMatchObject({ id });
-      await expect(repo.findById(id, s.assignee)).resolves.toMatchObject({
-        id,
-      });
       await expect(repo.findById(id, s.stranger)).resolves.toBeNull();
     });
   });
@@ -133,7 +127,7 @@ describe.each([
         displayText: 'Label',
       });
       await expect(
-        repo.update(id, { url: 'https://new', displayText: null }, s.assignee),
+        repo.update(id, { url: 'https://new', displayText: null }, s.owner),
       ).resolves.toMatchObject({
         url: 'https://new',
         displayText: null,

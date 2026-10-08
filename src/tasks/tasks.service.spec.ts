@@ -12,7 +12,6 @@ describe('TasksService', () => {
   let repo: {
     findById: jest.Mock;
     findByProject: jest.Mock;
-    findByAssignee: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -23,7 +22,6 @@ describe('TasksService', () => {
     repo = {
       findById: jest.fn(),
       findByProject: jest.fn(),
-      findByAssignee: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -81,7 +79,7 @@ describe('TasksService', () => {
   });
 
   describe('update', () => {
-    it('propagates NotFoundException when the caller is neither owner nor assignee', async () => {
+    it('propagates NotFoundException when the caller does not own the project', async () => {
       repo.findById.mockRejectedValue(
         new NotFoundException('Task 1 not found'),
       );
@@ -98,7 +96,6 @@ describe('TasksService', () => {
         status: 'TODO',
         description: null,
         dueDate: null,
-        assigneeId: null,
       });
       repo.findById.mockResolvedValue(before);
       repo.update.mockResolvedValue(before);
@@ -185,36 +182,19 @@ describe('TasksService', () => {
       });
     });
 
-    it('logs ASSIGNED when assigneeId changes', async () => {
-      const before = mockTask({ assigneeId: null });
-      const after = mockTask({ assigneeId: 5 });
-      repo.findById.mockResolvedValue(before);
-      repo.update.mockResolvedValue(after);
-
-      await service.update(1, { id: 1, assigneeId: 5 }, 7);
-
-      expect(activitiesService.log).toHaveBeenCalledWith(1, 7, 'ASSIGNED', {
-        to: 5,
-      });
-    });
-
     it('logs multiple activities when multiple fields change', async () => {
-      const before = mockTask({
-        title: 'Old',
-        status: 'TODO',
-        assigneeId: null,
-      });
-      const after = mockTask({ title: 'New', status: 'DONE', assigneeId: 3 });
+      const before = mockTask({ title: 'Old', status: 'TODO' });
+      const after = mockTask({ title: 'New', status: 'DONE' });
       repo.findById.mockResolvedValue(before);
       repo.update.mockResolvedValue(after);
 
       await service.update(
         1,
-        { id: 1, title: 'New', status: TaskStatus.DONE, assigneeId: 3 },
+        { id: 1, title: 'New', status: TaskStatus.DONE },
         7,
       );
 
-      expect(activitiesService.log).toHaveBeenCalledTimes(3);
+      expect(activitiesService.log).toHaveBeenCalledTimes(2);
       expect(activitiesService.log).toHaveBeenCalledWith(
         1,
         7,
@@ -225,12 +205,6 @@ describe('TasksService', () => {
         1,
         7,
         'STATUS_CHANGED',
-        expect.any(Object),
-      );
-      expect(activitiesService.log).toHaveBeenCalledWith(
-        1,
-        7,
-        'ASSIGNED',
         expect.any(Object),
       );
     });
@@ -273,7 +247,7 @@ describe('TasksService', () => {
       expect(result).toEqual(task);
     });
 
-    it('propagates NotFoundException when the caller is neither owner nor assignee', async () => {
+    it('propagates NotFoundException when the caller does not own the project', async () => {
       repo.findById.mockRejectedValue(
         new NotFoundException('Task 1 not found'),
       );
@@ -307,17 +281,6 @@ describe('TasksService', () => {
         { limit: 10 },
         'chapter',
       );
-    });
-  });
-
-  describe('findByAssignee', () => {
-    it('delegates to repository', async () => {
-      const connection = { edges: [], pageInfo: { hasNextPage: false } };
-      repo.findByAssignee.mockResolvedValue(connection);
-
-      const result = await service.findByAssignee(5);
-      expect(repo.findByAssignee).toHaveBeenCalledWith(5, undefined);
-      expect(result).toEqual(connection);
     });
   });
 });

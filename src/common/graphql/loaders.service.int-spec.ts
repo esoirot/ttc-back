@@ -121,23 +121,6 @@ describe('nested field loaders: who sees what', () => {
     });
   });
 
-  it("gives the assignee the task's fields, not the owner's project, entries or clients", async () => {
-    await expect(read(s.assignee)).resolves.toEqual({
-      subtasks: 1,
-      comments: 1,
-      labels: 1,
-      attachments: 1,
-      taskActivities: 1,
-      taskSeconds: 600,
-      taskWords: 200,
-      entryActivities: 0,
-      projectSeconds: null,
-      projectWords: null,
-      projectTaskWords: null,
-      statusHistory: 0,
-    });
-  });
-
   it('gives a stranger nothing at all', async () => {
     await expect(read(s.stranger)).resolves.toEqual({
       subtasks: 0,

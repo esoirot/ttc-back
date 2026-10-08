@@ -58,7 +58,6 @@ export function mockTask(overrides: Partial<TaskModel> = {}): TaskModel {
   return {
     id: 1,
     projectId: 1,
-    assigneeId: null,
     title: 'Test Task',
     description: null,
     status: 'TODO',

@@ -12,9 +12,6 @@ export class CreateTaskInput {
   @Field({ nullable: true })
   description?: string;
 
-  @Field(() => Int, { nullable: true })
-  assigneeId?: number;
-
   @Field(() => TaskStatus, { nullable: true })
   status?: TaskStatus;
 

@@ -73,15 +73,6 @@ export class TasksResolver {
   }
 
   @UseGuards(GqlAuthGuard)
-  @Query(() => TaskConnection, { name: 'myTasks' })
-  findMyTasks(
-    @CurrentUser() user: RequestUser,
-    @Args('pagination', { nullable: true }) pagination?: PaginationInput,
-  ) {
-    return this.tasksService.findByAssignee(user.id, pagination);
-  }
-
-  @UseGuards(GqlAuthGuard)
   @Mutation(() => Task)
   createTask(
     @CurrentUser() user: RequestUser,

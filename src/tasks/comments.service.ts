@@ -28,8 +28,8 @@ export class CommentsService {
     authorId: number,
   ): Promise<TaskCommentModel> {
     // #20 — findById throws NotFoundException unless the caller owns the
-    // task's project or is its assignee (same owner-or-assignee check used
-    // by tasks.findOne/update); otherwise anyone could comment on any task.
+    // task's project (same check as tasks.findOne/update); otherwise anyone
+    // could comment on any task.
     await this.taskRepo.findById(input.taskId, authorId);
     const comment = await this.repo.create(input, authorId);
     await this.activitiesService.log(input.taskId, authorId, 'COMMENT_ADDED');

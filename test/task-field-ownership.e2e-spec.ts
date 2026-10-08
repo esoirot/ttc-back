@@ -65,9 +65,9 @@ describe('Task field resolver ownership (e2e)', () => {
       findOne: jest.fn().mockResolvedValue(makeOwnedTask()),
     };
 
-    // Ownership-aware at the service boundary, mirroring what the real
-    // repository's `task: { OR: [{ project: { userId } }, { assigneeId }] }`
-    // filter does: only the owning user's id yields the real row.
+    // Ownership-aware at the service boundary, mirroring the real
+    // repository's project-owner filter (`taskVisibleTo` in
+    // src/prisma8/access.ts): only the owning user's id yields the real row.
     const subtasksService = {
       findByTaskIds: jest.fn(
         (taskIds: number[], userId: number): Promise<SubtaskModel[]> =>

@@ -55,7 +55,6 @@ describe('TasksResolver (e2e)', () => {
   let tasksService: {
     findOne: jest.Mock;
     findByProject: jest.Mock;
-    findByAssignee: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -84,7 +83,6 @@ describe('TasksResolver (e2e)', () => {
     tasksService = {
       findOne: jest.fn().mockResolvedValue(makeTask()),
       findByProject: jest.fn().mockResolvedValue(makeConn()),
-      findByAssignee: jest.fn().mockResolvedValue(makeConn()),
       create: jest.fn().mockResolvedValue(makeTask()),
       update: jest.fn().mockResolvedValue(makeTask({ title: 'Updated' })),
       delete: jest.fn().mockResolvedValue(true),
@@ -219,15 +217,6 @@ describe('TasksResolver (e2e)', () => {
     const body = gqlBody<{ tasks: { items: unknown[] } }>(res);
     expect(body.errors).toBeUndefined();
     expect(body.data?.tasks.items).toHaveLength(1);
-  });
-
-  it('myTasks — returns connection', async () => {
-    const res = await gql(
-      `{ myTasks { items ${TASK_FIELDS} total nextCursor } }`,
-    );
-    expect(res.status).toBe(200);
-    const body = gqlBody(res);
-    expect(body.errors).toBeUndefined();
   });
 
   it('createTask — returns created task', async () => {
