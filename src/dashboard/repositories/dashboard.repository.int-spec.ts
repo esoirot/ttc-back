@@ -3,6 +3,7 @@ import { toDb } from '../../prisma8/timestamp';
 import {
   seedClient,
   seedProject,
+  seedTask,
   seedTimeEntry,
   seedUser,
 } from '../../prisma8/testing/seed';
@@ -151,39 +152,136 @@ describe.each([
     });
   });
 
-  it('lists open projects due within a week, soonest first, deadline as ISO text', async () => {
-    const soon = await seedProject(db.prisma8, owner, {
-      title: 'Soon',
-      deadline: toDb(ahead(2)),
-      status: 'ACTIVE',
-    });
-    const sooner = await seedProject(db.prisma8, owner, {
-      title: 'Sooner',
-      deadline: toDb(ahead(1)),
-    });
-    await seedProject(db.prisma8, owner, { deadline: toDb(ahead(8)) });
-    await seedProject(db.prisma8, owner, { deadline: toDb(ago(1)) });
-    await seedProject(db.prisma8, owner, {
-      deadline: toDb(ahead(1)),
-      status: 'COMPLETED',
-    });
+  describe('upcoming deadlines', () => {
+    const subtask = (
+      taskId: number,
+      title: string,
+      data: { dueDate?: Date; done?: boolean } = {},
+    ) =>
+      db.prisma8.orm.public.Subtask.create({
+        taskId,
+        title,
+        dueDate: data.dueDate && toDb(data.dueDate),
+        done: data.done ?? false,
+        updatedAt: toDb(NOW),
+      });
 
-    const { upcomingDeadlines } = await repo.getDashboard(owner);
-
-    expect(upcomingDeadlines).toEqual([
-      {
-        id: sooner.id,
-        title: 'Sooner',
-        deadline: ahead(1).toISOString(),
-        status: 'DRAFT',
-      },
-      {
-        id: soon.id,
-        title: 'Soon',
-        deadline: ahead(2).toISOString(),
+    it('lists overdue and next-30-days projects, tasks and checklist items, earliest first', async () => {
+      const late = await seedProject(db.prisma8, owner, {
+        title: 'Late project',
         status: 'ACTIVE',
-      },
-    ]);
+        deadline: toDb(ago(3)),
+      });
+      const book = await seedProject(db.prisma8, owner, { title: 'Book' });
+      const task = await seedTask(db.prisma8, book.id, {
+        title: 'Chapter 1',
+        dueDate: toDb(ahead(2)),
+      });
+      const item = await subtask(task.id, 'Proofread', {
+        dueDate: ahead(10),
+      });
+      // Beyond the 30-day horizon, or without a due date.
+      await seedProject(db.prisma8, owner, { deadline: toDb(ahead(31)) });
+      await seedTask(db.prisma8, book.id, { dueDate: toDb(ahead(31)) });
+      await seedTask(db.prisma8, book.id);
+      await subtask(task.id, 'No date');
+
+      const { upcomingDeadlines } = await repo.getDashboard(owner);
+
+      expect(upcomingDeadlines).toEqual([
+        {
+          kind: 'PROJECT',
+          id: late.id,
+          title: 'Late project',
+          deadline: ago(3).toISOString(),
+          projectId: late.id,
+          projectTitle: 'Late project',
+          taskId: null,
+          taskTitle: null,
+        },
+        {
+          kind: 'TASK',
+          id: task.id,
+          title: 'Chapter 1',
+          deadline: ahead(2).toISOString(),
+          projectId: book.id,
+          projectTitle: 'Book',
+          taskId: task.id,
+          taskTitle: 'Chapter 1',
+        },
+        {
+          kind: 'CHECKLIST_ITEM',
+          id: item.id,
+          title: 'Proofread',
+          deadline: ahead(10).toISOString(),
+          projectId: book.id,
+          projectTitle: 'Book',
+          taskId: task.id,
+          taskTitle: 'Chapter 1',
+        },
+      ]);
+    });
+
+    it('merges the three kinds by due date, not by kind', async () => {
+      const project = await seedProject(db.prisma8, owner, {
+        title: 'P',
+        deadline: toDb(ahead(5)),
+      });
+      const task = await seedTask(db.prisma8, project.id, {
+        title: 'T',
+        dueDate: toDb(ahead(3)),
+      });
+      await subtask(task.id, 'S', { dueDate: ahead(1) });
+
+      const { upcomingDeadlines } = await repo.getDashboard(owner);
+
+      expect(upcomingDeadlines.map((d) => d.title)).toEqual(['S', 'T', 'P']);
+    });
+
+    it('leaves out finished work, however late', async () => {
+      for (const status of [
+        'COMPLETED',
+        'CANCELLED',
+        'ARCHIVED',
+        'INVOICE_SENT',
+        'INVOICE_PAID',
+      ] as const)
+        await seedProject(db.prisma8, owner, {
+          status,
+          deadline: toDb(ago(1)),
+        });
+      const project = await seedProject(db.prisma8, owner);
+      for (const status of ['DONE', 'PAID'] as const)
+        await seedTask(db.prisma8, project.id, {
+          status,
+          dueDate: toDb(ago(1)),
+        });
+      const task = await seedTask(db.prisma8, project.id);
+      await subtask(task.id, 'Ticked', { dueDate: ago(1), done: true });
+
+      await expect(repo.getDashboard(owner)).resolves.toMatchObject({
+        upcomingDeadlines: [],
+      });
+    });
+
+    it('keeps the 20 earliest across every kind', async () => {
+      const project = await seedProject(db.prisma8, owner);
+      for (let d = 1; d <= 12; d++)
+        await seedTask(db.prisma8, project.id, {
+          title: `T${d}`,
+          dueDate: toDb(ago(30 - d)),
+        });
+      const task = await seedTask(db.prisma8, project.id, { title: 'Holder' });
+      for (let d = 1; d <= 12; d++)
+        await subtask(task.id, `S${d}`, { dueDate: ahead(d) });
+
+      const { upcomingDeadlines } = await repo.getDashboard(owner);
+
+      expect(upcomingDeadlines.map((d) => d.title)).toEqual([
+        ...Array.from({ length: 12 }, (_, i) => `T${i + 1}`),
+        ...Array.from({ length: 8 }, (_, i) => `S${i + 1}`),
+      ]);
+    });
   });
 
   it('shows the 5 most recent time entries, start time as ISO text', async () => {
@@ -239,6 +337,17 @@ describe.each([
       wordsProcessed: 5,
     });
     await seedClient(db.prisma8, stranger, { status: 'TO_CONTACT' });
+    const theirTask = await seedTask(
+      db.prisma8,
+      (await seedProject(db.prisma8, stranger)).id,
+      { dueDate: toDb(ahead(1)) },
+    );
+    await db.prisma8.orm.public.Subtask.create({
+      taskId: theirTask.id,
+      title: 'Theirs',
+      dueDate: toDb(ahead(1)),
+      updatedAt: toDb(NOW),
+    });
 
     await expect(repo.getDashboard(owner)).resolves.toEqual({
       activeProjectCount: 0,
