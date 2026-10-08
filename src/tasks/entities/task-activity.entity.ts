@@ -10,6 +10,15 @@ class TaskActivityUser {
 }
 
 @ObjectType()
+class TaskActivityTaskRef {
+  @Field(() => Int)
+  id!: number;
+
+  @Field()
+  title!: string;
+}
+
+@ObjectType()
 export class TaskActivity {
   @Field(() => Int)
   id!: number;
@@ -34,4 +43,15 @@ export class TaskActivity {
 
   @Field(() => TaskActivityUser, { nullable: true })
   user?: TaskActivityUser | null;
+
+  /** Filled by projectActivities, to group a project's history by task. */
+  @Field(() => TaskActivityTaskRef, { nullable: true })
+  task?: TaskActivityTaskRef | null;
+}
+
+@ObjectType()
+export class TaskActivityConnection {
+  @Field(() => [TaskActivity]) items!: TaskActivity[];
+  @Field(() => Int, { nullable: true }) nextCursor!: number | null;
+  @Field(() => Int) total!: number;
 }

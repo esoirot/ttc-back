@@ -9,6 +9,7 @@ import {
   Context,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
+import { MoveTaskInput } from './dto/move-task.input';
 import { TasksService } from './tasks.service';
 import { SubtasksService } from './subtasks.service';
 import { CommentsService } from './comments.service';
@@ -20,7 +21,10 @@ import type { GqlContext } from '../auth/types/gql-context.type';
 import { Subtask } from './entities/subtask.entity';
 import { TaskComment } from './entities/task-comment.entity';
 import { TaskLabel } from './entities/task-label.entity';
-import { TaskActivity } from './entities/task-activity.entity';
+import {
+  TaskActivity,
+  TaskActivityConnection,
+} from './entities/task-activity.entity';
 import { TaskAttachment } from './entities/task-attachment.entity';
 import { TaskConnection } from './types/task-connection.type';
 import { CreateTaskInput } from './dto/create-task.input';
@@ -57,6 +61,16 @@ export class TasksResolver {
   }
 
   @UseGuards(GqlAuthGuard)
+  @Query(() => TaskActivityConnection, { name: 'projectActivities' })
+  findProjectActivities(
+    @Args('projectId', { type: () => Int }) projectId: number,
+    @CurrentUser() user: RequestUser,
+    @Args('pagination', { nullable: true }) pagination?: PaginationInput,
+  ) {
+    return this.activitiesService.findByProject(projectId, user.id, pagination);
+  }
+
+  @UseGuards(GqlAuthGuard)
   @Query(() => TaskConnection, { name: 'tasks' })
   findByProject(
     @Args('projectId', { type: () => Int }) projectId: number,
@@ -88,6 +102,15 @@ export class TasksResolver {
     @Args('input') input: UpdateTaskInput,
   ) {
     return this.tasksService.update(input.id, input, user.id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Task)
+  moveTask(
+    @CurrentUser() user: RequestUser,
+    @Args('input') input: MoveTaskInput,
+  ) {
+    return this.tasksService.move(input, user.id);
   }
 
   @UseGuards(GqlAuthGuard)

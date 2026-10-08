@@ -107,6 +107,7 @@ describe('TasksResolver GraphQL schema', () => {
     const queries = schema.getQueryType()?.getFields() ?? {};
     expect(queries).toHaveProperty('task');
     expect(queries).toHaveProperty('tasks');
+    expect(queries).toHaveProperty('projectActivities');
     // Tasks have no assignee: only the project owner works on them.
     expect(queries).not.toHaveProperty('myTasks');
 
@@ -114,6 +115,7 @@ describe('TasksResolver GraphQL schema', () => {
     for (const name of [
       'createTask',
       'updateTask',
+      'moveTask',
       'deleteTask',
       'createSubtask',
       'updateSubtask',

@@ -7,6 +7,7 @@ describe('ActivitiesService (tasks)', () => {
   let repo: {
     findByTaskIds: jest.Mock;
     findByTimeEntryIds: jest.Mock;
+    findByProject: jest.Mock;
     log: jest.Mock;
   };
 
@@ -14,6 +15,7 @@ describe('ActivitiesService (tasks)', () => {
     repo = {
       findByTaskIds: jest.fn(),
       findByTimeEntryIds: jest.fn(),
+      findByProject: jest.fn(),
       log: jest.fn(),
     };
 
@@ -72,6 +74,19 @@ describe('ActivitiesService (tasks)', () => {
       userId: 7,
       type: 'CREATED',
       payload: undefined,
+    });
+  });
+
+  it('findByProject — delegates to repo with the page', async () => {
+    const page = { items: [], nextCursor: null, total: 0 };
+    repo.findByProject.mockResolvedValue(page);
+
+    await expect(
+      service.findByProject(4, 7, { limit: 5, cursor: 9 }),
+    ).resolves.toBe(page);
+    expect(repo.findByProject).toHaveBeenCalledWith(4, 7, {
+      limit: 5,
+      cursor: 9,
     });
   });
 
