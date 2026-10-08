@@ -230,6 +230,16 @@ describe.each([
         customFields: [],
       });
       expect([cleared.languagePairs, cleared.customFields]).toEqual([[], []]);
+
+      await repo.update(o.id, owner, {
+        id: o.id,
+        customFields: [{ key: 'c', value: '3' }],
+      });
+      const clearedFields = await repo.update(o.id, owner, {
+        id: o.id,
+        customFields: null,
+      });
+      expect(clearedFields.customFields).toEqual([]);
     });
 
     it("throws NotFound for someone else's occupation", async () => {
@@ -298,6 +308,38 @@ describe.each([
       await expect(
         repo.updateCharge(charge.id, stranger, { id: charge.id, amount: 1 }),
       ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        repo.updateCharge(charge.id, owner, {
+          id: charge.id,
+          type: ChargeType.VARIABLE,
+        }),
+      ).resolves.toMatchObject({ type: 'VARIABLE', amount: 550 });
+    });
+
+    it("refuses someone else's charge even when the user has charges of their own", async () => {
+      const mine = await seedOccupation(db.prisma8, owner);
+      await repo.createCharge(owner, {
+        occupationId: mine.id,
+        name: 'own',
+        amount: 1,
+        type: ChargeType.FIXED,
+      });
+      const theirs = await seedOccupation(db.prisma8, stranger);
+      const charge = await repo.createCharge(stranger, {
+        occupationId: theirs.id,
+        name: 'theirs',
+        amount: 9,
+        type: ChargeType.FIXED,
+      });
+      await expect(
+        repo.updateCharge(charge.id, owner, { id: charge.id, amount: 1 }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(repo.deleteCharge(charge.id, owner)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      await expect(repo.findById(theirs.id, stranger)).resolves.toMatchObject({
+        charges: [expect.objectContaining({ name: 'theirs', amount: 9 })],
+      });
     });
 
     it('deletes a charge, NotFound on someone else', async () => {

@@ -219,6 +219,44 @@ describe.each([
     });
   });
 
+  it("ignores every other user's data", async () => {
+    await seedProject(db.prisma8, stranger, {
+      status: 'ACTIVE',
+      deadline: toDb(ahead(1)),
+    });
+    const inv = await db.prisma8.orm.public.Invoice.create({
+      userId: stranger,
+      number: 'S-1',
+      status: 'SENT',
+      issuedAt: toDb(ago(1)),
+      updatedAt: toDb(NOW),
+    });
+    await db.prisma8.orm.public.InvoiceItem.create({
+      invoiceId: inv.id,
+      description: 'x',
+      quantity: toNumeric(1),
+      unitPrice: toNumeric(10),
+      total: toNumeric(10),
+    });
+    await seedTimeEntry(db.prisma8, stranger, {
+      startTime: toDb(ago(1)),
+      durationSeconds: 60,
+      wordsProcessed: 5,
+    });
+    await seedClient(db.prisma8, stranger, { status: 'TO_CONTACT' });
+
+    await expect(repo.getDashboard(owner)).resolves.toEqual({
+      activeProjectCount: 0,
+      unpaidInvoiceCount: 0,
+      monthToDateSeconds: 0,
+      monthToDateRevenue: 0,
+      yearToDateWords: 0,
+      upcomingDeadlines: [],
+      recentTimeEntries: [],
+      prospectsToContact: [],
+    });
+  });
+
   it('lists prospects due for contact, longest-waiting first', async () => {
     const neverContacted = await seedClient(db.prisma8, owner, {
       name: 'New lead',
@@ -228,6 +266,11 @@ describe.each([
       name: 'Waiting',
       status: 'FOLLOW_UP_1',
       contactedAt: toDb(ago(90)),
+    });
+    const lessWaiting = await seedClient(db.prisma8, owner, {
+      name: 'Less waiting',
+      status: 'FOLLOW_UP_2',
+      contactedAt: toDb(ago(30)),
     });
     await seedClient(db.prisma8, owner, {
       name: 'Just contacted',
@@ -251,6 +294,12 @@ describe.each([
         name: 'Waiting',
         status: 'FOLLOW_UP_1',
         contactedAt: ago(90).toISOString(),
+      },
+      {
+        id: lessWaiting.id,
+        name: 'Less waiting',
+        status: 'FOLLOW_UP_2',
+        contactedAt: ago(30).toISOString(),
       },
     ]);
   });

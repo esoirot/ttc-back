@@ -30,7 +30,7 @@ export class AuditService {
       userId,
       action,
       resource,
-      ...(payload !== undefined ? { payload: payload as never } : {}),
+      payload: payload as never,
     }).catch((err: unknown) => {
       this.logger.error('Audit log write failed', String(err));
     });

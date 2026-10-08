@@ -59,6 +59,19 @@ describe.each([['prisma8', () => new AuditService(db.prisma8)]])(
       });
     });
 
+    it('has no next cursor when a page holds exactly the limit', async () => {
+      for (const action of ['a', 'b']) {
+        await db.prisma8.orm.public.AuditLog.create({
+          userId: user.id,
+          action,
+          resource: 'R',
+        });
+      }
+      await expect(service.findAll({ limit: 2 })).resolves.toMatchObject({
+        nextCursor: null,
+      });
+    });
+
     it('returns 50 entries per page by default', async () => {
       for (let i = 0; i < 51; i++) {
         await db.prisma8.orm.public.AuditLog.create({

@@ -29,7 +29,8 @@ describe.each([
     decoy = await seedTask(
       db.prisma8,
       (await seedProject(db.prisma8, other.id)).id,
-      { title: 'decoy' },
+      // Last in sort order, so a cursor wrongly taken from it empties the page.
+      { title: 'decoy', status: 'PAID' },
     );
     s = await seedTaskAccess(db.prisma8);
   });
@@ -139,6 +140,24 @@ describe.each([
         cursor = page.nextCursor;
       }
       expect(seen).toEqual(expected);
+    });
+
+    it('has no next cursor when the page holds exactly the limit', async () => {
+      await expect(
+        repo.findByProject(s.project, s.owner, { limit: 2 }),
+      ).resolves.toMatchObject({
+        nextCursor: null,
+        total: 2,
+      });
+    });
+
+    it('returns the tasks after an unknown cursor id', async () => {
+      await expect(
+        repo.findByProject(s.project, s.owner, { cursor: 999999 }),
+      ).resolves.toMatchObject({
+        items: [],
+        total: 2,
+      });
     });
 
     it('searches titles case-insensitively', async () => {
@@ -317,6 +336,15 @@ describe.each([
   });
 
   describe('delete', () => {
+    it('returns the deleted task, not another of the owner', async () => {
+      await expect(repo.delete(s.otherTask, s.owner)).resolves.toMatchObject({
+        id: s.otherTask,
+      });
+      await expect(repo.findById(s.task, s.owner)).resolves.toMatchObject({
+        id: s.task,
+      });
+    });
+
     it('lets only the project owner delete, returning the task', async () => {
       await expect(repo.delete(s.task, s.assignee)).rejects.toBeInstanceOf(
         NotFoundException,

@@ -9,7 +9,11 @@ import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 const config = {
-  getOrThrow: () => process.env.APP_ENCRYPTION_KEY,
+  getOrThrow: (key: string) => {
+    if (key !== 'APP_ENCRYPTION_KEY')
+      throw new Error(`unexpected config ${key}`);
+    return process.env.APP_ENCRYPTION_KEY;
+  },
 } as unknown as ConfigService;
 
 describe.each([
@@ -160,6 +164,12 @@ describe.each([
 
   describe('OAuth', () => {
     it('creates a user and its account on first sign-in, then finds it', async () => {
+      // Another user's account, created first: a lookup that loses its filter finds it.
+      await db.prisma8.orm.public.OAuthAccount.create({
+        provider: 'google',
+        providerId: 'g-0',
+        userId: other,
+      });
       await expect(repo.findOAuthUser('google', 'g-1')).resolves.toBeNull();
       const created = await repo.upsertOAuthUser(
         'google',
@@ -247,7 +257,9 @@ describe.each([
 
     it('deletes all codes of a user', async () => {
       await repo.createBackupCodes(user, await hashes(['aaaa-1111']));
+      await repo.createBackupCodes(other, await hashes(['dddd-4444']));
       await repo.deleteBackupCodes(user);
+      await expect(repo.getBackupCodeCount(other)).resolves.toBe(1);
       await expect(repo.getBackupCodeCount(user)).resolves.toBe(0);
     });
   });

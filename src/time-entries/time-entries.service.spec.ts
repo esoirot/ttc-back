@@ -148,6 +148,19 @@ describe('TimeEntriesService', () => {
   });
 
   describe('startTimer', () => {
+    it('keeps an explicit task even when a subtask is given', async () => {
+      repo.findSubtaskTaskId.mockResolvedValue(99);
+      repo.startTimer.mockResolvedValue(mockTimeEntry({ endTime: null }));
+
+      await service.startTimer(1, { taskId: 5, subtaskId: 7 });
+
+      expect(repo.findSubtaskTaskId).not.toHaveBeenCalled();
+      expect(repo.startTimer).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ taskId: 5 }),
+      );
+    });
+
     it('delegates to repository', async () => {
       const entry = mockTimeEntry({ endTime: null });
       repo.startTimer.mockResolvedValue(entry);
@@ -486,6 +499,16 @@ describe('TimeEntriesService', () => {
       expect(repo.create).not.toHaveBeenCalled();
     });
 
+    it('skips a zero-length entry', async () => {
+      repo.existsByClockifyEntryId.mockResolvedValue(false);
+
+      const result = await service.importEntries(1, [
+        makeEntry('empty', '2024-01-01T10:00:00Z', '2024-01-01T10:00:00Z'),
+      ]);
+
+      expect(result).toEqual({ imported: 0, skipped: 1 });
+    });
+
     it('returns zeros when entries array is empty', async () => {
       const result = await service.importEntries(1, []);
       expect(result).toEqual({ imported: 0, skipped: 0 });
@@ -509,6 +532,48 @@ describe('TimeEntriesService', () => {
           endTime: new Date('2024-01-01T10:30:00Z'),
         }),
       );
+    });
+  });
+
+  describe('read pass-throughs', () => {
+    it('return what the repository returns, for the same arguments', async () => {
+      const page = { items: [], nextCursor: null, total: 0 };
+      const sums = new Map([[1, 60]]);
+      repo.findAll.mockResolvedValue(page);
+      const r = repo as unknown as Record<string, jest.Mock>;
+      for (const m of [
+        'sumDurationByTaskIds',
+        'sumDurationByProjectIds',
+        'sumWordsProcessedByTaskIds',
+        'sumWordsProcessedByProjectIds',
+      ]) {
+        r[m] = jest.fn().mockResolvedValue(sums);
+      }
+
+      await expect(
+        service.findAll(1, { projectId: 2 }, { limit: 5 }),
+      ).resolves.toBe(page);
+      expect(repo.findAll).toHaveBeenCalledWith(
+        1,
+        { projectId: 2 },
+        { limit: 5 },
+      );
+      await expect(service.getTotalDurationByTaskIds([3], 1)).resolves.toBe(
+        sums,
+      );
+      expect(r.sumDurationByTaskIds).toHaveBeenCalledWith([3], 1);
+      await expect(service.getTotalDurationByProjectIds([4], 1)).resolves.toBe(
+        sums,
+      );
+      expect(r.sumDurationByProjectIds).toHaveBeenCalledWith([4], 1);
+      await expect(
+        service.getTotalWordsProcessedByTaskIds([5], 1),
+      ).resolves.toBe(sums);
+      expect(r.sumWordsProcessedByTaskIds).toHaveBeenCalledWith([5], 1);
+      await expect(
+        service.getTotalWordsProcessedByProjectIds([6], 1),
+      ).resolves.toBe(sums);
+      expect(r.sumWordsProcessedByProjectIds).toHaveBeenCalledWith([6], 1);
     });
   });
 });

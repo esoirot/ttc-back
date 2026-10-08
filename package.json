@@ -28,7 +28,7 @@
     "test:e2e": "CI=true jest --config ./test/jest-e2e.json",
     "test:integration": "CI=true jest --config ./test/jest-integration.json",
     "test:mutation": "stryker run",
-    "prisma:miggen": "prisma7 migrate deploy --config prisma7.config.ts && prisma7 generate --config prisma7.config.ts",
+    "prisma:miggen": "prisma7 migrate deploy --config prisma7.config.ts && prisma7 generate --config prisma7.config.ts && prisma db sign --no-advance-ref",
     "db:dump": "tsx --env-file .env src/scripts/pg-dump.ts",
     "db:export": "tsx --env-file .env src/scripts/export-db.ts",
     "db:import": "tsx --env-file .env src/scripts/import-db.ts",
