@@ -274,6 +274,34 @@ describe.each([
     });
   });
 
+  describe('color', () => {
+    it('stores a colour on create, changes it on update, and clears it when empty', async () => {
+      const task = await repo.create(
+        { projectId: s.project, title: 'Coloured', color: '#3B82F6' },
+        s.owner,
+      );
+      expect(task.color).toBe('#3B82F6');
+      await expect(
+        repo.update(task.id, s.owner, { id: task.id, color: '#EF4444' }),
+      ).resolves.toMatchObject({ color: '#EF4444' });
+      await expect(
+        repo.update(task.id, s.owner, { id: task.id, color: '' }),
+      ).resolves.toMatchObject({ color: null });
+    });
+
+    it('has no colour by default, and keeps it when other fields change', async () => {
+      const task = await repo.create(
+        { projectId: s.project, title: 'Plain' },
+        s.owner,
+      );
+      expect(task.color).toBeNull();
+      await repo.update(task.id, s.owner, { id: task.id, color: '#22C55E' });
+      await expect(
+        repo.update(task.id, s.owner, { id: task.id, title: 'Renamed' }),
+      ).resolves.toMatchObject({ color: '#22C55E' });
+    });
+  });
+
   describe('create', () => {
     it("refuses a project the caller doesn't own", async () => {
       await expect(

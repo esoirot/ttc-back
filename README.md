@@ -80,7 +80,7 @@ Server starts on `http://localhost:3000` by default (`PORT` env var overrides).
 
 ```bash
 pnpm prisma contract emit                  # after editing prisma8/contract.prisma
-pnpm prisma migration plan --name <name>   # write the migration package into migrations/app/
+pnpm prisma migration plan --name <name> --from <latest migrations/app dir>   # write the migration package into migrations/app/
 pnpm run prisma:miggen                     # apply pending migrations (refuses a Prisma 7 database never signed)
 pnpm run db:dump                           # pg_dump backup before deploying
 ```

@@ -308,6 +308,7 @@ namespace public {
     reminderOffset  String?
     startDate       TimestampString(3)?
     wordCount       Int?
+    color           String?
     subtasks        Subtask[]
     activities      TaskActivity[]
     attachments     TaskAttachment[]

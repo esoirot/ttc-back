@@ -63,6 +63,7 @@ export function mockTask(overrides: Partial<TaskModel> = {}): TaskModel {
     status: 'TODO',
     dueDate: null,
     wordCount: null,
+    color: null,
     sortOrder: 0,
     checklistTitles: [],
     createdAt: now,
