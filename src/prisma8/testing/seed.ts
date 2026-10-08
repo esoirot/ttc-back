@@ -1,5 +1,7 @@
 import { Prisma8Service } from '../prisma8.service';
+import { toNumeric } from '../numeric';
 import { toDb } from '../timestamp';
+import { toVarchar } from '../varchar';
 
 // Fixture rows written through Prisma 8, independent of the implementation
 // under test. Required columns get defaults; `data` overrides any column.
@@ -89,4 +91,21 @@ export function seedOccupation(
   name = `Occupation ${next()}`,
 ) {
   return db.orm.public.Occupation.create({ userId, name, updatedAt: now() });
+}
+
+export function seedRateSheet(
+  db: Prisma8Service,
+  userId: number,
+  data: Partial<Parameters<Orm['RateSheet']['create']>[0]> = {},
+) {
+  return db.orm.public.RateSheet.create({
+    userId,
+    name: `Sheet ${next()}`,
+    sourceLanguage: toVarchar('en'),
+    targetLanguage: toVarchar('fr'),
+    pricePerWord: toNumeric(0.1),
+    matchRates: {},
+    updatedAt: now(),
+    ...data,
+  });
 }

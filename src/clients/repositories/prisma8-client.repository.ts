@@ -1,3 +1,4 @@
+import { assertOwned } from '../../prisma8/ownership';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { occupationFromDb } from '../../occupations/repositories/prisma8-occupation.mapper';
 import { countOf } from '../../prisma8/count';
@@ -59,6 +60,15 @@ export class Prisma8ClientRepository implements ClientRepository {
       tags: tags.map((t) => t.tag!),
       occupations: occupations.map((o) => occupationFromDb(o.occupation)),
     };
+  }
+
+  private async assertRefs(
+    userId: number,
+    tagIds?: number[],
+    occupationIds?: number[],
+  ) {
+    await assertOwned(this.db.orm, userId, 'Tag', tagIds);
+    await assertOwned(this.db.orm, userId, 'Occupation', occupationIds);
   }
 
   private async link(
@@ -152,6 +162,7 @@ export class Prisma8ClientRepository implements ClientRepository {
 
   async create(userId: number, data: CreateClientInput): Promise<ClientModel> {
     const { tagIds, occupationIds, ...fields } = data;
+    await this.assertRefs(userId, tagIds, occupationIds);
     const id = await this.db.transaction(async (tx) => {
       const client = await tx.orm.public.Client.create({
         ...this.fields(fields),
@@ -172,6 +183,7 @@ export class Prisma8ClientRepository implements ClientRepository {
   ): Promise<ClientModel> {
     const { id: _id, tagIds, occupationIds, ...fields } = data;
     await this.findById(id, userId);
+    await this.assertRefs(userId, tagIds, occupationIds);
     await this.db.transaction(async (tx) => {
       await tx.orm.public.Client.where({ id }).update({
         ...this.fields(fields),

@@ -250,17 +250,31 @@ describe.each([
   });
 
   describe('create', () => {
+    it("refuses a project the caller doesn't own, even as an assignee in it", async () => {
+      for (const user of [s.assignee, s.stranger]) {
+        await expect(
+          repo.create({ projectId: s.project, title: 'Intruder' }, user),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(
+        db.prisma8.orm.public.Task.where({ title: 'Intruder' }).all(),
+      ).resolves.toEqual([]);
+    });
+
     it('defaults the status to TODO and stores the given fields', async () => {
       const due = new Date('2026-11-15T00:00:00.000Z');
       await expect(
-        repo.create({
-          projectId: s.project,
-          title: 'New',
-          description: 'd',
-          assigneeId: s.assignee,
-          dueDate: due,
-          wordCount: 800,
-        }),
+        repo.create(
+          {
+            projectId: s.project,
+            title: 'New',
+            description: 'd',
+            assigneeId: s.assignee,
+            dueDate: due,
+            wordCount: 800,
+          },
+          s.owner,
+        ),
       ).resolves.toMatchObject({
         projectId: s.project,
         title: 'New',
@@ -273,14 +287,17 @@ describe.each([
     });
 
     it('keeps an explicit status and stores startDate / recurring / reminderOffset', async () => {
-      const task = await repo.create({
-        projectId: s.project,
-        title: 'X',
-        status: TaskStatus.IN_PROGRESS,
-        startDate: new Date('2026-11-01T00:00:00.000Z'),
-        recurring: 'WEEKLY',
-        reminderOffset: '1d',
-      });
+      const task = await repo.create(
+        {
+          projectId: s.project,
+          title: 'X',
+          status: TaskStatus.IN_PROGRESS,
+          startDate: new Date('2026-11-01T00:00:00.000Z'),
+          recurring: 'WEEKLY',
+          reminderOffset: '1d',
+        },
+        s.owner,
+      );
       expect(task.status).toBe('IN_PROGRESS');
       const row = await db.prisma8.orm.public.Task.first({ id: task.id });
       expect(row).toMatchObject({ recurring: 'WEEKLY', reminderOffset: '1d' });

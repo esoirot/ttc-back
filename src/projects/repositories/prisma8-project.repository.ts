@@ -1,3 +1,4 @@
+import { assertOwned } from '../../prisma8/ownership';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { occupationFromDb } from '../../occupations/repositories/prisma8-occupation.mapper';
 import { countOf } from '../../prisma8/count';
@@ -57,6 +58,17 @@ export class Prisma8ProjectRepository implements ProjectRepository {
       updatedAt: fromDb(p.updatedAt),
       occupations: occupations.map((o) => occupationFromDb(o.occupation)),
     };
+  }
+
+  private async assertRefs(
+    userId: number,
+    refs: { clientId?: number | null; rateSheetId?: number | null },
+    occupationIds?: number[],
+  ) {
+    const orm = this.db.orm;
+    await assertOwned(orm, userId, 'Client', refs.clientId);
+    await assertOwned(orm, userId, 'RateSheet', refs.rateSheetId);
+    await assertOwned(orm, userId, 'Occupation', occupationIds);
   }
 
   private async link(
@@ -127,6 +139,7 @@ export class Prisma8ProjectRepository implements ProjectRepository {
     // Inheriting a linked client's occupations (when occupationIds is omitted)
     // is resolved by the caller (ProjectsService.create) before this is
     // reached — this method only ever writes whatever ids it's given.
+    await this.assertRefs(userId, rest, occupationIds);
     const id = await this.db.transaction(async (tx) => {
       const project = await tx.orm.public.Project.create({
         ...rest,
@@ -164,6 +177,7 @@ export class Prisma8ProjectRepository implements ProjectRepository {
       ...rest
     } = data;
     await this.findById(id, userId);
+    await this.assertRefs(userId, rest, occupationIds);
     await this.db.transaction(async (tx) => {
       await tx.orm.public.Project.where({ id }).update({
         ...rest,

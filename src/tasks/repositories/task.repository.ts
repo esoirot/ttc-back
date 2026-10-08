@@ -22,7 +22,7 @@ export abstract class TaskRepository {
     assigneeId: number,
     pagination?: PaginationArgs,
   ): Promise<TaskConnectionModel>;
-  abstract create(data: CreateTaskInput): Promise<TaskModel>;
+  abstract create(data: CreateTaskInput, userId: number): Promise<TaskModel>;
   abstract update(
     id: number,
     userId: number,

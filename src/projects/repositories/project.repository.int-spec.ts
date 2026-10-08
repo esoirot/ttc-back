@@ -5,6 +5,7 @@ import {
   seedClient,
   seedOccupation,
   seedProject,
+  seedRateSheet,
   seedUser,
 } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
@@ -359,6 +360,46 @@ describe.each([
       await expect(repo.findById(p.id, stranger)).resolves.toMatchObject({
         id: p.id,
       });
+    });
+  });
+
+  describe("references to other users' records", () => {
+    let theirs: [string, number | number[]][];
+
+    beforeEach(async () => {
+      theirs = [
+        ['clientId', (await seedClient(db.prisma8, stranger)).id],
+        ['occupationIds', [(await seedOccupation(db.prisma8, stranger)).id]],
+        ['rateSheetId', (await seedRateSheet(db.prisma8, stranger)).id],
+      ];
+    });
+
+    it("create refuses another user's client, occupations or rate sheet", async () => {
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.create(owner, { title: 'Intruder', [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(
+        db.prisma8.orm.public.Project.where({ userId: owner }).all(),
+      ).resolves.toEqual([]);
+    });
+
+    it('update refuses them and leaves the project as it was', async () => {
+      const own = await seedProject(db.prisma8, owner);
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.update(own.id, owner, { id: own.id, [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(
+        db.prisma8.orm.public.Project.first({ id: own.id }),
+      ).resolves.toEqual(own);
+      await expect(
+        db.prisma8.orm.public.ProjectOccupation.where({
+          projectId: own.id,
+        }).all(),
+      ).resolves.toEqual([]);
     });
   });
 });

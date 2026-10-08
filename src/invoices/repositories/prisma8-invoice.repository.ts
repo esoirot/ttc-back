@@ -1,3 +1,4 @@
+import { assertOwned } from '../../prisma8/ownership';
 import {
   BadRequestException,
   Injectable,
@@ -162,6 +163,7 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
     number: string,
     data: CreateInvoiceInput,
   ): Promise<InvoiceModel> {
+    await assertOwned(this.db.orm, userId, 'Client', data.clientId);
     const inv = await this.db.orm.public.Invoice.create({
       userId,
       number,
@@ -185,6 +187,7 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
     });
     if (!project)
       throw new NotFoundException(`Project ${data.projectId} not found`);
+    await assertOwned(this.db.orm, userId, 'Client', data.clientId);
 
     const num = (d: string | null) => (d === null ? null : Number(d));
     const fixedFee = num(project.fixedFee);
@@ -270,6 +273,7 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
     const inv = await this.db.orm.public.Invoice.first({ id, userId });
     if (!inv) throw new NotFoundException(`Invoice ${id} not found`);
     const { id: _id, status, dueDate, paidAt, ...rest } = data;
+    await assertOwned(this.db.orm, userId, 'Client', rest.clientId);
     if (status && !ALLOWED[inv.status].includes(status)) {
       throw new BadRequestException(
         `Cannot transition from ${inv.status} to ${status}`,
@@ -308,6 +312,7 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
     });
     if (!invoice)
       throw new NotFoundException(`Invoice ${data.invoiceId} not found`);
+    await assertOwned(this.db.orm, userId, 'Project', data.projectId);
     const item = await this.db.transaction(async (tx) => {
       if (data.timeEntryId != null) {
         const entry = await tx.orm.public.TimeEntry.first({

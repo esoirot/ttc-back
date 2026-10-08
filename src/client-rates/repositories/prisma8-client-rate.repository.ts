@@ -1,3 +1,4 @@
+import { assertOwned } from '../../prisma8/ownership';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma8Service } from '../../prisma8/prisma8.service';
 import { toNumeric } from '../../prisma8/numeric';
@@ -67,6 +68,7 @@ export class Prisma8ClientRateRepository implements ClientRateRepository {
     userId: number,
     data: CreateClientRateInput,
   ): Promise<ClientRateModel> {
+    await assertOwned(this.db.orm, userId, 'Client', data.clientId);
     const row = await this.rates.create({
       clientId: data.clientId,
       userId,

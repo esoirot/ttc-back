@@ -91,7 +91,7 @@ describe('TimeEntriesService', () => {
         endTime: new Date('2024-01-01T10:00:00Z'),
       });
 
-      expect(repo.findDefaultOccupationId).toHaveBeenCalledWith(7);
+      expect(repo.findDefaultOccupationId).toHaveBeenCalledWith(7, 1);
       expect(repo.create).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ occupationId: 3 }),
@@ -179,7 +179,7 @@ describe('TimeEntriesService', () => {
 
       await service.startTimer(1, { projectId: 7 });
 
-      expect(repo.findDefaultOccupationId).toHaveBeenCalledWith(7);
+      expect(repo.findDefaultOccupationId).toHaveBeenCalledWith(7, 1);
       expect(repo.startTimer).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ occupationId: 3 }),

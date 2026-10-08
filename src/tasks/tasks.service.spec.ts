@@ -71,10 +71,10 @@ describe('TasksService', () => {
         7,
       );
 
-      expect(repo.create).toHaveBeenCalledWith({
-        title: 'New Task',
-        projectId: 1,
-      });
+      expect(repo.create).toHaveBeenCalledWith(
+        { title: 'New Task', projectId: 1 },
+        7,
+      );
       expect(activitiesService.log).toHaveBeenCalledWith(42, 7, 'CREATED');
       expect(result).toEqual(task);
     });

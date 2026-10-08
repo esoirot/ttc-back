@@ -71,9 +71,10 @@ export class TimeEntriesService {
   // when the caller didn't explicitly pass one and a project is linked.
   private async resolveDefaultOccupationId(
     projectId: number | undefined,
+    userId: number,
   ): Promise<number | null> {
     if (!projectId) return null;
-    return this.repo.findDefaultOccupationId(projectId);
+    return this.repo.findDefaultOccupationId(projectId, userId);
   }
 
   async create(
@@ -87,6 +88,7 @@ export class TimeEntriesService {
     if (input.occupationId === undefined) {
       input.occupationId = await this.resolveDefaultOccupationId(
         input.projectId,
+        userId,
       );
     }
     return this.repo.create(userId, input);
@@ -103,6 +105,7 @@ export class TimeEntriesService {
     if (input.occupationId === undefined) {
       input.occupationId = await this.resolveDefaultOccupationId(
         input.projectId,
+        userId,
       );
     }
     const entry = await this.repo.startTimer(userId, input);

@@ -377,4 +377,37 @@ describe.each([
       await expect(repo.promoteClients([])).resolves.toBe(0);
     });
   });
+
+  describe("references to other users' records", () => {
+    let theirs: [string, number[]][];
+
+    beforeEach(async () => {
+      theirs = [
+        ['tagIds', [(await seedTag(db.prisma8, stranger, 'theirs')).id]],
+        ['occupationIds', [(await seedOccupation(db.prisma8, stranger)).id]],
+      ];
+    });
+
+    it("create refuses another user's tags or occupations", async () => {
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.create(owner, { name: 'Intruder', [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(
+        db.prisma8.orm.public.Client.where({ userId: owner }).all(),
+      ).resolves.toEqual([]);
+    });
+
+    it('update refuses them and leaves the client as it was', async () => {
+      const own = await seedClient(db.prisma8, owner);
+      const before = await snapshot(own.id);
+      for (const [field, value] of theirs) {
+        await expect(
+          repo.update(own.id, owner, { id: own.id, [field]: value }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      }
+      await expect(snapshot(own.id)).resolves.toEqual(before);
+    });
+  });
 });

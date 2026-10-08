@@ -4,8 +4,8 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 
 ## P0 — verify / fix first (correctness & safety risk, grows with graph size)
 
-### 1. Audit GraphQL authorization on nested fields — PARTIAL
-- **Status (2026-10-08)**: `test/task-field-ownership.e2e-spec.ts` covers one hop only (`Task.subtasks`: owner sees them, another user gets none). The other 11 `@ResolveField()`s and the multi-hop `client → projects → tasks → timeEntries` case below are not covered yet.
+### 1. Audit GraphQL authorization on nested fields — DONE
+- **Status (2026-10-08)**: reads were already safe: all 12 `@ResolveField()`s go through `LoadersService`, which scopes every batch by the requesting user; `src/common/graphql/loaders.service.int-spec.ts` now proves it on a real database (owner sees all, assignee sees the task's fields only, stranger sees nothing). The `client → projects → tasks` path below doesn't exist in the schema (`Client` has no `projects` field). The real holes were on writes: mutations stored other users' ids (time entry task/subtask/project/occupation/tags, task projectId, client tags/occupations, project client/occupations/rate sheet, invoice client/item project, rate clients/occupations), which then came back through nested fields. Fixed with `src/prisma8/ownership.ts` checks in each repository write, covered by "references to other users' records" blocks in the repository suites.
 - **What**: confirm every `@ResolveField()` and every resolver re-checks ownership/tenant scope rather than trusting the parent query already filtered correctly.
 - **Where to look**: `clients.resolver.ts` (`statusHistory`), `projects.resolver.ts` (`totalTimeSeconds`), `tasks.resolver.ts` (`subtasks`, `comments`, `labels`, `activities`, `attachments`), `time-entries.resolver.ts`/`task-time.resolver.ts` (`activities`, `totalTimeSeconds`), all of `admin.resolver.ts`.
 - **Specific risk case**: `client(id) { projects { tasks { timeEntries { ... } } } }` — verify each hop re-derives scope from `req.user.id`, not just the top-level `client` id.

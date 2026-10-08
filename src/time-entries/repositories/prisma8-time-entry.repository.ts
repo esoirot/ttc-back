@@ -7,6 +7,12 @@ import { and } from '@prisma/orm-postgres/orm-client';
 import { occupationFromDb } from '../../occupations/repositories/prisma8-occupation.mapper';
 import { taskVisibleTo } from '../../prisma8/access';
 import { countOf } from '../../prisma8/count';
+import {
+  assertOwned,
+  assertProjectsUsable,
+  assertSubtasksVisible,
+  assertTasksVisible,
+} from '../../prisma8/ownership';
 import { Prisma8Service, Prisma8Tx } from '../../prisma8/prisma8.service';
 import { fromDb, nowDb, toDb } from '../../prisma8/timestamp';
 import { CreateTimeEntryInput } from '../dto/create-time-entry.input';
@@ -61,6 +67,25 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
 
   private async load(id: number, orm = this.db.orm) {
     return this.toModel((await this.full(orm).first({ id }))!);
+  }
+
+  /** Every record an entry links to must be one the user may log time on. */
+  private async assertRefs(
+    userId: number,
+    data: {
+      projectId?: number | null;
+      taskId?: number | null;
+      subtaskId?: number | null;
+      occupationId?: number | null;
+      tagIds?: number[];
+    },
+  ) {
+    const orm = this.db.orm;
+    await assertProjectsUsable(orm, userId, data.projectId);
+    await assertTasksVisible(orm, userId, data.taskId);
+    await assertSubtasksVisible(orm, userId, data.subtaskId);
+    await assertOwned(orm, userId, 'Occupation', data.occupationId);
+    await assertOwned(orm, userId, 'Tag', data.tagIds);
   }
 
   private async setTags(tx: Prisma8Tx, timeEntryId: number, tagIds: number[]) {
@@ -144,10 +169,14 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
     return sub?.taskId ?? null;
   }
 
-  async findDefaultOccupationId(projectId: number): Promise<number | null> {
+  async findDefaultOccupationId(
+    projectId: number,
+    userId: number,
+  ): Promise<number | null> {
     const first = await this.db.orm.public.ProjectOccupation.where({
       projectId,
     })
+      .where((o) => o.occupation.some((occ) => occ.userId.eq(userId)))
       .orderBy((o) => o.occupationId.asc())
       .first();
     return first?.occupationId ?? null;
@@ -165,6 +194,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
     userId: number,
     data: CreateTimeEntryInput,
   ): Promise<TimeEntryModel> {
+    await this.assertRefs(userId, data);
     return this.db.transaction(async (tx) => {
       const entry = await tx.orm.public.TimeEntry.create({
         userId,
@@ -192,6 +222,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
   ): Promise<TimeEntryModel> {
     if (await this.findActive(userId))
       throw new ConflictException('A timer is already running');
+    await this.assertRefs(userId, data);
     return this.db.transaction(async (tx) => {
       const entry = await tx.orm.public.TimeEntry.create({
         userId,
@@ -228,6 +259,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
     data: UpdateTimeEntryInput,
   ): Promise<TimeEntryModel> {
     const entry = await this.findById(id, userId);
+    await this.assertRefs(userId, data);
     const { id: _id, tagIds, startTime, endTime, ...fields } = data;
     const start = startTime ?? entry.startTime;
     const end = endTime ?? entry.endTime;
