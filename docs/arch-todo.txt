@@ -39,7 +39,8 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 ### 4. `GET /admin/audit` — UNUSED, not being migrated
 - **Status: UNUSED.** Decision made not to migrate this to GraphQL. No active consumer — leave `src/audit/audit.controller.ts` as-is. Do not spend effort on it. See matching note in `CLAUDE.md`'s Audit log section.
 
-### 5. Extract shared provider credential/OAuth infrastructure (Clockify + HubSpot)
+### 5. Extract shared provider credential/OAuth infrastructure (Clockify + HubSpot) — DONE
+- **Status (2026-10-08)**: checked against the code, nothing left worth extracting. The OAuth refresh exchange is shared since `2d51098` (`src/common/oauth-token/oauth-token-refresh.service.ts`: per-key lock + token request; HubSpot and Google Calendar pass their own body, failure and success handling). Credential decryption lives in one place, the user repository; no provider service decrypts. Clockify uses a plain API key (no OAuth). What stays duplicated is the ~12-line `getValidToken` guard (not connected / near expiry / missing refresh token) in HubSpot and Google Calendar, with provider-specific fields and messages; a shared wrapper would only move those differences into parameters, so it stays.
 - **What**: `ClockifyController`/`ClockifyService` and `HubSpotController`/`HubSpotService` each repeat: JWT-guarded controller → look up encrypted credentials → decrypt → call provider client. Extract the repeated *context acquisition*, not the endpoint semantics — don't build a generic `proxy(provider, method, path)` abstraction (would hide that `contacts/:id/import-client` and `entries/import` are TTC domain operations, not passthroughs).
 - **Where**: new shared service, e.g. `src/common/provider-credentials/` — `ProviderCredentialService` (encrypted credential lookup, reused by both `ClockifyService` and `HubSpotService`) and, if OAuth token refresh logic is duplicated between Google Calendar/HubSpot, an `OAuthTokenService`.
 - **How to scope**: read `clockify.service.ts`, `hubspot.service.ts`, `google-calendar.service.ts` first to confirm exactly which lines are duplicated (credential decrypt via `crypto.util.ts`, token refresh) before extracting — don't extract a shape from assumption.
@@ -67,5 +68,5 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 
 ## Suggested order of execution
 
-Remaining (2026-10-08): 5 (provider credential extraction); #3 follow-ups A (`Task.activities` in the task list) and B (`members` exposes every user). Items 1, 2, 3, 6, 7 done; 4 skipped (UNUSED).
+Remaining (2026-10-08): #3 follow-ups A (`Task.activities` in the task list) and B (`members` exposes every user). Items 1, 2, 3, 5, 6, 7 done; 4 skipped (UNUSED).
 7 (P2, whenever — 10-minute fix, no dependency on anything else)
