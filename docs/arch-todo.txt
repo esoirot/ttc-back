@@ -20,8 +20,15 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 - **Test first**: spec that issues a `tasks { subtasks { id } comments { id } }` query over N tasks and asserts DB call count doesn't scale linearly with N (mock/spy repository call count, not just result correctness).
 - **Done when**: field-resolver DB call count is O(1) per field per request, not O(N).
 
-### 3. Add GraphQL query depth/complexity/pagination guards — DEPTH DONE, CARDINALITY REVIEW OPEN
-- **Status (2026-10-08)**: `graphql-depth-limit` in `app.module.ts` (`GRAPHQL_MAX_DEPTH`, default 10), tested by `test/graphql-depth-limit.e2e-spec.ts` (over-depth rejected, at-limit allowed). The bare-array cardinality review below is not written down yet.
+### 3. Add GraphQL query depth/complexity/pagination guards — DONE (two follow-ups below)
+- **Status (2026-10-08)**: `graphql-depth-limit` in `app.module.ts` (`GRAPHQL_MAX_DEPTH`, default 10), tested by `test/graphql-depth-limit.e2e-spec.ts` (over-depth rejected, at-limit allowed).
+- **Cardinality review of bare-array fields (2026-10-08)** — every list in `src/schema.gql` that is not a `*Connection` (admin excluded):
+  - **Fine as-is, small by domain**: `Client.contacts/occupations/tags`, `Project.occupations`, `Task.labels/attachments/checklistTitles/subtasks`, `TimeEntry.tags/activities` (a few START/STOP/RESUME rows per entry), `Invoice.items` (one line per billed entry; hundreds at worst, one invoice at a time), `User.adminPermissions`, `EnableTwoFactorResponse.backupCodes` (8), and the per-user settings lists `myOccupations`, `tags`, `rateSheets`, `translationRates`, `clientRates(clientId)`.
+  - **Bounded by a filter**: `DashboardData.recentTimeEntries` (limit 5), `upcomingDeadlines` (deadlines in the next 7 days), `prospectsToContact` (prospects due for contact).
+  - **Grows without bound, watch**: `Task.comments`, `Client.statusHistory` — grow with use but slowly; fine until a task/client has hundreds.
+  - **Follow-up A — `Task.activities` in the task list**: `TASKS_QUERY` (frontend `src/graphql/tasks.operations.ts`) selects `activities { ... user }` for every task of each kanban page, only so the project Activity tab (`ActivityTab.tsx`) can merge them. Activity rows are written on every task edit and timer start/stop, so this payload grows forever with project age. Fix when it bites: a paged `projectActivities(projectId, pagination)` query for the Activity tab, and drop `activities` from `TASKS_QUERY`.
+  - **Follow-up B — `Query.members` (privacy, not size)**: any authenticated user gets every user in the database (`UsersService.findAll()`), and the `User` type exposes email, phone, role, 2FA status. Registration is open, so a stranger who signs up can list everyone. It feeds the assignee picker. Decide who should be assignable (e.g. users already on your projects) before narrowing it.
+  - **Dead field**: `User.projects` is declared on the `User` type but nothing ever fills it (always null). Remove when next touching `user.entity.ts`.
 - **What**: nothing currently stops a client building an expensive nested query over `Client → Project → Task → {Subtask, Comment, Activity, Attachment, TimeEntry}`.
 - **Where**: `AppModule`'s `GraphQLModule.forRoot(...)` config (same place `orphanedTypes` is registered).
 - **Fix**: add `graphql-depth-limit` (or equivalent) as a validation rule; confirm every list-returning query/field with unbounded cardinality (`tasks`, `timeEntries`, `subtasks`, `comments`, etc.) has cursor pagination or a hard cap — several already return `*Connection` types (`ProjectConnection`, `TaskConnection`, `TimeEntryConnection`, `InvoiceConnection`, `ClientConnection`) which is good; flag ones returning bare `[X]` with no bound (e.g. `Task.subtasks`, `Task.comments`, `RateSheet[]`, `TranslationRate[]`) for review — bare arrays are fine at low cardinality per-parent but should be checked against realistic max (e.g. max subtasks per task).
@@ -32,7 +39,8 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 ### 4. `GET /admin/audit` — UNUSED, not being migrated
 - **Status: UNUSED.** Decision made not to migrate this to GraphQL. No active consumer — leave `src/audit/audit.controller.ts` as-is. Do not spend effort on it. See matching note in `CLAUDE.md`'s Audit log section.
 
-### 5. Extract shared provider credential/OAuth infrastructure (Clockify + HubSpot)
+### 5. Extract shared provider credential/OAuth infrastructure (Clockify + HubSpot) — DONE
+- **Status (2026-10-08)**: checked against the code, nothing left worth extracting. The OAuth refresh exchange is shared since `2d51098` (`src/common/oauth-token/oauth-token-refresh.service.ts`: per-key lock + token request; HubSpot and Google Calendar pass their own body, failure and success handling). Credential decryption lives in one place, the user repository; no provider service decrypts. Clockify uses a plain API key (no OAuth). What stays duplicated is the ~12-line `getValidToken` guard (not connected / near expiry / missing refresh token) in HubSpot and Google Calendar, with provider-specific fields and messages; a shared wrapper would only move those differences into parameters, so it stays.
 - **What**: `ClockifyController`/`ClockifyService` and `HubSpotController`/`HubSpotService` each repeat: JWT-guarded controller → look up encrypted credentials → decrypt → call provider client. Extract the repeated *context acquisition*, not the endpoint semantics — don't build a generic `proxy(provider, method, path)` abstraction (would hide that `contacts/:id/import-client` and `entries/import` are TTC domain operations, not passthroughs).
 - **Where**: new shared service, e.g. `src/common/provider-credentials/` — `ProviderCredentialService` (encrypted credential lookup, reused by both `ClockifyService` and `HubSpotService`) and, if OAuth token refresh logic is duplicated between Google Calendar/HubSpot, an `OAuthTokenService`.
 - **How to scope**: read `clockify.service.ts`, `hubspot.service.ts`, `google-calendar.service.ts` first to confirm exactly which lines are duplicated (credential decrypt via `crypto.util.ts`, token refresh) before extracting — don't extract a shape from assumption.
@@ -60,5 +68,5 @@ Actionable follow-up from `docs/final-arch.txt` §4. Ordered by priority. Each i
 
 ## Suggested order of execution
 
-Remaining (2026-10-08): 1 (finish the nested-field authorization specs) → 3 (cardinality review of bare-array fields) → 5 (provider credential extraction). Items 2, 6, 7 done; 4 skipped (UNUSED).
+Remaining (2026-10-08): #3 follow-ups A (`Task.activities` in the task list) and B (`members` exposes every user). Items 1, 2, 3, 5, 6, 7 done; 4 skipped (UNUSED).
 7 (P2, whenever — 10-minute fix, no dependency on anything else)
