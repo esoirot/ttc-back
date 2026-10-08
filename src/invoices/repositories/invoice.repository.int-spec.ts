@@ -1,5 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { toNumeric } from '../../prisma8/numeric';
+import { toDb } from '../../prisma8/timestamp';
 import {
   seedClient,
   seedProject,
@@ -34,10 +35,52 @@ describe.each([
   const entryStatus = async (id: number) =>
     (await db.prisma8.orm.public.TimeEntry.first({ id }))!.invoicingStatus;
 
+  // A third user's sent invoice with a billed line, plus an unbilled entry
+  // created first: a write or release that loses its filter lands here.
+  const snapshot = async (d: { invoice: number; entries: number[] }) => ({
+    invoice: await db.prisma8.orm.public.Invoice.first({ id: d.invoice }),
+    items: await db.prisma8.orm.public.InvoiceItem.where({
+      invoiceId: d.invoice,
+    }).all(),
+    entries: await Promise.all(
+      d.entries.map((id) => db.prisma8.orm.public.TimeEntry.first({ id })),
+    ),
+  });
+  let decoy: {
+    invoice: number;
+    entries: number[];
+    before: Awaited<ReturnType<typeof snapshot>>;
+  };
+
   beforeEach(async () => {
     repo = make();
+    const other = (await seedUser(db.prisma8)).id;
+    const unbilled = await seedTimeEntry(db.prisma8, other);
+    const billed = await seedTimeEntry(db.prisma8, other, {
+      invoicingStatus: 'INVOICED',
+    });
+    const inv = await db.prisma8.orm.public.Invoice.create({
+      userId: other,
+      number: 'DECOY',
+      status: 'SENT',
+      updatedAt: toDb(new Date()),
+    });
+    await db.prisma8.orm.public.InvoiceItem.create({
+      invoiceId: inv.id,
+      timeEntryId: billed.id,
+      description: 'decoy',
+      quantity: toNumeric(1),
+      unitPrice: toNumeric(1),
+      total: toNumeric(1),
+    });
+    const ids = { invoice: inv.id, entries: [unbilled.id, billed.id] };
+    decoy = { ...ids, before: await snapshot(ids) };
     owner = (await seedUser(db.prisma8)).id;
     stranger = (await seedUser(db.prisma8)).id;
+  });
+
+  afterEach(async () => {
+    await expect(snapshot(decoy)).resolves.toEqual(decoy.before);
   });
 
   describe('nextNumber', () => {
@@ -132,6 +175,16 @@ describe.each([
     });
   });
 
+  describe('findAll paging', () => {
+    it('has no next cursor when the page holds exactly the limit', async () => {
+      await repo.create(owner, 'INV-A', {});
+      await repo.create(owner, 'INV-B', {});
+      await expect(
+        repo.findAll(owner, undefined, { limit: 2 }),
+      ).resolves.toMatchObject({ nextCursor: null, total: 2 });
+    });
+  });
+
   describe('update', () => {
     it.each([
       ['DRAFT', InvoiceStatus.SENT],
@@ -197,10 +250,15 @@ describe.each([
         notes: 'updated',
         currency: 'USD',
         status: 'DRAFT',
+        issuedAt: null,
+        paidAt: null,
       });
       await expect(
         repo.update(inv.id, stranger, { id: inv.id, notes: 'x' }),
       ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(repo.findById(inv.id, owner)).resolves.toMatchObject({
+        notes: 'updated',
+      });
     });
   });
 
@@ -243,6 +301,13 @@ describe.each([
   });
 
   describe('items', () => {
+    it('defaults a line without description to empty text', async () => {
+      const inv = await repo.create(owner, 'INV-I', {});
+      await expect(
+        repo.addItem({ invoiceId: inv.id, quantity: 1, unitPrice: 1 }, owner),
+      ).resolves.toMatchObject({ description: '' });
+    });
+
     it('adds a free item with total = quantity x unitPrice', async () => {
       const inv = await repo.create(owner, 'INV-I', {});
       const item = await repo.addItem(
@@ -492,6 +557,29 @@ describe.each([
         repo.generate(owner, 'INV-X', { projectId: theirs.id }),
       ).rejects.toBeInstanceOf(NotFoundException);
       await expect(repo.findAll(owner)).resolves.toMatchObject({ total: 0 });
+    });
+
+    it('adds no fixed-fee or word line for a zero fee, rate or word count', async () => {
+      const zeroFee = await seedProject(db.prisma8, owner, {
+        fixedFee: toNumeric(0),
+      });
+      const noWords = await seedProject(db.prisma8, owner, {
+        perWordRate: toNumeric(0.1),
+        wordCount: 0,
+      });
+      const zeroRate = await seedProject(db.prisma8, owner, {
+        perWordRate: toNumeric(0),
+        wordCount: 500,
+      });
+      await expect(
+        repo.generate(owner, 'INV-Z1', { projectId: zeroFee.id }),
+      ).resolves.toMatchObject({ items: [] });
+      await expect(
+        repo.generate(owner, 'INV-Z2', { projectId: noWords.id }),
+      ).resolves.toMatchObject({ items: [] });
+      await expect(
+        repo.generate(owner, 'INV-Z3', { projectId: zeroRate.id }),
+      ).resolves.toMatchObject({ items: [] });
     });
 
     it('creates an empty draft when the project has no rates', async () => {

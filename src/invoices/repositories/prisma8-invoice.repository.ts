@@ -84,7 +84,6 @@ export async function releaseTimeEntries8(
   const ids = items.flatMap((i) =>
     i.timeEntryId === null ? [] : [i.timeEntryId],
   );
-  if (ids.length === 0) return;
   await tx.orm.public.TimeEntry.where((e) => e.id.in(ids)).updateAndCount({
     invoicingStatus: 'NO',
   });
@@ -200,11 +199,11 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
       unitPrice: number;
     };
     const lines: Line[] = [];
-    if (fixedFee != null && fixedFee > 0) {
+    if ((fixedFee ?? 0) > 0) {
       lines.push({
         description: 'Fixed fee',
         quantity: 1,
-        unitPrice: fixedFee,
+        unitPrice: fixedFee!,
       });
     }
     let consumed: number[] = [];
@@ -225,11 +224,11 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
       }
       consumed = entries.map((e) => e.id);
     }
-    if (perWordRate != null && perWordRate > 0 && wordCount > 0) {
+    if ((perWordRate ?? 0) > 0 && wordCount > 0) {
       lines.push({
         description: 'Word count',
         quantity: wordCount,
-        unitPrice: perWordRate,
+        unitPrice: perWordRate!,
       });
     }
 
@@ -242,26 +241,22 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
         dueDate: date(data.dueDate),
         updatedAt: nowDb(),
       });
-      if (lines.length > 0) {
-        await tx.orm.public.InvoiceItem.createAll(
-          lines.map((l) => ({
-            invoiceId: inv.id,
-            projectId: data.projectId,
-            timeEntryId: l.timeEntryId ?? null,
-            description: l.description,
-            quantity: toNumeric(l.quantity),
-            unitPrice: toNumeric(l.unitPrice),
-            total: toNumeric(l.quantity * l.unitPrice),
-          })),
-        );
-      }
-      if (consumed.length > 0) {
-        await tx.orm.public.TimeEntry.where((e) =>
-          e.id.in(consumed),
-        ).updateAndCount({
-          invoicingStatus: 'INVOICED',
-        });
-      }
+      await tx.orm.public.InvoiceItem.createAll(
+        lines.map((l) => ({
+          invoiceId: inv.id,
+          projectId: data.projectId,
+          timeEntryId: l.timeEntryId ?? null,
+          description: l.description,
+          quantity: toNumeric(l.quantity),
+          unitPrice: toNumeric(l.unitPrice),
+          total: toNumeric(l.quantity * l.unitPrice),
+        })),
+      );
+      await tx.orm.public.TimeEntry.where((e) =>
+        e.id.in(consumed),
+      ).updateAndCount({
+        invoicingStatus: 'INVOICED',
+      });
       return inv.id;
     });
     return this.findById(id, userId);

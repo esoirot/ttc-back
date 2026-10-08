@@ -9,6 +9,7 @@ import {
   seedUser,
 } from '../prisma8/testing/seed';
 import { isoTimestamp } from '../prisma8/testing/matchers';
+import { resetDb } from '../prisma8/testing/reset-db';
 import { useTestDb } from '../prisma8/testing/test-db';
 import { toDb } from '../prisma8/timestamp';
 import { PrismaClientLike, runExport } from './db-backup.core';
@@ -112,6 +113,9 @@ describe('importBackup8', () => {
       readFileSync(before.file, 'utf-8'),
     ) as BackupPayload;
 
+    // Restore into an empty database, so the import has to do the work.
+    await resetDb();
+    await expect(db.prisma8.orm.public.Client.all()).resolves.toEqual([]);
     await importBackup8(db.prisma8, payload.data);
     const after = await runExport(prisma8BackupClient(db.prisma8), dir);
 

@@ -27,6 +27,20 @@ describe('backup row conversion (Prisma 8)', () => {
     });
   });
 
+  it('leaves decimals without a fraction and text that looks numeric untouched', () => {
+    expect(rowToBackup('ClientRate', { amount: '100', name: 'v2.50' })).toEqual(
+      {
+        amount: '100',
+        name: 'v2.50',
+      },
+    );
+  });
+
+  it('passes through fields the contract does not describe', () => {
+    expect(rowToBackup('Client', { extra: 'x' })).toEqual({ extra: 'x' });
+    expect(rowFromBackup('Client', { extra: 'x' })).toEqual({ extra: 'x' });
+  });
+
   it('reads a backup row back into Prisma 8 field names', () => {
     expect(
       rowFromBackup('ClientRate', {
