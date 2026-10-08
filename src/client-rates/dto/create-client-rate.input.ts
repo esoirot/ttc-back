@@ -1,5 +1,5 @@
 import { InputType, Field, Int, Float } from '@nestjs/graphql';
-import { RateType } from '../../generated/prisma/client';
+import { RateType } from '../entities/client-rate.entity';
 
 @InputType()
 export class CreateClientRateInput {

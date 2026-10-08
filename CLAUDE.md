@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Stack
 
-NestJS 11 + Fastify v5, GraphQL (code-first, Apollo), Prisma 8 (`@prisma/orm-postgres`; Prisma 7 CLI kept only for the migration handover) + PostgreSQL, Redis (throttler + pub/sub), JWT via HTTP-only cookies.
+NestJS 11 + Fastify v5, GraphQL (code-first, Apollo), Prisma 8 (`@prisma/orm-postgres`) + PostgreSQL, Redis (throttler + pub/sub), JWT via HTTP-only cookies.
 
 ## Working rules
 
@@ -18,10 +18,10 @@ NestJS 11 + Fastify v5, GraphQL (code-first, Apollo), Prisma 8 (`@prisma/orm-pos
 pnpm run start:dev          # watch mode (requires .env + docker compose up -d)
 docker compose up -d        # start postgres + redis
 
-# DB (queries on Prisma 8; schema changes still Prisma 7 migrations until release B, see "Prisma 7 / 8" below)
-pnpm prisma7 migrate dev --name <name> --config prisma7.config.ts   # schema change: edit prisma/schema.prisma AND prisma8/contract.prisma
-pnpm prisma contract emit                                           # re-emit generated/prisma8/ after editing prisma8/contract.prisma
-pnpm run prisma:miggen                                              # deploy: prisma7 migrate deploy + generate, then prisma db sign --no-advance-ref
+# DB (Prisma 8, see "Prisma 8" below)
+pnpm prisma contract emit                  # re-emit generated/prisma8/ after editing prisma8/contract.prisma
+pnpm prisma migration plan --name <name>   # write the migration package for the change into migrations/app/
+pnpm run prisma:miggen                     # deploy: guard (refuses a Prisma 7 database never signed), then prisma db migrate
 
 # Quality (run all at once)
 pnpm run check              # typecheck + circular + audit + prune + format:check + lint
@@ -111,7 +111,7 @@ Query depth capped via `graphql-depth-limit` (`validationRules` in `GraphQLModul
 
 ### GraphQL field resolvers — ownership + DataLoader (mandatory pattern)
 
-Every `@ResolveField()` must independently re-derive scope from the current user, the same as top-level queries — never trust that the parent query already filtered correctly. Nested relations that don't carry their own `userId` (`Subtask`, `TaskComment`, `TaskLabel`, `TaskAttachment`, `TaskActivity`) scope through the parent `Task`'s ownership check (`task: { OR: [{ project: { userId } }, { assigneeId: userId } ] } }`, mirroring `prisma-task.repository.ts`'s `findById`); relations with their own direct owner (`ClientStatusHistory` via `client.userId`, `TimeEntry`-linked `TaskActivity` via `timeEntry.userId`) scope through that instead. Aggregates (`Project.totalTimeSeconds`, `Task.totalTimeSeconds`) sum **all** contributors' data, not just the requesting user's own rows — the `userId` only gates _access_ to the parent resource, it must never also restrict which rows get aggregated.
+Every `@ResolveField()` must independently re-derive scope from the current user, the same as top-level queries — never trust that the parent query already filtered correctly. Nested relations that don't carry their own `userId` (`Subtask`, `TaskComment`, `TaskLabel`, `TaskAttachment`, `TaskActivity`) scope through the parent `Task`'s ownership check (`task: { OR: [{ project: { userId } }, { assigneeId: userId } ] } }`, see `taskVisibleTo` in `src/prisma8/access.ts`); relations with their own direct owner (`ClientStatusHistory` via `client.userId`, `TimeEntry`-linked `TaskActivity` via `timeEntry.userId`) scope through that instead. Aggregates (`Project.totalTimeSeconds`, `Task.totalTimeSeconds`) sum **all** contributors' data, not just the requesting user's own rows — the `userId` only gates _access_ to the parent resource, it must never also restrict which rows get aggregated.
 
 Field resolvers must go through the per-request `GqlLoaders` (`@Context() ctx: GqlContext`, `ctx.loaders.<name>.load(id)`) rather than calling a service directly — calling a service per-row reintroduces N+1. Loaders are built in `LoadersService.createLoaders()` (`src/common/graphql/loaders.service.ts`), wired into the GraphQL context in `app.module.ts`'s `GraphQLModule.forRootAsync`. Adding a new field resolver that fetches by parent id: add a batch method (`findByXIds(ids, userId)`) to the relevant repository (scoped per the ownership rules above), wire a loader for it in `LoadersService` using `createGroupedListLoader`/`createMappedValueLoader` (`src/common/graphql/batch-loader.util.ts`), then call `ctx.loaders.<name>.load(id)` from the resolver — don't call the service/repository directly from a field resolver.
 
@@ -129,19 +129,19 @@ Fire-and-forget `AuditLog` writes in HubSpot, Clockify, Clients, Projects, and I
 
 `GET /admin/audit` (`src/audit/audit.controller.ts`) — **UNUSED**. No active consumer. It's the one REST endpoint left over from before the GraphQL admin surface existed (see `docs/final-arch.txt` §4); migrating it to `admin.resolver.ts` was considered and explicitly deprioritized (`docs/arch-todo.txt` item 4). Leave as-is, don't spend effort on it.
 
-### Prisma 7 / 8
+### Prisma 8
 
-Upgrade following Prisma's 7 -> 8 guide (https://www.prisma.io/docs/guides/upgrade-prisma-orm/postgresql). Every repository, service and script now runs on Prisma 8 (`Prisma8Service`, one client app-wide via the `@Global` `Prisma8Module`). Release A (current `prisma:miggen`) still applies pending Prisma 7 migrations, then `prisma db sign --no-advance-ref` adopts the database for Prisma 8 (refuses on drift, exit 4). Release B removes Prisma 7 (the `Prisma*Repository` v7 classes, `PrismaService`, `@prisma/client`, `@prisma/adapter-pg`, `@prisma/prisma7`) and switches `prisma:miggen` to `prisma db migrate`; deploy it only after release A ran on every database.
+Ported from Prisma 7 following Prisma's 7 -> 8 guide (https://www.prisma.io/docs/guides/upgrade-prisma-orm/postgresql). Every repository, service and script runs on Prisma 8 (`Prisma8Service`, one client app-wide via the `@Global` `Prisma8Module`). Prisma 7 is gone; `prisma/migrations/` is its read-only history (never edited, never applied again).
 
-Until release B, a schema change is a Prisma 7 migration AND the same change in `prisma8/contract.prisma` + `pnpm prisma contract emit`, or `db sign` will refuse. Never run `prisma db init` / `db update` against a real database. Pin `@prisma/orm-postgres` to the `@prisma/orm-toolchain` version the `prisma` CLI depends on (`pnpm view prisma@<v> dependencies`): a mismatched pair crashes `contract infer`/`emit` with "Malformed authoring pslBlock contribution". Port plan: `../docs/plans/step1.25/prisma8-port.md` (phases A-E). Port conventions:
+Migrations: `migrations/app/` holds Prisma 8 packages, starting with a baseline that creates the whole schema (applied only to an empty database). Databases built by Prisma 7 were adopted by release A (commit `633e552`, `prisma db sign`), so `prisma db migrate` skips the baseline for them. `pnpm run prisma:miggen` runs `src/scripts/migrate-guard.ts` first: an unsigned database that already has tables means release A was skipped, and it stops with instructions instead of running the baseline against existing tables. Schema change: edit `prisma8/contract.prisma`, `pnpm prisma contract emit`, `pnpm prisma migration plan --name <name>`, commit `generated/prisma8/` and `migrations/`. `migrations/` and `pnpm-lock.yaml` are generated: excluded from tsconfig and Prettier. Never run `prisma db init` / `db update` against a real database. Pin `@prisma/orm-postgres` to the `@prisma/orm-toolchain` version the `prisma` CLI depends on (`pnpm view prisma@<v> dependencies`): a mismatched pair crashes `contract infer`/`emit` with "Malformed authoring pslBlock contribution". Port plan: `../docs/plans/step1.25/prisma8-port.md` (phases A-E). Port conventions:
 
 - Client: inject `Prisma8Service` (`src/prisma8/`), query via `this.db.orm.public.<Model>`.
 - Timestamps: the contract types every `timestamp(3)` column as `TimestampString(3)` (no `Temporal`, no polyfill). Convert at the repository boundary with `fromDb`/`toDb` (`src/prisma8/timestamp.ts`); the app keeps using `Date`. No automatic `updatedAt` on Postgres: set it on every update.
-- Relation field names in `prisma8/contract.prisma` match `prisma/schema.prisma` (`contacts`, `items`, `tags`...); keep them aligned.
-- Case-insensitive search: `.ilike(...)` (escape `%`/`_` in user input). Transactions: `db.transaction(async (tx) => ...)`. Decimals come back as strings: `Number(...)` where Prisma 7 code called `.toNumber()`.
+- Relation field names in `prisma8/contract.prisma` kept the Prisma 7 names (`contacts`, `items`, `tags`...); the GraphQL types and mappers rely on them.
+- Case-insensitive search: `.ilike(...)` (escape `%`/`_` in user input). Transactions: `db.transaction(async (tx) => ...)`. Decimals come back as strings: `Number(...)` on read, `toNumeric(...)` (`src/prisma8/numeric.ts`) on write. GraphQL enums are TS enums declared next to their `registerEnumType` in the entity file (e.g. `RateType` in `client-rate.entity.ts`).
 - Single-row `where(...).update()` / `.delete()` with a missing or empty filter silently hits one arbitrary row (the lowest id): in tests, never make the target the first row, so a dropped filter fails. One `Prisma8Module` (`@Global`) provides the single `Prisma8Service`; repositories inject it, modules don't list it.
 - Mutation testing: `stryker.config.json` points `tsconfigFile` at a missing file on purpose (TypeScript 7 has no JS compiler API; Stryker only needs it to rewrite tsconfig references) and loads `@stryker-mutator/jest-runner` explicitly (pnpm isolation). After changing tests, run with `--force`: incremental mode can reuse stale results when a test change is not a new/edited `it` (e.g. an `afterEach`). Accepted survivors: error-message text, and `.some(...)` -> `.every(...)` on a required to-one relation (equivalent: exactly one related row). Suites with update/delete keep a decoy row created first and assert it unchanged in `afterEach`.
-- Tests: `pnpm run test:integration` (`*.int-spec.ts`, real Postgres `ttc_test` from `.env.test`, migrated by `test/integration-setup.js`, which refuses any other database). Test kit in `src/prisma8/testing/`: `useTestDb()` (one Prisma 7 + one Prisma 8 client per file, tables emptied before each test), `seed*` helpers (written through Prisma 8), `seedTaskAccess` (owner / assignee / stranger), typed matchers (`anyNumber`, `anyDate`... — `expect.any` is `any` and fails lint). Each repository suite is a `describe.each` over implementations: phase C adds the Prisma 8 one next to `prisma7` and the same tests must pass. The runtime is ESM-only: `test/esm-transformer.js` compiles only ESM files from `node_modules` for Jest; the app itself loads it through Node's `require(esm)` (Node 22.12+).
+- Tests: `pnpm run test:integration` (`*.int-spec.ts`, real Postgres `ttc_test` from `.env.test`, migrated by `test/integration-setup.js`, which refuses any other database). Test kit in `src/prisma8/testing/`: `useTestDb()` (one Prisma 8 client per file, tables emptied before each test), `seed*` helpers (written through Prisma 8), `seedTaskAccess` (owner / assignee / stranger), typed matchers (`anyNumber`, `anyDate`... — `expect.any` is `any` and fails lint). Repository suites keep a single-entry `describe.each` over implementations (the Prisma 7 entry was removed with release B). `test/integration-setup.js` migrates `ttc_test` with `prisma db migrate`. The runtime is ESM-only: `test/esm-transformer.js` compiles only ESM files from `node_modules` for Jest; the app itself loads it through Node's `require(esm)` (Node 22.12+).
 
 ### Rates system
 

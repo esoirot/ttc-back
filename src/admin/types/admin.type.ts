@@ -13,7 +13,7 @@ export type AdminStatsModel = {
   totalTimeSeconds: number;
 };
 
-export type AdminContactModel = {
+type AdminContactModel = {
   id: number;
   clientId: number;
   firstName: string | null;

@@ -1,3 +1,4 @@
+import { RateType } from './entities/client-rate.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientRatesResolver } from './client-rates.resolver';
 import { ClientRatesService } from './client-rates.service';
@@ -54,7 +55,7 @@ describe('ClientRatesResolver', () => {
         clientId: 1,
         name: 'Rate',
         amount: 0.12,
-        type: 'PER_WORD',
+        type: RateType.PER_WORD,
         currency: 'EUR',
       },
       user,

@@ -2,7 +2,6 @@ import { NotFoundException } from '@nestjs/common';
 import { at, seedProject, seedTask } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
-import { PrismaSubtaskRepository } from './prisma-subtask.repository';
 import { Prisma8SubtaskRepository } from './prisma8-subtask.repository';
 import { SubtaskRepository } from './subtask.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
@@ -10,7 +9,6 @@ import { anyNumber } from '../../prisma8/testing/matchers';
 const db = useTestDb();
 
 describe.each([
-  ['prisma7', (): SubtaskRepository => new PrismaSubtaskRepository(db.prisma7)],
   [
     'prisma8',
     (): SubtaskRepository => new Prisma8SubtaskRepository(db.prisma8),

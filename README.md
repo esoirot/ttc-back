@@ -7,7 +7,7 @@ NestJS + Fastify backend for the TranslatorAssistant platform. Exposes a GraphQL
 - **TypeScript 7**
 - **NestJS 11** on **Fastify v5**
 - **GraphQL** (code-first, Apollo driver) — auto-generates `src/schema.gql`
-- **Prisma 7** + PostgreSQL (`@prisma/adapter-pg`, client generated to `src/generated/prisma/`)
+- **Prisma 8** (`@prisma/orm-postgres`) + PostgreSQL — contract in `prisma8/contract.prisma`, emitted to `generated/prisma8/`, migrations in `migrations/app/`
 - **Passport.js** — local, JWT, and Google OAuth strategies
 - **JWT** auth via HTTP-only cookies (access + refresh tokens)
 - **2FA** — TOTP (speakeasy + QR code)
@@ -57,7 +57,7 @@ NestJS + Fastify backend for the TranslatorAssistant platform. Exposes a GraphQL
 4. **Run migrations**
 
    ```bash
-   pnpm prisma migrate dev --name init
+   pnpm run prisma:miggen
    ```
 
 5. **Start the server**
@@ -79,9 +79,10 @@ Server starts on `http://localhost:3000` by default (`PORT` env var overrides).
 ## Database
 
 ```bash
-pnpm prisma migrate dev --name <migration-name>   # apply schema changes + regenerate client
-pnpm prisma db pull --print                       # introspect DB into schema
-pnpm prisma generate                              # regenerate client without migrating
+pnpm prisma contract emit                  # after editing prisma8/contract.prisma
+pnpm prisma migration plan --name <name>   # write the migration package into migrations/app/
+pnpm run prisma:miggen                     # apply pending migrations (refuses a Prisma 7 database never signed)
+pnpm run db:dump                           # pg_dump backup before deploying
 ```
 
 ## Quality checks

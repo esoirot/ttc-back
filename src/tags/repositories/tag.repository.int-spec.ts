@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { seedTag, seedUser } from '../../prisma8/testing/seed';
-import { PrismaTagRepository } from './prisma-tag.repository';
 import { Prisma8TagRepository } from './prisma8-tag.repository';
 import { TagRepository } from './tag.repository';
 import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
@@ -9,7 +8,6 @@ import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
 const db = useTestDb();
 
 describe.each([
-  ['prisma7', (): TagRepository => new PrismaTagRepository(db.prisma7)],
   ['prisma8', (): TagRepository => new Prisma8TagRepository(db.prisma8)],
 ])('TagRepository (%s)', (_impl, make) => {
   let repo: TagRepository;

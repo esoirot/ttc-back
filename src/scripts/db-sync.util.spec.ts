@@ -6,22 +6,24 @@ import {
 } from './db-sync.util';
 
 // [model, ...modelsItDependsOn] per FK fields in prisma/schema.prisma
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import contractJson from '../../generated/prisma8/contract.json';
 
-// Read the real schema so a new model or FK can never be forgotten here.
-const SCHEMA = readFileSync(
-  join(__dirname, '../../prisma/schema.prisma'),
-  'utf-8',
-);
+type ModelMeta = {
+  fields: Record<string, unknown>;
+  relations: Record<string, { cardinality: string; to: { model: string } }>;
+};
 
-const SCHEMA_MODELS = [
-  ...SCHEMA.matchAll(/^model (\w+) \{([\s\S]*?)^\}/gm),
-].map(([, name, body]) => ({
+const SCHEMA_MODELS = Object.entries(
+  contractJson.domain.namespaces.public.models as unknown as Record<
+    string,
+    ModelMeta
+  >,
+).map(([name, model]) => ({
   name,
-  hasId: /^\s+id\s.*@id\b/m.test(body),
-  fkTargets: [...body.matchAll(/^\s+\w+\s+(\w+)\??\s+@relation\(fields:/gm)]
-    .map(([, target]) => target)
+  hasId: 'id' in model.fields,
+  fkTargets: Object.values(model.relations)
+    .filter((r) => r.cardinality === 'N:1')
+    .map((r) => r.to.model)
     .filter((target) => target !== name),
 }));
 
@@ -30,7 +32,7 @@ describe('MODEL_ORDER', () => {
     expect(new Set(MODEL_ORDER).size).toBe(MODEL_ORDER.length);
   });
 
-  it('covers every model in prisma/schema.prisma, so backups miss no table', () => {
+  it('covers every model in the Prisma 8 contract, so backups miss no table', () => {
     expect([...MODEL_ORDER].sort()).toEqual(
       SCHEMA_MODELS.map((m) => m.name).sort(),
     );

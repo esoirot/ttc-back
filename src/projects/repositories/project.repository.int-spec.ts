@@ -8,14 +8,12 @@ import {
   seedUser,
 } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
-import { PrismaProjectRepository } from './prisma-project.repository';
 import { Prisma8ProjectRepository } from './prisma8-project.repository';
 import { ProjectRepository } from './projects.repository';
 
 const db = useTestDb();
 
 describe.each([
-  ['prisma7', (): ProjectRepository => new PrismaProjectRepository(db.prisma7)],
   [
     'prisma8',
     (): ProjectRepository => new Prisma8ProjectRepository(db.prisma8),
@@ -180,32 +178,29 @@ describe.each([
   describe('search', () => {
     // Prisma 7's `contains` let % and _ act as wildcards ('100%' also found
     // '1000 words'); the Prisma 8 port matches them literally on purpose.
-    (_impl === 'prisma7' ? it.skip : it)(
-      'matches LIKE wildcards in the search text literally',
-      async () => {
-        await seedProject(db.prisma8, owner, { title: '100% done' });
-        await seedProject(db.prisma8, owner, { title: '1000 words' });
-        await seedProject(db.prisma8, owner, { title: 'a_b' });
-        await seedProject(db.prisma8, owner, { title: 'axb' });
+    it('matches LIKE wildcards in the search text literally', async () => {
+      await seedProject(db.prisma8, owner, { title: '100% done' });
+      await seedProject(db.prisma8, owner, { title: '1000 words' });
+      await seedProject(db.prisma8, owner, { title: 'a_b' });
+      await seedProject(db.prisma8, owner, { title: 'axb' });
 
-        const pct = await repo.findAll(
-          owner,
-          false,
-          undefined,
-          undefined,
-          '100%',
-        );
-        expect(pct.items.map((p) => p.title)).toEqual(['100% done']);
-        const under = await repo.findAll(
-          owner,
-          false,
-          undefined,
-          undefined,
-          'a_b',
-        );
-        expect(under.items.map((p) => p.title)).toEqual(['a_b']);
-      },
-    );
+      const pct = await repo.findAll(
+        owner,
+        false,
+        undefined,
+        undefined,
+        '100%',
+      );
+      expect(pct.items.map((p) => p.title)).toEqual(['100% done']);
+      const under = await repo.findAll(
+        owner,
+        false,
+        undefined,
+        undefined,
+        'a_b',
+      );
+      expect(under.items.map((p) => p.title)).toEqual(['a_b']);
+    });
   });
 
   describe('create', () => {

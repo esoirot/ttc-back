@@ -7,7 +7,6 @@ import {
 } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { TranslationRateType } from '../entities/translation-rate.entity';
-import { PrismaTranslationRateRepository } from './prisma-translation-rate.repository';
 import { Prisma8TranslationRateRepository } from './prisma8-translation-rate.repository';
 import { TranslationRateRepository } from './translation-rate.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
@@ -15,11 +14,6 @@ import { anyNumber } from '../../prisma8/testing/matchers';
 const db = useTestDb();
 
 describe.each([
-  [
-    'prisma7',
-    (): TranslationRateRepository =>
-      new PrismaTranslationRateRepository(db.prisma7),
-  ],
   [
     'prisma8',
     (): TranslationRateRepository =>

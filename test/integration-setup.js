@@ -16,7 +16,7 @@ module.exports = () => {
   }
   execFileSync(
     'pnpm',
-    ['exec', 'prisma7', 'migrate', 'deploy', '--config', 'prisma7.config.ts'],
+    ['exec', 'prisma', 'db', 'migrate', '--db', DATABASE_URL],
     { cwd: root, env: { ...process.env, DATABASE_URL }, stdio: 'ignore' },
   );
 };

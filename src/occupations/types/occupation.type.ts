@@ -22,6 +22,12 @@ interface CustomFieldModel {
   value: string;
 }
 
+/** An occupation row without its nested lists. */
+export type OccupationRow = Omit<
+  OccupationModel,
+  'charges' | 'translationRates' | 'languagePairs' | 'customFields'
+>;
+
 export interface OccupationModel {
   id: number;
   userId: number;

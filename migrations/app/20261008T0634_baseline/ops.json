@@ -1,0 +1,3930 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.ChargeType",
+    "label": "Create enum type \"ChargeType\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "ChargeType"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"ChargeType\"",
+        "sql": "CREATE TYPE \"public\".\"ChargeType\" AS ENUM ('FIXED', 'VARIABLE')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.ClientIndustry",
+    "label": "Create enum type \"ClientIndustry\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "ClientIndustry"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"ClientIndustry\"",
+        "sql": "CREATE TYPE \"public\".\"ClientIndustry\" AS ENUM ('HEALTHCARE', 'EDUCATION', 'LEGAL', 'FINANCE', 'TECHNOLOGY', 'VIDEO_GAMES', 'MARKETING', 'MEDIA_ENTERTAINMENT', 'E_COMMERCE', 'MANUFACTURING', 'AUTOMOTIVE', 'GOVERNMENT', 'NGO', 'REAL_ESTATE', 'OTHER', 'TOURISM', 'LUXE')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.ClientStatus",
+    "label": "Create enum type \"ClientStatus\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "ClientStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"ClientStatus\"",
+        "sql": "CREATE TYPE \"public\".\"ClientStatus\" AS ENUM ('TO_CONTACT', 'CONTACTED', 'FOLLOW_UP_1', 'FOLLOW_UP_2', 'FOLLOW_UP_3', 'TALKING', 'CLIENT', 'RECONTACT_LATER')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.ClientType",
+    "label": "Create enum type \"ClientType\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "ClientType"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"ClientType\"",
+        "sql": "CREATE TYPE \"public\".\"ClientType\" AS ENUM ('COMPANY', 'INDIVIDUAL')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.InvoiceStatus",
+    "label": "Create enum type \"InvoiceStatus\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "InvoiceStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"InvoiceStatus\"",
+        "sql": "CREATE TYPE \"public\".\"InvoiceStatus\" AS ENUM ('DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.InvoicingStatus",
+    "label": "Create enum type \"InvoicingStatus\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "InvoicingStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"InvoicingStatus\"",
+        "sql": "CREATE TYPE \"public\".\"InvoicingStatus\" AS ENUM ('NO', 'INVOICED')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.OccupationType",
+    "label": "Create enum type \"OccupationType\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "OccupationType"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"OccupationType\"",
+        "sql": "CREATE TYPE \"public\".\"OccupationType\" AS ENUM ('TRANSLATOR', 'CORRECTOR', 'CUSTOM')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.ProjectStatus",
+    "label": "Create enum type \"ProjectStatus\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "ProjectStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"ProjectStatus\"",
+        "sql": "CREATE TYPE \"public\".\"ProjectStatus\" AS ENUM ('DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'ARCHIVED', 'INVOICE_SENT', 'INVOICE_PAID')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.RateType",
+    "label": "Create enum type \"RateType\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "RateType"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"RateType\"",
+        "sql": "CREATE TYPE \"public\".\"RateType\" AS ENUM ('HOURLY', 'PER_WORD', 'FIXED', 'DAY')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.Role",
+    "label": "Create enum type \"Role\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "Role"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"Role\"",
+        "sql": "CREATE TYPE \"public\".\"Role\" AS ENUM ('ADMIN', 'MANAGER', 'USER')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.TaskStatus",
+    "label": "Create enum type \"TaskStatus\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "TaskStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"TaskStatus\"",
+        "sql": "CREATE TYPE \"public\".\"TaskStatus\" AS ENUM ('TODO', 'IN_PROGRESS', 'DONE', 'PAID')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.AuditLog",
+    "label": "Create table \"AuditLog\"",
+    "summary": "Creates table \"AuditLog\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AuditLog"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AuditLog\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AuditLog\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AuditLog\"",
+        "sql": "CREATE TABLE \"public\".\"AuditLog\" (\n  \"action\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"payload\" jsonb,\n  \"resource\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"AuditLog_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AuditLog\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AuditLog\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Charge",
+    "label": "Create table \"Charge\"",
+    "summary": "Creates table \"Charge\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Charge"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Charge\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Charge\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Charge\"",
+        "sql": "CREATE TABLE \"public\".\"Charge\" (\n  \"amount\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"occupationId\" int4 NOT NULL,\n  \"type\" \"ChargeType\" NOT NULL,\n  CONSTRAINT \"Charge_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Charge\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Charge\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Client",
+    "label": "Create table \"Client\"",
+    "summary": "Creates table \"Client\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Client"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Client\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Client\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Client\"",
+        "sql": "CREATE TABLE \"public\".\"Client\" (\n  \"address\" text,\n  \"addressLine2\" text,\n  \"billingEndOfMonth\" bool DEFAULT false NOT NULL,\n  \"city\" text,\n  \"clientType\" \"ClientType\" DEFAULT 'COMPANY'::\"ClientType\" NOT NULL,\n  \"color\" text,\n  \"company\" text,\n  \"contactedAt\" timestamp(3),\n  \"country\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"email\" text,\n  \"firstName\" text,\n  \"hubspotId\" text,\n  \"id\" SERIAL NOT NULL,\n  \"industry\" \"ClientIndustry\",\n  \"lastName\" text,\n  \"legalForm\" text,\n  \"legalName\" text,\n  \"name\" text NOT NULL,\n  \"notes\" text,\n  \"paymentDelayDays\" int4,\n  \"phone\" text,\n  \"postalCode\" text,\n  \"state\" text,\n  \"status\" \"ClientStatus\" DEFAULT 'CLIENT'::\"ClientStatus\" NOT NULL,\n  \"taxRate\" numeric(5,2),\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  \"vatNumber\" text,\n  \"website\" text,\n  CONSTRAINT \"Client_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Client\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Client\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ClientOccupation",
+    "label": "Create table \"ClientOccupation\"",
+    "summary": "Creates table \"ClientOccupation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ClientOccupation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ClientOccupation\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ClientOccupation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ClientOccupation\"",
+        "sql": "CREATE TABLE \"public\".\"ClientOccupation\" (\n  \"clientId\" int4 NOT NULL,\n  \"occupationId\" int4 NOT NULL,\n  CONSTRAINT \"ClientOccupation_pkey\" PRIMARY KEY (\"clientId\", \"occupationId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ClientOccupation\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ClientOccupation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ClientRate",
+    "label": "Create table \"ClientRate\"",
+    "summary": "Creates table \"ClientRate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ClientRate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ClientRate\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ClientRate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ClientRate\"",
+        "sql": "CREATE TABLE \"public\".\"ClientRate\" (\n  \"amount\" numeric(10,4) NOT NULL,\n  \"clientId\" int4 NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"currency\" text DEFAULT 'EUR' NOT NULL,\n  \"description\" text,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"type\" \"RateType\" NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"ClientRate_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ClientRate\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ClientRate\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ClientStatusHistory",
+    "label": "Create table \"ClientStatusHistory\"",
+    "summary": "Creates table \"ClientStatusHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ClientStatusHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ClientStatusHistory\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ClientStatusHistory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ClientStatusHistory\"",
+        "sql": "CREATE TABLE \"public\".\"ClientStatusHistory\" (\n  \"clientId\" int4 NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"payload\" text,\n  \"type\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"ClientStatusHistory_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ClientStatusHistory\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ClientStatusHistory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ClientTag",
+    "label": "Create table \"ClientTag\"",
+    "summary": "Creates table \"ClientTag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ClientTag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ClientTag\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ClientTag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ClientTag\"",
+        "sql": "CREATE TABLE \"public\".\"ClientTag\" (\n  \"clientId\" int4 NOT NULL,\n  \"tagId\" int4 NOT NULL,\n  CONSTRAINT \"ClientTag_pkey\" PRIMARY KEY (\"clientId\", \"tagId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ClientTag\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ClientTag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.CompanyContact",
+    "label": "Create table \"CompanyContact\"",
+    "summary": "Creates table \"CompanyContact\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "CompanyContact"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"CompanyContact\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CompanyContact\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"CompanyContact\"",
+        "sql": "CREATE TABLE \"public\".\"CompanyContact\" (\n  \"clientId\" int4 NOT NULL,\n  \"color\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"email\" text,\n  \"firstName\" text,\n  \"id\" SERIAL NOT NULL,\n  \"jobTitle\" text,\n  \"lastName\" text,\n  \"phone\" text,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  CONSTRAINT \"CompanyContact_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"CompanyContact\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CompanyContact\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.CustomField",
+    "label": "Create table \"CustomField\"",
+    "summary": "Creates table \"CustomField\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "CustomField"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"CustomField\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CustomField\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"CustomField\"",
+        "sql": "CREATE TABLE \"public\".\"CustomField\" (\n  \"id\" SERIAL NOT NULL,\n  \"key\" text NOT NULL,\n  \"occupationId\" int4 NOT NULL,\n  \"value\" text NOT NULL,\n  CONSTRAINT \"CustomField_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"CustomField\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CustomField\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Invoice",
+    "label": "Create table \"Invoice\"",
+    "summary": "Creates table \"Invoice\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Invoice"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Invoice\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invoice\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Invoice\"",
+        "sql": "CREATE TABLE \"public\".\"Invoice\" (\n  \"clientId\" int4,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"currency\" text DEFAULT 'EUR' NOT NULL,\n  \"dueDate\" timestamp(3),\n  \"id\" SERIAL NOT NULL,\n  \"issuedAt\" timestamp(3),\n  \"notes\" text,\n  \"number\" text NOT NULL,\n  \"paidAt\" timestamp(3),\n  \"status\" \"InvoiceStatus\" DEFAULT 'DRAFT'::\"InvoiceStatus\" NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"Invoice_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Invoice\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invoice\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.InvoiceItem",
+    "label": "Create table \"InvoiceItem\"",
+    "summary": "Creates table \"InvoiceItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "InvoiceItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"InvoiceItem\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"InvoiceItem\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"InvoiceItem\"",
+        "sql": "CREATE TABLE \"public\".\"InvoiceItem\" (\n  \"description\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"invoiceId\" int4 NOT NULL,\n  \"projectId\" int4,\n  \"quantity\" numeric(10,4) NOT NULL,\n  \"timeEntryId\" int4,\n  \"total\" numeric(10,4) NOT NULL,\n  \"unitPrice\" numeric(10,4) NOT NULL,\n  CONSTRAINT \"InvoiceItem_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"InvoiceItem\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"InvoiceItem\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.LanguagePair",
+    "label": "Create table \"LanguagePair\"",
+    "summary": "Creates table \"LanguagePair\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "LanguagePair"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"LanguagePair\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"LanguagePair\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"LanguagePair\"",
+        "sql": "CREATE TABLE \"public\".\"LanguagePair\" (\n  \"fromLanguage\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"occupationId\" int4 NOT NULL,\n  \"toLanguage\" text NOT NULL,\n  CONSTRAINT \"LanguagePair_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"LanguagePair\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"LanguagePair\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.OAuthAccount",
+    "label": "Create table \"OAuthAccount\"",
+    "summary": "Creates table \"OAuthAccount\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "OAuthAccount"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"OAuthAccount\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"OAuthAccount\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"OAuthAccount\"",
+        "sql": "CREATE TABLE \"public\".\"OAuthAccount\" (\n  \"id\" SERIAL NOT NULL,\n  \"provider\" text NOT NULL,\n  \"providerId\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"OAuthAccount_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"OAuthAccount\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"OAuthAccount\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Occupation",
+    "label": "Create table \"Occupation\"",
+    "summary": "Creates table \"Occupation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Occupation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Occupation\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Occupation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Occupation\"",
+        "sql": "CREATE TABLE \"public\".\"Occupation\" (\n  \"companyName\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"legalForm\" text,\n  \"name\" text NOT NULL,\n  \"objectiveQ1\" int4,\n  \"objectiveQ2\" int4,\n  \"objectiveQ3\" int4,\n  \"objectiveQ4\" int4,\n  \"occupationType\" \"OccupationType\" DEFAULT 'CUSTOM'::\"OccupationType\" NOT NULL,\n  \"professionalEmail\" text,\n  \"professionalPhone\" text,\n  \"timezone\" text,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  \"website\" text,\n  CONSTRAINT \"Occupation_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Occupation\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Occupation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.PasswordResetToken",
+    "label": "Create table \"PasswordResetToken\"",
+    "summary": "Creates table \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"PasswordResetToken\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"PasswordResetToken\"",
+        "sql": "CREATE TABLE \"public\".\"PasswordResetToken\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamp(3) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"tokenHash\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"PasswordResetToken_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"PasswordResetToken\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Project",
+    "label": "Create table \"Project\"",
+    "summary": "Creates table \"Project\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Project"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Project\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Project\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Project\"",
+        "sql": "CREATE TABLE \"public\".\"Project\" (\n  \"clientId\" int4,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"currency\" text DEFAULT 'EUR' NOT NULL,\n  \"deadline\" timestamp(3),\n  \"description\" text,\n  \"fixedFee\" numeric(10,4),\n  \"hourlyRate\" numeric(10,4),\n  \"id\" SERIAL NOT NULL,\n  \"perWordRate\" numeric(10,4),\n  \"rateSheetId\" int4,\n  \"sourceLanguage\" text,\n  \"startDate\" timestamp(3),\n  \"status\" \"ProjectStatus\" DEFAULT 'DRAFT'::\"ProjectStatus\" NOT NULL,\n  \"targetLanguage\" text,\n  \"title\" text NOT NULL,\n  \"unitPrice\" numeric(14,8),\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"useCustomRate\" bool DEFAULT false NOT NULL,\n  \"userId\" int4,\n  \"wordCount\" int4,\n  CONSTRAINT \"Project_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Project\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Project\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ProjectOccupation",
+    "label": "Create table \"ProjectOccupation\"",
+    "summary": "Creates table \"ProjectOccupation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ProjectOccupation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ProjectOccupation\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ProjectOccupation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ProjectOccupation\"",
+        "sql": "CREATE TABLE \"public\".\"ProjectOccupation\" (\n  \"occupationId\" int4 NOT NULL,\n  \"projectId\" int4 NOT NULL,\n  CONSTRAINT \"ProjectOccupation_pkey\" PRIMARY KEY (\"projectId\", \"occupationId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ProjectOccupation\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ProjectOccupation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.RateSheet",
+    "label": "Create table \"RateSheet\"",
+    "summary": "Creates table \"RateSheet\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "RateSheet"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"RateSheet\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RateSheet\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"RateSheet\"",
+        "sql": "CREATE TABLE \"public\".\"RateSheet\" (\n  \"clientId\" int4,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"currency\" text DEFAULT 'EUR' NOT NULL,\n  \"description\" text,\n  \"id\" SERIAL NOT NULL,\n  \"isDefault\" bool DEFAULT false NOT NULL,\n  \"matchRates\" jsonb NOT NULL,\n  \"name\" text NOT NULL,\n  \"occupationId\" int4,\n  \"pricePerWord\" numeric(10,6) NOT NULL,\n  \"sourceLanguage\" character varying(2) NOT NULL,\n  \"targetLanguage\" character varying(2) NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"RateSheet_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"RateSheet\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RateSheet\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.RefreshToken",
+    "label": "Create table \"RefreshToken\"",
+    "summary": "Creates table \"RefreshToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "RefreshToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"RefreshToken\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RefreshToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"RefreshToken\"",
+        "sql": "CREATE TABLE \"public\".\"RefreshToken\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamp(3) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"tokenHash\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"RefreshToken_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"RefreshToken\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RefreshToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Subtask",
+    "label": "Create table \"Subtask\"",
+    "summary": "Creates table \"Subtask\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Subtask"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Subtask\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Subtask\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Subtask\"",
+        "sql": "CREATE TABLE \"public\".\"Subtask\" (\n  \"checklistTitle\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"done\" bool DEFAULT false NOT NULL,\n  \"dueDate\" timestamp(3),\n  \"id\" SERIAL NOT NULL,\n  \"taskId\" int4 NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"wordCount\" int4,\n  CONSTRAINT \"Subtask_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Subtask\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Subtask\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Tag",
+    "label": "Create table \"Tag\"",
+    "summary": "Creates table \"Tag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Tag\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Tag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Tag\"",
+        "sql": "CREATE TABLE \"public\".\"Tag\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"Tag_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Tag\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Tag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Task",
+    "label": "Create table \"Task\"",
+    "summary": "Creates table \"Task\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Task"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Task\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Task\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Task\"",
+        "sql": "CREATE TABLE \"public\".\"Task\" (\n  \"assigneeId\" int4,\n  \"checklistTitles\" text[],\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"dueDate\" timestamp(3),\n  \"id\" SERIAL NOT NULL,\n  \"projectId\" int4 NOT NULL,\n  \"recurring\" text,\n  \"reminderOffset\" text,\n  \"sortOrder\" int4 DEFAULT 0 NOT NULL,\n  \"startDate\" timestamp(3),\n  \"status\" \"TaskStatus\" DEFAULT 'TODO'::\"TaskStatus\" NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"wordCount\" int4,\n  CONSTRAINT \"Task_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Task\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Task\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TaskActivity",
+    "label": "Create table \"TaskActivity\"",
+    "summary": "Creates table \"TaskActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TaskActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TaskActivity\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaskActivity\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TaskActivity\"",
+        "sql": "CREATE TABLE \"public\".\"TaskActivity\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"payload\" text,\n  \"taskId\" int4,\n  \"timeEntryId\" int4,\n  \"type\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"TaskActivity_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TaskActivity\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaskActivity\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TaskAttachment",
+    "label": "Create table \"TaskAttachment\"",
+    "summary": "Creates table \"TaskAttachment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TaskAttachment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TaskAttachment\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaskAttachment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TaskAttachment\"",
+        "sql": "CREATE TABLE \"public\".\"TaskAttachment\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"displayText\" text,\n  \"fileName\" text,\n  \"id\" SERIAL NOT NULL,\n  \"storageDriver\" text,\n  \"storageKey\" text,\n  \"taskId\" int4 NOT NULL,\n  \"type\" text NOT NULL,\n  \"url\" text NOT NULL,\n  CONSTRAINT \"TaskAttachment_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TaskAttachment\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaskAttachment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TaskComment",
+    "label": "Create table \"TaskComment\"",
+    "summary": "Creates table \"TaskComment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TaskComment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TaskComment\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaskComment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TaskComment\"",
+        "sql": "CREATE TABLE \"public\".\"TaskComment\" (\n  \"authorId\" int4 NOT NULL,\n  \"body\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"taskId\" int4 NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  CONSTRAINT \"TaskComment_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TaskComment\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaskComment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TaskLabel",
+    "label": "Create table \"TaskLabel\"",
+    "summary": "Creates table \"TaskLabel\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TaskLabel"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TaskLabel\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaskLabel\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TaskLabel\"",
+        "sql": "CREATE TABLE \"public\".\"TaskLabel\" (\n  \"color\" text DEFAULT '#6B7280' NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"taskId\" int4 NOT NULL,\n  CONSTRAINT \"TaskLabel_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TaskLabel\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaskLabel\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TimeEntry",
+    "label": "Create table \"TimeEntry\"",
+    "summary": "Creates table \"TimeEntry\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TimeEntry"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TimeEntry\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TimeEntry\"",
+        "sql": "CREATE TABLE \"public\".\"TimeEntry\" (\n  \"billable\" bool DEFAULT true NOT NULL,\n  \"clockifyEntryId\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"durationSeconds\" int4,\n  \"endTime\" timestamp(3),\n  \"id\" SERIAL NOT NULL,\n  \"invoicingStatus\" \"InvoicingStatus\" DEFAULT 'NO'::\"InvoicingStatus\" NOT NULL,\n  \"occupationId\" int4,\n  \"projectId\" int4,\n  \"startTime\" timestamp(3) NOT NULL,\n  \"subtaskId\" int4,\n  \"taskId\" int4,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  \"wordsProcessed\" int4,\n  CONSTRAINT \"TimeEntry_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TimeEntry\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TimeEntryTag",
+    "label": "Create table \"TimeEntryTag\"",
+    "summary": "Creates table \"TimeEntryTag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TimeEntryTag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TimeEntryTag\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TimeEntryTag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TimeEntryTag\"",
+        "sql": "CREATE TABLE \"public\".\"TimeEntryTag\" (\n  \"tagId\" int4 NOT NULL,\n  \"timeEntryId\" int4 NOT NULL,\n  CONSTRAINT \"TimeEntryTag_pkey\" PRIMARY KEY (\"timeEntryId\", \"tagId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TimeEntryTag\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TimeEntryTag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TranslationRate",
+    "label": "Create table \"TranslationRate\"",
+    "summary": "Creates table \"TranslationRate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TranslationRate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TranslationRate\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TranslationRate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TranslationRate\"",
+        "sql": "CREATE TABLE \"public\".\"TranslationRate\" (\n  \"amount\" float8 NOT NULL,\n  \"clientId\" int4,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"currency\" text DEFAULT 'EUR' NOT NULL,\n  \"description\" text,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"occupationId\" int4,\n  \"sourceLanguage\" character varying(2),\n  \"targetLanguage\" character varying(2),\n  \"type\" \"RateType\" NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"TranslationRate_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TranslationRate\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TranslationRate\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TwoFactorBackupCode",
+    "label": "Create table \"TwoFactorBackupCode\"",
+    "summary": "Creates table \"TwoFactorBackupCode\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TwoFactorBackupCode"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TwoFactorBackupCode\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TwoFactorBackupCode\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TwoFactorBackupCode\"",
+        "sql": "CREATE TABLE \"public\".\"TwoFactorBackupCode\" (\n  \"codeHash\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"usedAt\" timestamp(3),\n  \"userId\" int4 NOT NULL,\n  CONSTRAINT \"TwoFactorBackupCode_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TwoFactorBackupCode\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TwoFactorBackupCode\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.User",
+    "label": "Create table \"User\"",
+    "summary": "Creates table \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"User\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"User\"",
+        "sql": "CREATE TABLE \"public\".\"User\" (\n  \"adminPermissions\" text[] DEFAULT '{}',\n  \"clockifyApiKey\" text,\n  \"clockifyUserId\" text,\n  \"clockifyWorkspaceId\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"dateFormat\" text DEFAULT 'DD/MM/YYYY',\n  \"defaultCurrency\" text DEFAULT 'EUR' NOT NULL,\n  \"email\" text NOT NULL,\n  \"firstName\" text,\n  \"googleCalendarAccessToken\" text,\n  \"googleCalendarEmail\" text,\n  \"googleCalendarRefreshToken\" text,\n  \"googleCalendarTokenExpiresAt\" timestamp(3),\n  \"hourFormat\" text DEFAULT '24h',\n  \"hubspotAccessToken\" text,\n  \"hubspotPortalId\" text,\n  \"hubspotRefreshToken\" text,\n  \"hubspotTokenExpiresAt\" timestamp(3),\n  \"id\" SERIAL NOT NULL,\n  \"interfaceLanguage\" text DEFAULT 'en',\n  \"jobTitle\" text,\n  \"lastName\" text,\n  \"logoUrl\" text,\n  \"mobilePhone\" text,\n  \"name\" text,\n  \"numberFormat\" text DEFAULT '1,234.56',\n  \"password\" text,\n  \"role\" \"Role\" DEFAULT 'USER'::\"Role\" NOT NULL,\n  \"twoFactorEnabled\" bool DEFAULT false NOT NULL,\n  \"twoFactorSecret\" text,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  CONSTRAINT \"User_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"User\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Invoice.Invoice_userId_number_key",
+    "label": "Create index \"Invoice_userId_number_key\" on \"Invoice\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Invoice_userId_number_key",
+        "table": "Invoice"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Invoice_userId_number_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invoice_userId_number_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Invoice_userId_number_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Invoice_userId_number_key\" ON \"public\".\"Invoice\" (\"userId\", \"number\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Invoice_userId_number_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invoice_userId_number_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.OAuthAccount.OAuthAccount_provider_providerId_key",
+    "label": "Create index \"OAuthAccount_provider_providerId_key\" on \"OAuthAccount\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "OAuthAccount_provider_providerId_key",
+        "table": "OAuthAccount"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"OAuthAccount_provider_providerId_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"OAuthAccount_provider_providerId_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"OAuthAccount_provider_providerId_key\"",
+        "sql": "CREATE UNIQUE INDEX \"OAuthAccount_provider_providerId_key\" ON \"public\".\"OAuthAccount\" (\"provider\", \"providerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"OAuthAccount_provider_providerId_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"OAuthAccount_provider_providerId_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PasswordResetToken.PasswordResetToken_tokenHash_key",
+    "label": "Create index \"PasswordResetToken_tokenHash_key\" on \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PasswordResetToken_tokenHash_key",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PasswordResetToken_tokenHash_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_tokenHash_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PasswordResetToken_tokenHash_key\"",
+        "sql": "CREATE UNIQUE INDEX \"PasswordResetToken_tokenHash_key\" ON \"public\".\"PasswordResetToken\" (\"tokenHash\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PasswordResetToken_tokenHash_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_tokenHash_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.RefreshToken.RefreshToken_tokenHash_key",
+    "label": "Create index \"RefreshToken_tokenHash_key\" on \"RefreshToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "RefreshToken_tokenHash_key",
+        "table": "RefreshToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"RefreshToken_tokenHash_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RefreshToken_tokenHash_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"RefreshToken_tokenHash_key\"",
+        "sql": "CREATE UNIQUE INDEX \"RefreshToken_tokenHash_key\" ON \"public\".\"RefreshToken\" (\"tokenHash\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"RefreshToken_tokenHash_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"RefreshToken_tokenHash_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Tag.Tag_userId_name_key",
+    "label": "Create index \"Tag_userId_name_key\" on \"Tag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Tag_userId_name_key",
+        "table": "Tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Tag_userId_name_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Tag_userId_name_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Tag_userId_name_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Tag_userId_name_key\" ON \"public\".\"Tag\" (\"userId\", \"name\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Tag_userId_name_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Tag_userId_name_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.User.User_email_key",
+    "label": "Create index \"User_email_key\" on \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "User_email_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"User_email_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_email_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"User_email_key\"",
+        "sql": "CREATE UNIQUE INDEX \"User_email_key\" ON \"public\".\"User\" (\"email\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"User_email_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_email_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.AuditLog.AuditLog_userId_fkey",
+    "label": "Add foreign key \"AuditLog_userId_fkey\" on \"AuditLog\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "AuditLog_userId_fkey",
+        "table": "AuditLog"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"AuditLog_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AuditLog_userId_fkey",
+          "public",
+          "\"public\".\"AuditLog\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"AuditLog_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"AuditLog\"\nADD CONSTRAINT \"AuditLog_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"AuditLog_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AuditLog_userId_fkey",
+          "public",
+          "\"public\".\"AuditLog\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Charge.Charge_occupationId_fkey",
+    "label": "Add foreign key \"Charge_occupationId_fkey\" on \"Charge\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Charge_occupationId_fkey",
+        "table": "Charge"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Charge_occupationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Charge_occupationId_fkey",
+          "public",
+          "\"public\".\"Charge\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Charge_occupationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Charge\"\nADD CONSTRAINT \"Charge_occupationId_fkey\"\nFOREIGN KEY (\"occupationId\")\nREFERENCES \"public\".\"Occupation\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Charge_occupationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Charge_occupationId_fkey",
+          "public",
+          "\"public\".\"Charge\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Client.Client_userId_fkey",
+    "label": "Add foreign key \"Client_userId_fkey\" on \"Client\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Client_userId_fkey",
+        "table": "Client"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Client_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Client_userId_fkey",
+          "public",
+          "\"public\".\"Client\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Client_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Client\"\nADD CONSTRAINT \"Client_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Client_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Client_userId_fkey",
+          "public",
+          "\"public\".\"Client\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ClientOccupation.ClientOccupation_clientId_fkey",
+    "label": "Add foreign key \"ClientOccupation_clientId_fkey\" on \"ClientOccupation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ClientOccupation_clientId_fkey",
+        "table": "ClientOccupation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ClientOccupation_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientOccupation_clientId_fkey",
+          "public",
+          "\"public\".\"ClientOccupation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ClientOccupation_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ClientOccupation\"\nADD CONSTRAINT \"ClientOccupation_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ClientOccupation_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientOccupation_clientId_fkey",
+          "public",
+          "\"public\".\"ClientOccupation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ClientOccupation.ClientOccupation_occupationId_fkey",
+    "label": "Add foreign key \"ClientOccupation_occupationId_fkey\" on \"ClientOccupation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ClientOccupation_occupationId_fkey",
+        "table": "ClientOccupation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ClientOccupation_occupationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientOccupation_occupationId_fkey",
+          "public",
+          "\"public\".\"ClientOccupation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ClientOccupation_occupationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ClientOccupation\"\nADD CONSTRAINT \"ClientOccupation_occupationId_fkey\"\nFOREIGN KEY (\"occupationId\")\nREFERENCES \"public\".\"Occupation\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ClientOccupation_occupationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientOccupation_occupationId_fkey",
+          "public",
+          "\"public\".\"ClientOccupation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ClientRate.ClientRate_clientId_fkey",
+    "label": "Add foreign key \"ClientRate_clientId_fkey\" on \"ClientRate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ClientRate_clientId_fkey",
+        "table": "ClientRate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ClientRate_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientRate_clientId_fkey",
+          "public",
+          "\"public\".\"ClientRate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ClientRate_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ClientRate\"\nADD CONSTRAINT \"ClientRate_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ClientRate_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientRate_clientId_fkey",
+          "public",
+          "\"public\".\"ClientRate\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ClientRate.ClientRate_userId_fkey",
+    "label": "Add foreign key \"ClientRate_userId_fkey\" on \"ClientRate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ClientRate_userId_fkey",
+        "table": "ClientRate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ClientRate_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientRate_userId_fkey",
+          "public",
+          "\"public\".\"ClientRate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ClientRate_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ClientRate\"\nADD CONSTRAINT \"ClientRate_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ClientRate_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientRate_userId_fkey",
+          "public",
+          "\"public\".\"ClientRate\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ClientStatusHistory.ClientStatusHistory_clientId_fkey",
+    "label": "Add foreign key \"ClientStatusHistory_clientId_fkey\" on \"ClientStatusHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ClientStatusHistory_clientId_fkey",
+        "table": "ClientStatusHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ClientStatusHistory_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientStatusHistory_clientId_fkey",
+          "public",
+          "\"public\".\"ClientStatusHistory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ClientStatusHistory_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ClientStatusHistory\"\nADD CONSTRAINT \"ClientStatusHistory_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ClientStatusHistory_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientStatusHistory_clientId_fkey",
+          "public",
+          "\"public\".\"ClientStatusHistory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ClientStatusHistory.ClientStatusHistory_userId_fkey",
+    "label": "Add foreign key \"ClientStatusHistory_userId_fkey\" on \"ClientStatusHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ClientStatusHistory_userId_fkey",
+        "table": "ClientStatusHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ClientStatusHistory_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientStatusHistory_userId_fkey",
+          "public",
+          "\"public\".\"ClientStatusHistory\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ClientStatusHistory_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ClientStatusHistory\"\nADD CONSTRAINT \"ClientStatusHistory_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ClientStatusHistory_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientStatusHistory_userId_fkey",
+          "public",
+          "\"public\".\"ClientStatusHistory\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ClientTag.ClientTag_clientId_fkey",
+    "label": "Add foreign key \"ClientTag_clientId_fkey\" on \"ClientTag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ClientTag_clientId_fkey",
+        "table": "ClientTag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ClientTag_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientTag_clientId_fkey",
+          "public",
+          "\"public\".\"ClientTag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ClientTag_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ClientTag\"\nADD CONSTRAINT \"ClientTag_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ClientTag_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientTag_clientId_fkey",
+          "public",
+          "\"public\".\"ClientTag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ClientTag.ClientTag_tagId_fkey",
+    "label": "Add foreign key \"ClientTag_tagId_fkey\" on \"ClientTag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ClientTag_tagId_fkey",
+        "table": "ClientTag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ClientTag_tagId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientTag_tagId_fkey",
+          "public",
+          "\"public\".\"ClientTag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ClientTag_tagId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ClientTag\"\nADD CONSTRAINT \"ClientTag_tagId_fkey\"\nFOREIGN KEY (\"tagId\")\nREFERENCES \"public\".\"Tag\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ClientTag_tagId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ClientTag_tagId_fkey",
+          "public",
+          "\"public\".\"ClientTag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.CompanyContact.CompanyContact_clientId_fkey",
+    "label": "Add foreign key \"CompanyContact_clientId_fkey\" on \"CompanyContact\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "CompanyContact_clientId_fkey",
+        "table": "CompanyContact"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"CompanyContact_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CompanyContact_clientId_fkey",
+          "public",
+          "\"public\".\"CompanyContact\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"CompanyContact_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"CompanyContact\"\nADD CONSTRAINT \"CompanyContact_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"CompanyContact_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CompanyContact_clientId_fkey",
+          "public",
+          "\"public\".\"CompanyContact\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.CustomField.CustomField_occupationId_fkey",
+    "label": "Add foreign key \"CustomField_occupationId_fkey\" on \"CustomField\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "CustomField_occupationId_fkey",
+        "table": "CustomField"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"CustomField_occupationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CustomField_occupationId_fkey",
+          "public",
+          "\"public\".\"CustomField\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"CustomField_occupationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"CustomField\"\nADD CONSTRAINT \"CustomField_occupationId_fkey\"\nFOREIGN KEY (\"occupationId\")\nREFERENCES \"public\".\"Occupation\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"CustomField_occupationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CustomField_occupationId_fkey",
+          "public",
+          "\"public\".\"CustomField\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Invoice.Invoice_clientId_fkey",
+    "label": "Add foreign key \"Invoice_clientId_fkey\" on \"Invoice\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Invoice_clientId_fkey",
+        "table": "Invoice"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Invoice_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invoice_clientId_fkey",
+          "public",
+          "\"public\".\"Invoice\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Invoice_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Invoice\"\nADD CONSTRAINT \"Invoice_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Invoice_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invoice_clientId_fkey",
+          "public",
+          "\"public\".\"Invoice\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Invoice.Invoice_userId_fkey",
+    "label": "Add foreign key \"Invoice_userId_fkey\" on \"Invoice\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Invoice_userId_fkey",
+        "table": "Invoice"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Invoice_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invoice_userId_fkey",
+          "public",
+          "\"public\".\"Invoice\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Invoice_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Invoice\"\nADD CONSTRAINT \"Invoice_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Invoice_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invoice_userId_fkey",
+          "public",
+          "\"public\".\"Invoice\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.InvoiceItem.InvoiceItem_invoiceId_fkey",
+    "label": "Add foreign key \"InvoiceItem_invoiceId_fkey\" on \"InvoiceItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "InvoiceItem_invoiceId_fkey",
+        "table": "InvoiceItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"InvoiceItem_invoiceId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "InvoiceItem_invoiceId_fkey",
+          "public",
+          "\"public\".\"InvoiceItem\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"InvoiceItem_invoiceId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"InvoiceItem\"\nADD CONSTRAINT \"InvoiceItem_invoiceId_fkey\"\nFOREIGN KEY (\"invoiceId\")\nREFERENCES \"public\".\"Invoice\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"InvoiceItem_invoiceId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "InvoiceItem_invoiceId_fkey",
+          "public",
+          "\"public\".\"InvoiceItem\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.InvoiceItem.InvoiceItem_projectId_fkey",
+    "label": "Add foreign key \"InvoiceItem_projectId_fkey\" on \"InvoiceItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "InvoiceItem_projectId_fkey",
+        "table": "InvoiceItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"InvoiceItem_projectId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "InvoiceItem_projectId_fkey",
+          "public",
+          "\"public\".\"InvoiceItem\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"InvoiceItem_projectId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"InvoiceItem\"\nADD CONSTRAINT \"InvoiceItem_projectId_fkey\"\nFOREIGN KEY (\"projectId\")\nREFERENCES \"public\".\"Project\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"InvoiceItem_projectId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "InvoiceItem_projectId_fkey",
+          "public",
+          "\"public\".\"InvoiceItem\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.InvoiceItem.InvoiceItem_timeEntryId_fkey",
+    "label": "Add foreign key \"InvoiceItem_timeEntryId_fkey\" on \"InvoiceItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "InvoiceItem_timeEntryId_fkey",
+        "table": "InvoiceItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"InvoiceItem_timeEntryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "InvoiceItem_timeEntryId_fkey",
+          "public",
+          "\"public\".\"InvoiceItem\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"InvoiceItem_timeEntryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"InvoiceItem\"\nADD CONSTRAINT \"InvoiceItem_timeEntryId_fkey\"\nFOREIGN KEY (\"timeEntryId\")\nREFERENCES \"public\".\"TimeEntry\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"InvoiceItem_timeEntryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "InvoiceItem_timeEntryId_fkey",
+          "public",
+          "\"public\".\"InvoiceItem\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.LanguagePair.LanguagePair_occupationId_fkey",
+    "label": "Add foreign key \"LanguagePair_occupationId_fkey\" on \"LanguagePair\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "LanguagePair_occupationId_fkey",
+        "table": "LanguagePair"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"LanguagePair_occupationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "LanguagePair_occupationId_fkey",
+          "public",
+          "\"public\".\"LanguagePair\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"LanguagePair_occupationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"LanguagePair\"\nADD CONSTRAINT \"LanguagePair_occupationId_fkey\"\nFOREIGN KEY (\"occupationId\")\nREFERENCES \"public\".\"Occupation\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"LanguagePair_occupationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "LanguagePair_occupationId_fkey",
+          "public",
+          "\"public\".\"LanguagePair\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.OAuthAccount.OAuthAccount_userId_fkey",
+    "label": "Add foreign key \"OAuthAccount_userId_fkey\" on \"OAuthAccount\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "OAuthAccount_userId_fkey",
+        "table": "OAuthAccount"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"OAuthAccount_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "OAuthAccount_userId_fkey",
+          "public",
+          "\"public\".\"OAuthAccount\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"OAuthAccount_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"OAuthAccount\"\nADD CONSTRAINT \"OAuthAccount_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"OAuthAccount_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "OAuthAccount_userId_fkey",
+          "public",
+          "\"public\".\"OAuthAccount\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Occupation.Occupation_userId_fkey",
+    "label": "Add foreign key \"Occupation_userId_fkey\" on \"Occupation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Occupation_userId_fkey",
+        "table": "Occupation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Occupation_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Occupation_userId_fkey",
+          "public",
+          "\"public\".\"Occupation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Occupation_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Occupation\"\nADD CONSTRAINT \"Occupation_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Occupation_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Occupation_userId_fkey",
+          "public",
+          "\"public\".\"Occupation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.PasswordResetToken.PasswordResetToken_userId_fkey",
+    "label": "Add foreign key \"PasswordResetToken_userId_fkey\" on \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "PasswordResetToken_userId_fkey",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"PasswordResetToken_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PasswordResetToken_userId_fkey",
+          "public",
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"PasswordResetToken_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"PasswordResetToken\"\nADD CONSTRAINT \"PasswordResetToken_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"PasswordResetToken_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PasswordResetToken_userId_fkey",
+          "public",
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Project.Project_clientId_fkey",
+    "label": "Add foreign key \"Project_clientId_fkey\" on \"Project\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Project_clientId_fkey",
+        "table": "Project"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Project_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Project_clientId_fkey",
+          "public",
+          "\"public\".\"Project\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Project_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Project\"\nADD CONSTRAINT \"Project_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Project_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Project_clientId_fkey",
+          "public",
+          "\"public\".\"Project\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Project.Project_rateSheetId_fkey",
+    "label": "Add foreign key \"Project_rateSheetId_fkey\" on \"Project\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Project_rateSheetId_fkey",
+        "table": "Project"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Project_rateSheetId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Project_rateSheetId_fkey",
+          "public",
+          "\"public\".\"Project\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Project_rateSheetId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Project\"\nADD CONSTRAINT \"Project_rateSheetId_fkey\"\nFOREIGN KEY (\"rateSheetId\")\nREFERENCES \"public\".\"RateSheet\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Project_rateSheetId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Project_rateSheetId_fkey",
+          "public",
+          "\"public\".\"Project\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Project.Project_userId_fkey",
+    "label": "Add foreign key \"Project_userId_fkey\" on \"Project\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Project_userId_fkey",
+        "table": "Project"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Project_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Project_userId_fkey",
+          "public",
+          "\"public\".\"Project\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Project_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Project\"\nADD CONSTRAINT \"Project_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Project_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Project_userId_fkey",
+          "public",
+          "\"public\".\"Project\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ProjectOccupation.ProjectOccupation_occupationId_fkey",
+    "label": "Add foreign key \"ProjectOccupation_occupationId_fkey\" on \"ProjectOccupation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ProjectOccupation_occupationId_fkey",
+        "table": "ProjectOccupation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ProjectOccupation_occupationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ProjectOccupation_occupationId_fkey",
+          "public",
+          "\"public\".\"ProjectOccupation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ProjectOccupation_occupationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ProjectOccupation\"\nADD CONSTRAINT \"ProjectOccupation_occupationId_fkey\"\nFOREIGN KEY (\"occupationId\")\nREFERENCES \"public\".\"Occupation\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ProjectOccupation_occupationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ProjectOccupation_occupationId_fkey",
+          "public",
+          "\"public\".\"ProjectOccupation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ProjectOccupation.ProjectOccupation_projectId_fkey",
+    "label": "Add foreign key \"ProjectOccupation_projectId_fkey\" on \"ProjectOccupation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ProjectOccupation_projectId_fkey",
+        "table": "ProjectOccupation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ProjectOccupation_projectId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ProjectOccupation_projectId_fkey",
+          "public",
+          "\"public\".\"ProjectOccupation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ProjectOccupation_projectId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ProjectOccupation\"\nADD CONSTRAINT \"ProjectOccupation_projectId_fkey\"\nFOREIGN KEY (\"projectId\")\nREFERENCES \"public\".\"Project\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ProjectOccupation_projectId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ProjectOccupation_projectId_fkey",
+          "public",
+          "\"public\".\"ProjectOccupation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.RateSheet.RateSheet_clientId_fkey",
+    "label": "Add foreign key \"RateSheet_clientId_fkey\" on \"RateSheet\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "RateSheet_clientId_fkey",
+        "table": "RateSheet"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"RateSheet_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RateSheet_clientId_fkey",
+          "public",
+          "\"public\".\"RateSheet\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"RateSheet_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"RateSheet\"\nADD CONSTRAINT \"RateSheet_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"RateSheet_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RateSheet_clientId_fkey",
+          "public",
+          "\"public\".\"RateSheet\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.RateSheet.RateSheet_occupationId_fkey",
+    "label": "Add foreign key \"RateSheet_occupationId_fkey\" on \"RateSheet\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "RateSheet_occupationId_fkey",
+        "table": "RateSheet"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"RateSheet_occupationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RateSheet_occupationId_fkey",
+          "public",
+          "\"public\".\"RateSheet\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"RateSheet_occupationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"RateSheet\"\nADD CONSTRAINT \"RateSheet_occupationId_fkey\"\nFOREIGN KEY (\"occupationId\")\nREFERENCES \"public\".\"Occupation\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"RateSheet_occupationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RateSheet_occupationId_fkey",
+          "public",
+          "\"public\".\"RateSheet\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.RateSheet.RateSheet_userId_fkey",
+    "label": "Add foreign key \"RateSheet_userId_fkey\" on \"RateSheet\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "RateSheet_userId_fkey",
+        "table": "RateSheet"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"RateSheet_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RateSheet_userId_fkey",
+          "public",
+          "\"public\".\"RateSheet\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"RateSheet_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"RateSheet\"\nADD CONSTRAINT \"RateSheet_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"RateSheet_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RateSheet_userId_fkey",
+          "public",
+          "\"public\".\"RateSheet\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.RefreshToken.RefreshToken_userId_fkey",
+    "label": "Add foreign key \"RefreshToken_userId_fkey\" on \"RefreshToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "RefreshToken_userId_fkey",
+        "table": "RefreshToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"RefreshToken_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RefreshToken_userId_fkey",
+          "public",
+          "\"public\".\"RefreshToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"RefreshToken_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"RefreshToken\"\nADD CONSTRAINT \"RefreshToken_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"RefreshToken_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "RefreshToken_userId_fkey",
+          "public",
+          "\"public\".\"RefreshToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Subtask.Subtask_taskId_fkey",
+    "label": "Add foreign key \"Subtask_taskId_fkey\" on \"Subtask\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Subtask_taskId_fkey",
+        "table": "Subtask"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Subtask_taskId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Subtask_taskId_fkey",
+          "public",
+          "\"public\".\"Subtask\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Subtask_taskId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Subtask\"\nADD CONSTRAINT \"Subtask_taskId_fkey\"\nFOREIGN KEY (\"taskId\")\nREFERENCES \"public\".\"Task\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Subtask_taskId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Subtask_taskId_fkey",
+          "public",
+          "\"public\".\"Subtask\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Tag.Tag_userId_fkey",
+    "label": "Add foreign key \"Tag_userId_fkey\" on \"Tag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Tag_userId_fkey",
+        "table": "Tag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Tag_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Tag_userId_fkey",
+          "public",
+          "\"public\".\"Tag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Tag_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Tag\"\nADD CONSTRAINT \"Tag_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Tag_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Tag_userId_fkey",
+          "public",
+          "\"public\".\"Tag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Task.Task_assigneeId_fkey",
+    "label": "Add foreign key \"Task_assigneeId_fkey\" on \"Task\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Task_assigneeId_fkey",
+        "table": "Task"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Task_assigneeId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Task_assigneeId_fkey",
+          "public",
+          "\"public\".\"Task\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Task_assigneeId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Task\"\nADD CONSTRAINT \"Task_assigneeId_fkey\"\nFOREIGN KEY (\"assigneeId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Task_assigneeId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Task_assigneeId_fkey",
+          "public",
+          "\"public\".\"Task\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Task.Task_projectId_fkey",
+    "label": "Add foreign key \"Task_projectId_fkey\" on \"Task\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Task_projectId_fkey",
+        "table": "Task"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Task_projectId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Task_projectId_fkey",
+          "public",
+          "\"public\".\"Task\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Task_projectId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Task\"\nADD CONSTRAINT \"Task_projectId_fkey\"\nFOREIGN KEY (\"projectId\")\nREFERENCES \"public\".\"Project\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Task_projectId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Task_projectId_fkey",
+          "public",
+          "\"public\".\"Task\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TaskActivity.TaskActivity_taskId_fkey",
+    "label": "Add foreign key \"TaskActivity_taskId_fkey\" on \"TaskActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TaskActivity_taskId_fkey",
+        "table": "TaskActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TaskActivity_taskId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskActivity_taskId_fkey",
+          "public",
+          "\"public\".\"TaskActivity\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TaskActivity_taskId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TaskActivity\"\nADD CONSTRAINT \"TaskActivity_taskId_fkey\"\nFOREIGN KEY (\"taskId\")\nREFERENCES \"public\".\"Task\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TaskActivity_taskId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskActivity_taskId_fkey",
+          "public",
+          "\"public\".\"TaskActivity\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TaskActivity.TaskActivity_timeEntryId_fkey",
+    "label": "Add foreign key \"TaskActivity_timeEntryId_fkey\" on \"TaskActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TaskActivity_timeEntryId_fkey",
+        "table": "TaskActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TaskActivity_timeEntryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskActivity_timeEntryId_fkey",
+          "public",
+          "\"public\".\"TaskActivity\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TaskActivity_timeEntryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TaskActivity\"\nADD CONSTRAINT \"TaskActivity_timeEntryId_fkey\"\nFOREIGN KEY (\"timeEntryId\")\nREFERENCES \"public\".\"TimeEntry\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TaskActivity_timeEntryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskActivity_timeEntryId_fkey",
+          "public",
+          "\"public\".\"TaskActivity\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TaskActivity.TaskActivity_userId_fkey",
+    "label": "Add foreign key \"TaskActivity_userId_fkey\" on \"TaskActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TaskActivity_userId_fkey",
+        "table": "TaskActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TaskActivity_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskActivity_userId_fkey",
+          "public",
+          "\"public\".\"TaskActivity\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TaskActivity_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TaskActivity\"\nADD CONSTRAINT \"TaskActivity_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TaskActivity_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskActivity_userId_fkey",
+          "public",
+          "\"public\".\"TaskActivity\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TaskAttachment.TaskAttachment_taskId_fkey",
+    "label": "Add foreign key \"TaskAttachment_taskId_fkey\" on \"TaskAttachment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TaskAttachment_taskId_fkey",
+        "table": "TaskAttachment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TaskAttachment_taskId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskAttachment_taskId_fkey",
+          "public",
+          "\"public\".\"TaskAttachment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TaskAttachment_taskId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TaskAttachment\"\nADD CONSTRAINT \"TaskAttachment_taskId_fkey\"\nFOREIGN KEY (\"taskId\")\nREFERENCES \"public\".\"Task\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TaskAttachment_taskId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskAttachment_taskId_fkey",
+          "public",
+          "\"public\".\"TaskAttachment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TaskComment.TaskComment_authorId_fkey",
+    "label": "Add foreign key \"TaskComment_authorId_fkey\" on \"TaskComment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TaskComment_authorId_fkey",
+        "table": "TaskComment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TaskComment_authorId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskComment_authorId_fkey",
+          "public",
+          "\"public\".\"TaskComment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TaskComment_authorId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TaskComment\"\nADD CONSTRAINT \"TaskComment_authorId_fkey\"\nFOREIGN KEY (\"authorId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TaskComment_authorId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskComment_authorId_fkey",
+          "public",
+          "\"public\".\"TaskComment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TaskComment.TaskComment_taskId_fkey",
+    "label": "Add foreign key \"TaskComment_taskId_fkey\" on \"TaskComment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TaskComment_taskId_fkey",
+        "table": "TaskComment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TaskComment_taskId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskComment_taskId_fkey",
+          "public",
+          "\"public\".\"TaskComment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TaskComment_taskId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TaskComment\"\nADD CONSTRAINT \"TaskComment_taskId_fkey\"\nFOREIGN KEY (\"taskId\")\nREFERENCES \"public\".\"Task\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TaskComment_taskId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskComment_taskId_fkey",
+          "public",
+          "\"public\".\"TaskComment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TaskLabel.TaskLabel_taskId_fkey",
+    "label": "Add foreign key \"TaskLabel_taskId_fkey\" on \"TaskLabel\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TaskLabel_taskId_fkey",
+        "table": "TaskLabel"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TaskLabel_taskId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskLabel_taskId_fkey",
+          "public",
+          "\"public\".\"TaskLabel\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TaskLabel_taskId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TaskLabel\"\nADD CONSTRAINT \"TaskLabel_taskId_fkey\"\nFOREIGN KEY (\"taskId\")\nREFERENCES \"public\".\"Task\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TaskLabel_taskId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaskLabel_taskId_fkey",
+          "public",
+          "\"public\".\"TaskLabel\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TimeEntry.TimeEntry_occupationId_fkey",
+    "label": "Add foreign key \"TimeEntry_occupationId_fkey\" on \"TimeEntry\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TimeEntry_occupationId_fkey",
+        "table": "TimeEntry"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TimeEntry_occupationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_occupationId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TimeEntry_occupationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TimeEntry\"\nADD CONSTRAINT \"TimeEntry_occupationId_fkey\"\nFOREIGN KEY (\"occupationId\")\nREFERENCES \"public\".\"Occupation\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TimeEntry_occupationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_occupationId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TimeEntry.TimeEntry_projectId_fkey",
+    "label": "Add foreign key \"TimeEntry_projectId_fkey\" on \"TimeEntry\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TimeEntry_projectId_fkey",
+        "table": "TimeEntry"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TimeEntry_projectId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_projectId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TimeEntry_projectId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TimeEntry\"\nADD CONSTRAINT \"TimeEntry_projectId_fkey\"\nFOREIGN KEY (\"projectId\")\nREFERENCES \"public\".\"Project\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TimeEntry_projectId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_projectId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TimeEntry.TimeEntry_subtaskId_fkey",
+    "label": "Add foreign key \"TimeEntry_subtaskId_fkey\" on \"TimeEntry\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TimeEntry_subtaskId_fkey",
+        "table": "TimeEntry"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TimeEntry_subtaskId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_subtaskId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TimeEntry_subtaskId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TimeEntry\"\nADD CONSTRAINT \"TimeEntry_subtaskId_fkey\"\nFOREIGN KEY (\"subtaskId\")\nREFERENCES \"public\".\"Subtask\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TimeEntry_subtaskId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_subtaskId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TimeEntry.TimeEntry_taskId_fkey",
+    "label": "Add foreign key \"TimeEntry_taskId_fkey\" on \"TimeEntry\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TimeEntry_taskId_fkey",
+        "table": "TimeEntry"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TimeEntry_taskId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_taskId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TimeEntry_taskId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TimeEntry\"\nADD CONSTRAINT \"TimeEntry_taskId_fkey\"\nFOREIGN KEY (\"taskId\")\nREFERENCES \"public\".\"Task\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TimeEntry_taskId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_taskId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TimeEntry.TimeEntry_userId_fkey",
+    "label": "Add foreign key \"TimeEntry_userId_fkey\" on \"TimeEntry\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TimeEntry_userId_fkey",
+        "table": "TimeEntry"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TimeEntry_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_userId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TimeEntry_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TimeEntry\"\nADD CONSTRAINT \"TimeEntry_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TimeEntry_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntry_userId_fkey",
+          "public",
+          "\"public\".\"TimeEntry\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TimeEntryTag.TimeEntryTag_tagId_fkey",
+    "label": "Add foreign key \"TimeEntryTag_tagId_fkey\" on \"TimeEntryTag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TimeEntryTag_tagId_fkey",
+        "table": "TimeEntryTag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TimeEntryTag_tagId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntryTag_tagId_fkey",
+          "public",
+          "\"public\".\"TimeEntryTag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TimeEntryTag_tagId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TimeEntryTag\"\nADD CONSTRAINT \"TimeEntryTag_tagId_fkey\"\nFOREIGN KEY (\"tagId\")\nREFERENCES \"public\".\"Tag\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TimeEntryTag_tagId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntryTag_tagId_fkey",
+          "public",
+          "\"public\".\"TimeEntryTag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TimeEntryTag.TimeEntryTag_timeEntryId_fkey",
+    "label": "Add foreign key \"TimeEntryTag_timeEntryId_fkey\" on \"TimeEntryTag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TimeEntryTag_timeEntryId_fkey",
+        "table": "TimeEntryTag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TimeEntryTag_timeEntryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntryTag_timeEntryId_fkey",
+          "public",
+          "\"public\".\"TimeEntryTag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TimeEntryTag_timeEntryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TimeEntryTag\"\nADD CONSTRAINT \"TimeEntryTag_timeEntryId_fkey\"\nFOREIGN KEY (\"timeEntryId\")\nREFERENCES \"public\".\"TimeEntry\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TimeEntryTag_timeEntryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TimeEntryTag_timeEntryId_fkey",
+          "public",
+          "\"public\".\"TimeEntryTag\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TranslationRate.TranslationRate_clientId_fkey",
+    "label": "Add foreign key \"TranslationRate_clientId_fkey\" on \"TranslationRate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TranslationRate_clientId_fkey",
+        "table": "TranslationRate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TranslationRate_clientId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TranslationRate_clientId_fkey",
+          "public",
+          "\"public\".\"TranslationRate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TranslationRate_clientId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TranslationRate\"\nADD CONSTRAINT \"TranslationRate_clientId_fkey\"\nFOREIGN KEY (\"clientId\")\nREFERENCES \"public\".\"Client\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TranslationRate_clientId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TranslationRate_clientId_fkey",
+          "public",
+          "\"public\".\"TranslationRate\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TranslationRate.TranslationRate_occupationId_fkey",
+    "label": "Add foreign key \"TranslationRate_occupationId_fkey\" on \"TranslationRate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TranslationRate_occupationId_fkey",
+        "table": "TranslationRate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TranslationRate_occupationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TranslationRate_occupationId_fkey",
+          "public",
+          "\"public\".\"TranslationRate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TranslationRate_occupationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TranslationRate\"\nADD CONSTRAINT \"TranslationRate_occupationId_fkey\"\nFOREIGN KEY (\"occupationId\")\nREFERENCES \"public\".\"Occupation\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TranslationRate_occupationId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TranslationRate_occupationId_fkey",
+          "public",
+          "\"public\".\"TranslationRate\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TranslationRate.TranslationRate_userId_fkey",
+    "label": "Add foreign key \"TranslationRate_userId_fkey\" on \"TranslationRate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TranslationRate_userId_fkey",
+        "table": "TranslationRate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TranslationRate_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TranslationRate_userId_fkey",
+          "public",
+          "\"public\".\"TranslationRate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TranslationRate_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TranslationRate\"\nADD CONSTRAINT \"TranslationRate_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TranslationRate_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TranslationRate_userId_fkey",
+          "public",
+          "\"public\".\"TranslationRate\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TwoFactorBackupCode.TwoFactorBackupCode_userId_fkey",
+    "label": "Add foreign key \"TwoFactorBackupCode_userId_fkey\" on \"TwoFactorBackupCode\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TwoFactorBackupCode_userId_fkey",
+        "table": "TwoFactorBackupCode"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TwoFactorBackupCode_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TwoFactorBackupCode_userId_fkey",
+          "public",
+          "\"public\".\"TwoFactorBackupCode\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TwoFactorBackupCode_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TwoFactorBackupCode\"\nADD CONSTRAINT \"TwoFactorBackupCode_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TwoFactorBackupCode_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TwoFactorBackupCode_userId_fkey",
+          "public",
+          "\"public\".\"TwoFactorBackupCode\""
+        ]
+      }
+    ]
+  }
+]

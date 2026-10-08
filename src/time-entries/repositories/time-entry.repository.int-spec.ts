@@ -10,7 +10,6 @@ import {
 } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
-import { PrismaTimeEntryRepository } from './prisma-time-entry.repository';
 import { Prisma8TimeEntryRepository } from './prisma8-time-entry.repository';
 import { TimeEntryRepository } from './time-entry.repository';
 import { anyString } from '../../prisma8/testing/matchers';
@@ -19,10 +18,6 @@ const db = useTestDb();
 const t = (iso: string) => new Date(iso);
 
 describe.each([
-  [
-    'prisma7',
-    (): TimeEntryRepository => new PrismaTimeEntryRepository(db.prisma7),
-  ],
   [
     'prisma8',
     (): TimeEntryRepository => new Prisma8TimeEntryRepository(db.prisma8),

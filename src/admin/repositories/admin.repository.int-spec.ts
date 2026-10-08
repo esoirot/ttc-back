@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { RateType } from '../../generated/prisma/client';
+import { RateType } from '../../client-rates/entities/client-rate.entity';
 import { InvoiceStatus } from '../../invoices/entities/invoice.entity';
 import { toNumeric } from '../../prisma8/numeric';
 import { toDb } from '../../prisma8/timestamp';
@@ -13,7 +13,6 @@ import {
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ProjectStatus } from '../../projects/entities/project.entity';
 import { AdminRepository } from './admin.repository';
-import { PrismaAdminRepository } from './prisma-admin.repository';
 import { Prisma8AdminRepository } from './prisma8-admin.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
@@ -21,7 +20,6 @@ const db = useTestDb();
 const MISSING = 999999;
 
 describe.each([
-  ['prisma7', (): AdminRepository => new PrismaAdminRepository(db.prisma7)],
   ['prisma8', (): AdminRepository => new Prisma8AdminRepository(db.prisma8)],
 ])('AdminRepository (%s)', (_impl, make) => {
   let repo: AdminRepository;

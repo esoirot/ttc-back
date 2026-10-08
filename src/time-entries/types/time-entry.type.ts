@@ -1,7 +1,4 @@
-import type {
-  Occupation as PrismaOccupation,
-  InvoicingStatus,
-} from '../../generated/prisma/client';
+import type { OccupationRow } from '../../occupations/types/occupation.type';
 
 export type TimeEntryModel = {
   id: number;
@@ -15,9 +12,9 @@ export type TimeEntryModel = {
   billable: boolean;
   clockifyEntryId: string | null;
   occupationId: number | null;
-  occupation: PrismaOccupation | null;
+  occupation: OccupationRow | null;
   wordsProcessed: number | null;
-  invoicingStatus: InvoicingStatus;
+  invoicingStatus: 'NO' | 'INVOICED';
   tags: { id: number; name: string }[];
   task: { id: number; title: string } | null;
   subtaskId: number | null;

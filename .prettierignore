@@ -1,1 +1,4 @@
 generated/
+migrations/
+pnpm-lock.yaml
+src/schema.gql

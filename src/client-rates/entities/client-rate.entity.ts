@@ -5,7 +5,12 @@ import {
   Float,
   registerEnumType,
 } from '@nestjs/graphql';
-import { RateType } from '../../generated/prisma/client';
+export enum RateType {
+  HOURLY = 'HOURLY',
+  DAY = 'DAY',
+  PER_WORD = 'PER_WORD',
+  FIXED = 'FIXED',
+}
 
 registerEnumType(RateType, { name: 'RateType' });
 

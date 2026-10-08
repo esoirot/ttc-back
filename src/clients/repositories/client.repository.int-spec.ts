@@ -10,13 +10,11 @@ import {
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ClientStatus, ClientType } from '../entities/client.entity';
 import { ClientRepository } from './client.repository';
-import { PrismaClientRepository } from './prisma-client.repository';
 import { Prisma8ClientRepository } from './prisma8-client.repository';
 
 const db = useTestDb();
 
 describe.each([
-  ['prisma7', (): ClientRepository => new PrismaClientRepository(db.prisma7)],
   ['prisma8', (): ClientRepository => new Prisma8ClientRepository(db.prisma8)],
 ])('ClientRepository (%s)', (_impl, make) => {
   let repo: ClientRepository;

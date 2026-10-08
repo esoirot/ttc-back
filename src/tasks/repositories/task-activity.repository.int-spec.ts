@@ -1,7 +1,6 @@
 import { at, seedTimeEntry, seedUser } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
-import { PrismaTaskActivityRepository } from './prisma-task-activity.repository';
 import { Prisma8TaskActivityRepository } from './prisma8-task-activity.repository';
 import { TaskActivityRepository } from './task-activity.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
@@ -9,10 +8,6 @@ import { anyNumber } from '../../prisma8/testing/matchers';
 const db = useTestDb();
 
 describe.each([
-  [
-    'prisma7',
-    (): TaskActivityRepository => new PrismaTaskActivityRepository(db.prisma7),
-  ],
   [
     'prisma8',
     (): TaskActivityRepository => new Prisma8TaskActivityRepository(db.prisma8),

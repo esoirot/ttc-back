@@ -1,18 +1,12 @@
 import { at, seedClient, seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ClientStatusHistoryRepository } from './client-status-history.repository';
-import { PrismaClientStatusHistoryRepository } from './prisma-client-status-history.repository';
 import { Prisma8ClientStatusHistoryRepository } from './prisma8-client-status-history.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
 describe.each([
-  [
-    'prisma7',
-    (): ClientStatusHistoryRepository =>
-      new PrismaClientStatusHistoryRepository(db.prisma7),
-  ],
   [
     'prisma8',
     (): ClientStatusHistoryRepository =>
