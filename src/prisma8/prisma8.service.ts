@@ -14,7 +14,7 @@ type Client = ReturnType<typeof createClient>;
 /** The handle a `transaction` callback receives: same `orm` as the client. */
 export type Prisma8Tx = Parameters<Parameters<Client['transaction']>[0]>[0];
 
-/** Prisma 8 client. Coexists with PrismaService until every repository is ported. */
+/** Prisma 8 client. */
 @Injectable()
 export class Prisma8Service implements OnModuleDestroy {
   private readonly client = createClient();

@@ -1,20 +1,15 @@
 import { NotFoundException } from '@nestjs/common';
-import { RateType } from '../../generated/prisma/client';
+import { RateType } from '../entities/client-rate.entity';
 import { toNumeric } from '../../prisma8/numeric';
 import { at, seedClient, seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ClientRateRepository } from './client-rate.repository';
-import { PrismaClientRateRepository } from './prisma-client-rate.repository';
 import { Prisma8ClientRateRepository } from './prisma8-client-rate.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
 describe.each([
-  [
-    'prisma7',
-    (): ClientRateRepository => new PrismaClientRateRepository(db.prisma7),
-  ],
   [
     'prisma8',
     (): ClientRateRepository => new Prisma8ClientRateRepository(db.prisma8),

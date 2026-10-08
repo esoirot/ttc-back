@@ -3,7 +3,6 @@ import { at, seedOccupation, seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { ChargeType, OccupationType } from '../entities/occupation.entity';
 import { OccupationsRepository } from './occupations.repository';
-import { PrismaOccupationsRepository } from './prisma-occupations.repository';
 import { Prisma8OccupationsRepository } from './prisma8-occupations.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
@@ -16,10 +15,6 @@ const fields = (o: { customFields: { key: string; value: string }[] }) =>
   o.customFields.map((f) => `${f.key}=${f.value}`).sort();
 
 describe.each([
-  [
-    'prisma7',
-    (): OccupationsRepository => new PrismaOccupationsRepository(db.prisma7),
-  ],
   [
     'prisma8',
     (): OccupationsRepository => new Prisma8OccupationsRepository(db.prisma8),

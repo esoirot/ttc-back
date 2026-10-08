@@ -1,4 +1,4 @@
-import type { Occupation as PrismaOccupation } from '../../generated/prisma/client';
+import type { OccupationRow } from '../../occupations/types/occupation.type';
 
 export type CompanyContactModel = {
   id: number;
@@ -54,5 +54,5 @@ export type ClientModel = {
   createdAt: Date;
   updatedAt: Date;
   contacts: CompanyContactModel[];
-  occupations: PrismaOccupation[];
+  occupations: OccupationRow[];
 };

@@ -3,7 +3,6 @@ import * as bcrypt from 'bcrypt';
 import { seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { AuthRepository } from './auth.repository';
-import { PrismaAuthRepository } from './prisma-auth.repository';
 import { Prisma8AuthRepository } from './prisma8-auth.repository';
 import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
 
@@ -17,10 +16,6 @@ const config = {
 } as unknown as ConfigService;
 
 describe.each([
-  [
-    'prisma7',
-    (): AuthRepository => new PrismaAuthRepository(db.prisma7, config),
-  ],
   [
     'prisma8',
     (): AuthRepository => new Prisma8AuthRepository(db.prisma8, config),

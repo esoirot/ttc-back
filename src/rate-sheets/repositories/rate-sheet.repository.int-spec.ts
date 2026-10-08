@@ -6,7 +6,6 @@ import {
 } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { CreateRateSheetInput } from '../dto/create-rate-sheet.input';
-import { PrismaRateSheetRepository } from './prisma-rate-sheet.repository';
 import { Prisma8RateSheetRepository } from './prisma8-rate-sheet.repository';
 import { RateSheetRepository } from './rate-sheet.repository';
 import { anyDate, anyNumber } from '../../prisma8/testing/matchers';
@@ -45,10 +44,6 @@ const input = (
 });
 
 describe.each([
-  [
-    'prisma7',
-    (): RateSheetRepository => new PrismaRateSheetRepository(db.prisma7),
-  ],
   [
     'prisma8',
     (): RateSheetRepository => new Prisma8RateSheetRepository(db.prisma8),

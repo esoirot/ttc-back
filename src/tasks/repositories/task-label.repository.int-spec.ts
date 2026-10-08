@@ -2,7 +2,6 @@ import { NotFoundException } from '@nestjs/common';
 import { at } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
-import { PrismaTaskLabelRepository } from './prisma-task-label.repository';
 import { Prisma8TaskLabelRepository } from './prisma8-task-label.repository';
 import { TaskLabelRepository } from './task-label.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
@@ -10,10 +9,6 @@ import { anyNumber } from '../../prisma8/testing/matchers';
 const db = useTestDb();
 
 describe.each([
-  [
-    'prisma7',
-    (): TaskLabelRepository => new PrismaTaskLabelRepository(db.prisma7),
-  ],
   [
     'prisma8',
     (): TaskLabelRepository => new Prisma8TaskLabelRepository(db.prisma8),

@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { seedUser } from '../../prisma8/testing/seed';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { AdminPermission, Role } from '../entities/user.entity';
-import { PrismaUserRepository } from './prisma-user.repository';
 import { Prisma8UserRepository } from './prisma8-user.repository';
 import { UserRepository } from './users.repository';
 
@@ -19,10 +18,6 @@ const config = {
 const MISSING = 999999;
 
 describe.each([
-  [
-    'prisma7',
-    (): UserRepository => new PrismaUserRepository(db.prisma7, config),
-  ],
   [
     'prisma8',
     (): UserRepository => new Prisma8UserRepository(db.prisma8, config),

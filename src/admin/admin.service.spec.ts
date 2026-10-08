@@ -1,3 +1,4 @@
+import { RateType } from '../client-rates/entities/client-rate.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
@@ -103,7 +104,7 @@ describe('AdminService', () => {
   });
 
   it('findRates — delegates with type', async () => {
-    await service.findRates('PER_WORD');
+    await service.findRates(RateType.PER_WORD);
     expect(repo.findRates).toHaveBeenCalledWith('PER_WORD');
   });
 
@@ -271,7 +272,7 @@ describe('AdminService', () => {
       const result = await service.createRate(99, {
         userId: 5,
         occupationId: 1,
-        type: 'HOURLY',
+        type: RateType.HOURLY,
         name: 'Rate',
         amount: 50,
         currency: 'EUR',

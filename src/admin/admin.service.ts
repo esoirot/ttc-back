@@ -12,7 +12,7 @@ import {
 } from './dto/admin.input';
 import { ProjectStatus } from '../projects/entities/project.entity';
 import { InvoiceStatus } from '../invoices/entities/invoice.entity';
-import { RateType } from '../generated/prisma/client';
+import { RateType } from '../client-rates/entities/client-rate.entity';
 
 @Injectable()
 export class AdminService {

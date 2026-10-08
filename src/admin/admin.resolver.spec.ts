@@ -1,3 +1,4 @@
+import { RateType } from '../client-rates/entities/client-rate.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminResolver } from './admin.resolver';
 import { AdminService } from './admin.service';
@@ -110,7 +111,7 @@ describe('AdminResolver', () => {
   it('findRates — delegates with type', async () => {
     service.findRates.mockResolvedValue({ edges: [] });
 
-    await resolver.findRates('PER_WORD');
+    await resolver.findRates(RateType.PER_WORD);
     expect(service.findRates).toHaveBeenCalledWith('PER_WORD');
   });
 
@@ -208,7 +209,7 @@ describe('AdminResolver', () => {
     const rateInput = {
       userId: 5,
       occupationId: 1,
-      type: 'HOURLY' as const,
+      type: RateType.HOURLY,
       name: 'Rate',
       amount: 50,
       currency: 'EUR',

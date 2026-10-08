@@ -3,14 +3,12 @@ import { at } from '../../prisma8/testing/seed';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { CommentRepository } from './comment.repository';
-import { PrismaCommentRepository } from './prisma-comment.repository';
 import { Prisma8CommentRepository } from './prisma8-comment.repository';
 import { anyNumber } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
 describe.each([
-  ['prisma7', (): CommentRepository => new PrismaCommentRepository(db.prisma7)],
   [
     'prisma8',
     (): CommentRepository => new Prisma8CommentRepository(db.prisma8),

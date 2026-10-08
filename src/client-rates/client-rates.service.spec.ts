@@ -1,3 +1,4 @@
+import { RateType } from './entities/client-rate.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientRatesService } from './client-rates.service';
 import { ClientRateRepository } from './repositories/client-rate.repository';
@@ -61,7 +62,7 @@ describe('ClientRatesService', () => {
       clientId: 1,
       name: 'Rate',
       amount: 0.12,
-      type: 'PER_WORD',
+      type: RateType.PER_WORD,
       currency: 'EUR',
     });
     expect(repo.create).toHaveBeenCalledWith(1, expect.any(Object));

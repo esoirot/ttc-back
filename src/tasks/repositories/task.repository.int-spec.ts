@@ -4,14 +4,12 @@ import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { fromDb } from '../../prisma8/timestamp';
 import { TaskStatus } from '../entities/task.entity';
-import { PrismaTaskRepository } from './prisma-task.repository';
 import { Prisma8TaskRepository } from './prisma8-task.repository';
 import { TaskRepository } from './task.repository';
 
 const db = useTestDb();
 
 describe.each([
-  ['prisma7', (): TaskRepository => new PrismaTaskRepository(db.prisma7)],
   ['prisma8', (): TaskRepository => new Prisma8TaskRepository(db.prisma8)],
 ])('TaskRepository (%s)', (_impl, make) => {
   let repo: TaskRepository;
