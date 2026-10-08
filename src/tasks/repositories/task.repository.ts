@@ -1,3 +1,4 @@
+import { TaskStatus } from '../entities/task.entity';
 import { CreateTaskInput } from '../dto/create-task.input';
 import { UpdateTaskInput } from '../dto/update-task.input';
 import { TaskModel } from '../types/task.type';
@@ -18,6 +19,13 @@ export abstract class TaskRepository {
     pagination?: PaginationArgs,
     search?: string,
   ): Promise<TaskConnectionModel>;
+  /** Puts the task at `position` in the `status` column; both columns renumbered 0..n. */
+  abstract move(
+    id: number,
+    userId: number,
+    status: TaskStatus,
+    position: number,
+  ): Promise<TaskModel>;
   abstract create(data: CreateTaskInput, userId: number): Promise<TaskModel>;
   abstract update(
     id: number,

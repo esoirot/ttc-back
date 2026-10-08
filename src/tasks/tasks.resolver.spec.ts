@@ -1,3 +1,4 @@
+import { TaskStatus } from './entities/task.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TasksResolver } from './tasks.resolver';
 import { TasksService } from './tasks.service';
@@ -25,6 +26,7 @@ describe('TasksResolver', () => {
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
+    move: jest.Mock;
   };
   let subtasksService: {
     create: jest.Mock;
@@ -43,7 +45,7 @@ describe('TasksResolver', () => {
     create: jest.Mock;
     delete: jest.Mock;
   };
-  let activitiesService: { log: jest.Mock };
+  let activitiesService: { log: jest.Mock; findByProject: jest.Mock };
   let attachmentsService: object;
 
   const user = { id: 7 };
@@ -55,6 +57,7 @@ describe('TasksResolver', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      move: jest.fn(),
     };
     subtasksService = {
       create: jest.fn(),
@@ -73,7 +76,7 @@ describe('TasksResolver', () => {
       create: jest.fn(),
       delete: jest.fn(),
     };
-    activitiesService = { log: jest.fn() };
+    activitiesService = { log: jest.fn(), findByProject: jest.fn() };
     attachmentsService = {};
 
     const module: TestingModule = await Test.createTestingModule({
@@ -143,6 +146,27 @@ describe('TasksResolver', () => {
       7,
     );
     expect(result).toEqual(task);
+  });
+
+  it('projectActivities — delegates with project, user and page', async () => {
+    const page = { items: [], nextCursor: null, total: 0 };
+    activitiesService.findByProject.mockResolvedValue(page);
+
+    await expect(
+      resolver.findProjectActivities(4, user, { limit: 5 }),
+    ).resolves.toBe(page);
+    expect(activitiesService.findByProject).toHaveBeenCalledWith(4, 7, {
+      limit: 5,
+    });
+  });
+
+  it('moveTask — delegates with input and user id', async () => {
+    const task = mockTask({ status: TaskStatus.DONE });
+    tasksService.move.mockResolvedValue(task);
+    const input = { id: 1, status: TaskStatus.DONE, position: 0 };
+
+    await expect(resolver.moveTask(user, input)).resolves.toBe(task);
+    expect(tasksService.move).toHaveBeenCalledWith(input, 7);
   });
 
   it('updateTask — delegates with id, input, user id', async () => {

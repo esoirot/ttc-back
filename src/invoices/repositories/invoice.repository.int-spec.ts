@@ -446,7 +446,71 @@ describe.each([
     });
   });
 
+  describe('exact amounts', () => {
+    const exact = { quantity: 0.15, unitPrice: 0.359, total: 0.0539 };
+
+    it('adds and updates lines with exact totals (floats would give 0.0538)', async () => {
+      const inv = await repo.create(owner, 'INV-1', {});
+      const added = await repo.addItem(
+        { invoiceId: inv.id, quantity: 0.15, unitPrice: 0.359 },
+        owner,
+      );
+      expect(added).toMatchObject(exact);
+      const other = await repo.addItem(
+        { invoiceId: inv.id, quantity: 1, unitPrice: 1 },
+        owner,
+      );
+      await expect(
+        repo.updateItem(
+          other.id,
+          { id: other.id, quantity: 0.15, unitPrice: 0.359 },
+          owner,
+        ),
+      ).resolves.toMatchObject(exact);
+    });
+
+    it('bills time in hours on 4 decimals, total = shown hours x rate', async () => {
+      const project = await seedProject(db.prisma8, owner, {
+        hourlyRate: toNumeric(0.359),
+      });
+      await seedTimeEntry(db.prisma8, owner, {
+        projectId: project.id,
+        durationSeconds: 540,
+      });
+      await seedTimeEntry(db.prisma8, owner, {
+        projectId: project.id,
+        durationSeconds: 1200,
+      });
+      const inv = await repo.generate(owner, 'INV-G', {
+        projectId: project.id,
+      });
+      expect(
+        inv.items!.map(({ quantity, total }) => ({ quantity, total })),
+      ).toEqual([
+        { quantity: 0.15, total: 0.0539 },
+        { quantity: 0.3333, total: 0.1197 },
+      ]);
+    });
+  });
+
   describe('generate', () => {
+    it('refuses a project with nothing to invoice and creates nothing', async () => {
+      const project = await seedProject(db.prisma8, owner, {
+        hourlyRate: toNumeric(60),
+      });
+      await seedTimeEntry(db.prisma8, owner, {
+        projectId: project.id,
+        durationSeconds: 3600,
+        billable: false,
+      });
+      await expect(
+        repo.generate(owner, 'INV-G', { projectId: project.id }),
+      ).rejects.toThrow(/Nothing to invoice/);
+      await expect(
+        db.prisma8.orm.public.Invoice.where({ userId: owner }).all(),
+      ).resolves.toEqual([]);
+    });
+
     it('builds fixed-fee, time and word-count lines and marks the consumed entries invoiced', async () => {
       const project = await seedProject(db.prisma8, owner, {
         fixedFee: toNumeric(500),
@@ -557,7 +621,7 @@ describe.each([
       await expect(repo.findAll(owner)).resolves.toMatchObject({ total: 0 });
     });
 
-    it('adds no fixed-fee or word line for a zero fee, rate or word count', async () => {
+    it('counts a zero fee, rate or word count as nothing to invoice', async () => {
       const zeroFee = await seedProject(db.prisma8, owner, {
         fixedFee: toNumeric(0),
       });
@@ -571,16 +635,16 @@ describe.each([
       });
       await expect(
         repo.generate(owner, 'INV-Z1', { projectId: zeroFee.id }),
-      ).resolves.toMatchObject({ items: [] });
+      ).rejects.toThrow(/Nothing to invoice/);
       await expect(
         repo.generate(owner, 'INV-Z2', { projectId: noWords.id }),
-      ).resolves.toMatchObject({ items: [] });
+      ).rejects.toThrow(/Nothing to invoice/);
       await expect(
         repo.generate(owner, 'INV-Z3', { projectId: zeroRate.id }),
-      ).resolves.toMatchObject({ items: [] });
+      ).rejects.toThrow(/Nothing to invoice/);
     });
 
-    it('creates an empty draft when the project has no rates', async () => {
+    it('refuses a project with no rates, even with tracked time', async () => {
       const project = await seedProject(db.prisma8, owner);
       await seedTimeEntry(db.prisma8, owner, {
         projectId: project.id,
@@ -588,7 +652,7 @@ describe.each([
       });
       await expect(
         repo.generate(owner, 'INV-E', { projectId: project.id }),
-      ).resolves.toMatchObject({ items: [] });
+      ).rejects.toThrow(/Nothing to invoice/);
     });
   });
 

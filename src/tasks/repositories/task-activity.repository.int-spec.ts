@@ -1,9 +1,16 @@
-import { at, seedTimeEntry, seedUser } from '../../prisma8/testing/seed';
+import {
+  at,
+  seedProject,
+  seedTask,
+  seedTimeEntry,
+  seedUser,
+} from '../../prisma8/testing/seed';
+import { NotFoundException } from '@nestjs/common';
 import { seedTaskAccess } from '../../prisma8/testing/task-access';
 import { useTestDb } from '../../prisma8/testing/test-db';
 import { Prisma8TaskActivityRepository } from './prisma8-task-activity.repository';
 import { TaskActivityRepository } from './task-activity.repository';
-import { anyNumber } from '../../prisma8/testing/matchers';
+import { anyNumber, anyString } from '../../prisma8/testing/matchers';
 
 const db = useTestDb();
 
@@ -151,6 +158,89 @@ describe.each([
         timeEntryId: null,
         payload: null,
       });
+    });
+  });
+
+  describe('findByProject', () => {
+    const types = (page: { items: { type: string }[] }) =>
+      page.items.map((a) => a.type);
+
+    it("pages the project's task activity newest first, with each task's title", async () => {
+      await activity({ taskId: s.task, userId: s.owner, type: 'A1' }, 1);
+      await activity({ taskId: s.otherTask, userId: s.owner, type: 'A2' }, 2);
+      await activity({ taskId: s.task, userId: s.owner, type: 'A3' }, 3);
+      // Another project of the same owner, and activity without a task.
+      const elsewhere = await seedTask(
+        db.prisma8,
+        (await seedProject(db.prisma8, s.owner)).id,
+      );
+      await activity({ taskId: elsewhere.id, userId: s.owner, type: 'X' }, 4);
+      const entry = await seedTimeEntry(db.prisma8, s.owner);
+      await activity({ timeEntryId: entry.id, userId: s.owner, type: 'T' }, 5);
+
+      const page1 = await repo.findByProject(s.project, s.owner, { limit: 2 });
+      expect(types(page1)).toEqual(['A3', 'A2']);
+      expect(page1).toMatchObject({ total: 3, nextCursor: page1.items[1].id });
+      expect(page1.items[0]).toMatchObject({
+        taskId: s.task,
+        task: { id: s.task, title: anyString },
+        user: { id: s.owner, name: 'Owner' },
+      });
+      const page2 = await repo.findByProject(s.project, s.owner, {
+        limit: 2,
+        cursor: page1.nextCursor!,
+      });
+      expect(types(page2)).toEqual(['A1']);
+      expect(page2.nextCursor).toBeNull();
+    });
+
+    it('breaks createdAt ties by newest id, without skipping or repeating', async () => {
+      for (const type of ['B1', 'B2', 'B3'])
+        await activity({ taskId: s.task, userId: s.owner, type }, 7);
+      const seen: string[] = [];
+      let cursor: number | undefined;
+      for (let i = 0; i < 5; i++) {
+        const page = await repo.findByProject(s.project, s.owner, {
+          limit: 1,
+          cursor,
+        });
+        seen.push(...types(page));
+        if (page.nextCursor === null) break;
+        cursor = page.nextCursor;
+      }
+      expect(seen).toEqual(['B3', 'B2', 'B1']);
+    });
+
+    it('has no next cursor when the page holds exactly the limit', async () => {
+      await activity({ taskId: s.task, userId: s.owner, type: 'A' }, 1);
+      await activity({ taskId: s.task, userId: s.owner, type: 'B' }, 2);
+      await expect(
+        repo.findByProject(s.project, s.owner, { limit: 2 }),
+      ).resolves.toMatchObject({ nextCursor: null, total: 2 });
+    });
+
+    it('starts over from the newest event for an unknown cursor', async () => {
+      await activity({ taskId: s.task, userId: s.owner, type: 'A' }, 1);
+      await activity({ taskId: s.task, userId: s.owner, type: 'B' }, 2);
+      const page = await repo.findByProject(s.project, s.owner, {
+        cursor: 999999,
+      });
+      expect(types(page)).toEqual(['B', 'A']);
+    });
+
+    it('defaults to 20 per page', async () => {
+      for (let i = 0; i < 21; i++)
+        await activity({ taskId: s.task, userId: s.owner, type: `E${i}` }, i);
+      const page = await repo.findByProject(s.project, s.owner);
+      expect(page.items).toHaveLength(20);
+      expect(page.total).toBe(21);
+    });
+
+    it('throws NotFound for a stranger', async () => {
+      await activity({ taskId: s.task, userId: s.owner, type: 'A' });
+      await expect(
+        repo.findByProject(s.project, s.stranger),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

@@ -1,3 +1,4 @@
+import { hoursOf, lineAmounts } from '../line-amounts';
 import { assertOwned } from '../../prisma8/ownership';
 import {
   BadRequestException,
@@ -7,7 +8,6 @@ import {
 import { or } from '@prisma/orm-postgres/orm-client';
 import { countOf } from '../../prisma8/count';
 import { containsPattern } from '../../prisma8/like';
-import { toNumeric } from '../../prisma8/numeric';
 import { Prisma8Service, Prisma8Tx } from '../../prisma8/prisma8.service';
 import { fromDb, nowDb, toDb } from '../../prisma8/timestamp';
 import {
@@ -221,7 +221,7 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
         lines.push({
           timeEntryId: e.id,
           description: e.description ?? 'Time tracked',
-          quantity: (e.durationSeconds ?? 0) / 3600,
+          quantity: hoursOf(e.durationSeconds ?? 0),
           unitPrice: hourlyRate,
         });
       }
@@ -234,6 +234,11 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
         unitPrice: perWordRate!,
       });
     }
+
+    if (lines.length === 0)
+      throw new BadRequestException(
+        'Nothing to invoice: no fixed fee, no unbilled billable time and no word count.',
+      );
 
     const id = await this.db.transaction(async (tx) => {
       const inv = await tx.orm.public.Invoice.create({
@@ -250,9 +255,7 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
           projectId: data.projectId,
           timeEntryId: l.timeEntryId ?? null,
           description: l.description,
-          quantity: toNumeric(l.quantity),
-          unitPrice: toNumeric(l.unitPrice),
-          total: toNumeric(l.quantity * l.unitPrice),
+          ...lineAmounts(l.quantity, l.unitPrice),
         })),
       );
       await tx.orm.public.TimeEntry.where((e) =>
@@ -337,9 +340,7 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
         projectId: data.projectId,
         timeEntryId: data.timeEntryId,
         description: data.description ?? '',
-        quantity: toNumeric(data.quantity),
-        unitPrice: toNumeric(data.unitPrice),
-        total: toNumeric(data.quantity * data.unitPrice),
+        ...lineAmounts(data.quantity, data.unitPrice),
       });
     });
     return itemFromDb(item);
@@ -363,9 +364,7 @@ export class Prisma8InvoiceRepository implements InvoiceRepository {
     const unitPrice = data.unitPrice ?? Number(existing.unitPrice);
     const item = await this.db.orm.public.InvoiceItem.where({ id }).update({
       description: data.description,
-      quantity: toNumeric(quantity),
-      unitPrice: toNumeric(unitPrice),
-      total: toNumeric(quantity * unitPrice),
+      ...lineAmounts(quantity, unitPrice),
     });
     return itemFromDb(item!);
   }

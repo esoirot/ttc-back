@@ -7,6 +7,7 @@ import { Prisma8Service } from '../../prisma8/prisma8.service';
 import { fromDb, nowDb, toDb } from '../../prisma8/timestamp';
 import { CreateTaskInput } from '../dto/create-task.input';
 import { UpdateTaskInput } from '../dto/update-task.input';
+import { TaskStatus } from '../entities/task.entity';
 import { TaskModel } from '../types/task.type';
 import { TaskConnectionModel, TaskRepository } from './task.repository';
 
@@ -120,6 +121,41 @@ export class Prisma8TaskRepository implements TaskRepository {
       updatedAt: nowDb(),
     });
     return toModel(row!);
+  }
+
+  async move(
+    id: number,
+    userId: number,
+    status: TaskStatus,
+    position: number,
+  ): Promise<TaskModel> {
+    await this.db.transaction(async (tx) => {
+      const tasks = tx.orm.public.Task;
+      const task = await tasks.where(taskVisibleTo(userId)).first({ id });
+      if (!task) throw new NotFoundException(`Task ${id} not found`);
+      // A column's tasks other than the moved one, in board order.
+      const others = async (column: TaskStatus) =>
+        (
+          await tasks
+            .where({ projectId: task.projectId, status: column })
+            .where((t) => t.id.notIn([id]))
+            .orderBy([(t) => t.sortOrder.asc(), (t) => t.id.asc()])
+            .select('id')
+            .all()
+        ).map((t) => t.id);
+      const renumber = async (ids: number[]) => {
+        for (const [sortOrder, taskId] of ids.entries())
+          await tasks.where({ id: taskId }).updateAndCount({ sortOrder });
+      };
+
+      const target = await others(status);
+      target.splice(Math.min(Math.max(position, 0), target.length), 0, id);
+      await tasks.where({ id }).update({ status, updatedAt: nowDb() });
+      await renumber(target);
+      const from = task.status as TaskStatus;
+      if (from !== status) await renumber(await others(from));
+    });
+    return this.findById(id, userId);
   }
 
   async delete(id: number, userId: number): Promise<TaskModel> {

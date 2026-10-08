@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  TaskActivityConnectionModel,
   TaskActivityRepository,
   TaskActivityModel,
 } from './repositories/task-activity.repository';
@@ -20,6 +21,14 @@ export class ActivitiesService {
     userId: number,
   ): Promise<TaskActivityModel[]> {
     return this.repo.findByTimeEntryIds(timeEntryIds, userId);
+  }
+
+  findByProject(
+    projectId: number,
+    userId: number,
+    pagination?: { limit?: number; cursor?: number },
+  ): Promise<TaskActivityConnectionModel> {
+    return this.repo.findByProject(projectId, userId, pagination);
   }
 
   log(

@@ -15,6 +15,7 @@ describe('TasksService', () => {
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
+    move: jest.Mock;
   };
   let activitiesService: { log: jest.Mock };
 
@@ -25,6 +26,7 @@ describe('TasksService', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      move: jest.fn(),
     };
     activitiesService = { log: jest.fn().mockResolvedValue(undefined) };
 
@@ -281,6 +283,36 @@ describe('TasksService', () => {
         { limit: 10 },
         'chapter',
       );
+    });
+  });
+
+  describe('move', () => {
+    it('moves the task and logs STATUS_CHANGED when the column changes', async () => {
+      const moved = mockTask({ status: 'DONE' });
+      repo.findById.mockResolvedValue(mockTask({ status: 'TODO' }));
+      repo.move.mockResolvedValue(moved);
+
+      await expect(
+        service.move({ id: 1, status: TaskStatus.DONE, position: 2 }, 7),
+      ).resolves.toBe(moved);
+
+      expect(repo.findById).toHaveBeenCalledWith(1, 7);
+      expect(repo.move).toHaveBeenCalledWith(1, 7, TaskStatus.DONE, 2);
+      expect(activitiesService.log).toHaveBeenCalledWith(
+        1,
+        7,
+        'STATUS_CHANGED',
+        { from: 'TODO', to: 'DONE' },
+      );
+    });
+
+    it('logs nothing for a reorder within the same column', async () => {
+      repo.findById.mockResolvedValue(mockTask({ status: 'TODO' }));
+      repo.move.mockResolvedValue(mockTask({ status: 'TODO' }));
+
+      await service.move({ id: 1, status: TaskStatus.TODO, position: 0 }, 7);
+
+      expect(activitiesService.log).not.toHaveBeenCalled();
     });
   });
 });

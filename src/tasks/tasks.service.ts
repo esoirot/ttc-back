@@ -1,3 +1,4 @@
+import { MoveTaskInput } from './dto/move-task.input';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   TaskRepository,
@@ -78,6 +79,23 @@ export class TasksService {
     ) {
       await this.activitiesService.log(id, userId, 'DUE_DATE_SET', {
         to: input.dueDate,
+      });
+    }
+    return task;
+  }
+
+  async move(input: MoveTaskInput, userId: number): Promise<TaskModel> {
+    const before = await this.repo.findById(input.id, userId);
+    const task = await this.repo.move(
+      input.id,
+      userId,
+      input.status,
+      input.position,
+    );
+    if (input.status !== (before.status as TaskStatus)) {
+      await this.activitiesService.log(input.id, userId, 'STATUS_CHANGED', {
+        from: before.status,
+        to: input.status,
       });
     }
     return task;

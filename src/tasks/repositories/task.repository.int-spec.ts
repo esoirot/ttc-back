@@ -184,6 +184,96 @@ describe.each([
     });
   });
 
+  describe('move', () => {
+    // Column contents as (title, sortOrder) in board order.
+    const column = async (status: TaskStatus) =>
+      (await repo.findByProject(s.project, s.owner)).items
+        .filter((t) => (t.status as TaskStatus) === status)
+        .map((t) => [t.title, t.sortOrder]);
+    let a: number, b: number, c: number, x: number;
+
+    beforeEach(async () => {
+      await db.prisma8.orm.public.Task.where({
+        projectId: s.project,
+      }).deleteAndCount();
+      const seed = (title: string, status: TaskStatus, sortOrder: number) =>
+        seedTask(db.prisma8, s.project, { title, status, sortOrder }).then(
+          (t) => t.id,
+        );
+      a = await seed('A', TaskStatus.TODO, 0);
+      b = await seed('B', TaskStatus.TODO, 1);
+      c = await seed('C', TaskStatus.TODO, 2);
+      x = await seed('X', TaskStatus.DONE, 0);
+    });
+
+    it('reorders within a column and renumbers it 0..n', async () => {
+      await repo.move(c, s.owner, TaskStatus.TODO, 0);
+      await expect(column(TaskStatus.TODO)).resolves.toEqual([
+        ['C', 0],
+        ['A', 1],
+        ['B', 2],
+      ]);
+    });
+
+    it('moves into another column at the drop position, renumbering both', async () => {
+      await expect(
+        repo.move(a, s.owner, TaskStatus.DONE, 1),
+      ).resolves.toMatchObject({ id: a, status: 'DONE', sortOrder: 1 });
+      await expect(column(TaskStatus.DONE)).resolves.toEqual([
+        ['X', 0],
+        ['A', 1],
+      ]);
+      await expect(column(TaskStatus.TODO)).resolves.toEqual([
+        ['B', 0],
+        ['C', 1],
+      ]);
+    });
+
+    it("places the card by the column's sort order, not by creation order", async () => {
+      await db.prisma8.orm.public.Task.where({ id: c }).update({
+        sortOrder: -1,
+      });
+      await repo.move(x, s.owner, TaskStatus.TODO, 99);
+      await expect(column(TaskStatus.TODO)).resolves.toEqual([
+        ['C', 0],
+        ['A', 1],
+        ['B', 2],
+        ['X', 3],
+      ]);
+    });
+
+    it('closes the gap in the column the card left', async () => {
+      await seedTask(db.prisma8, s.project, {
+        title: 'Y',
+        status: TaskStatus.DONE,
+        sortOrder: 1,
+      });
+      await repo.move(x, s.owner, TaskStatus.TODO, 0);
+      await expect(column(TaskStatus.DONE)).resolves.toEqual([['Y', 0]]);
+    });
+
+    it('clamps a position past the end to the last place', async () => {
+      await repo.move(x, s.owner, TaskStatus.TODO, 99);
+      await expect(column(TaskStatus.TODO)).resolves.toEqual([
+        ['A', 0],
+        ['B', 1],
+        ['C', 2],
+        ['X', 3],
+      ]);
+    });
+
+    it('throws NotFound for a stranger and changes nothing', async () => {
+      await expect(
+        repo.move(b, s.stranger, TaskStatus.DONE, 0),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(column(TaskStatus.TODO)).resolves.toEqual([
+        ['A', 0],
+        ['B', 1],
+        ['C', 2],
+      ]);
+    });
+  });
+
   describe('create', () => {
     it("refuses a project the caller doesn't own", async () => {
       await expect(
