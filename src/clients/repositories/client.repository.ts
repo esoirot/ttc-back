@@ -12,6 +12,12 @@ export interface ClientConnectionModel {
 
 type PaginationArgs = { limit?: number; cursor?: number };
 
+export type ClientSortField = 'NAME' | 'LAST_NAME' | 'FIRST_NAME';
+export type ClientSort = {
+  field: ClientSortField;
+  direction: 'ASC' | 'DESC';
+};
+
 export type ClientFilters = {
   /** Company name, or a person's first or last name (pickers, prospect board). */
   search?: string;
@@ -39,6 +45,8 @@ export abstract class ClientRepository {
     isAdmin: boolean,
     pagination?: PaginationArgs,
     filters?: ClientFilters,
+    /** Without it: oldest first, except individuals by last name. */
+    sort?: ClientSort,
   ): Promise<ClientConnectionModel>;
   abstract create(
     userId: number,

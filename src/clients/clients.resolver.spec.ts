@@ -1,3 +1,4 @@
+import { ClientSortField, SortDirection } from './dto/client-sort.input';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsResolver } from './clients.resolver';
 import { ClientsService } from './clients.service';
@@ -67,16 +68,53 @@ describe('ClientsResolver', () => {
   it('findAll — passes isAdmin=false for USER', async () => {
     service.findAll.mockResolvedValue({ items: [] });
     await resolver.findAll(user, undefined, 'ACME');
-    expect(service.findAll).toHaveBeenCalledWith(1, false, undefined, {
-      ...noFilters,
-      search: 'ACME',
-    });
+    expect(service.findAll).toHaveBeenCalledWith(
+      1,
+      false,
+      undefined,
+      { ...noFilters, search: 'ACME' },
+      undefined,
+    );
   });
 
   it('findAll — passes isAdmin=true for ADMIN', async () => {
     service.findAll.mockResolvedValue({ items: [] });
     await resolver.findAll(adminUser);
-    expect(service.findAll).toHaveBeenCalledWith(2, true, undefined, noFilters);
+    expect(service.findAll).toHaveBeenCalledWith(
+      2,
+      true,
+      undefined,
+      noFilters,
+      undefined,
+    );
+  });
+
+  it('findAll — passes the sort through', async () => {
+    service.findAll.mockResolvedValue({ items: [] });
+    const sort = {
+      field: ClientSortField.NAME,
+      direction: SortDirection.DESC,
+    };
+    await resolver.findAll(
+      user,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      sort,
+    );
+    expect(service.findAll).toHaveBeenCalledWith(
+      1,
+      false,
+      undefined,
+      noFilters,
+      sort,
+    );
   });
 
   it('findAll — passes every filter through by name', async () => {
@@ -108,6 +146,7 @@ describe('ClientsResolver', () => {
         firstName: 'Marie',
         lastName: 'Curie',
       },
+      undefined,
     );
   });
 

@@ -3,6 +3,7 @@ import {
   ClientRepository,
   ClientConnectionModel,
   ClientFilters,
+  ClientSort,
 } from './repositories/client.repository';
 import { AuditService } from '../audit/audit.service';
 import { ClientStatusHistoryService } from './client-status-history.service';
@@ -26,8 +27,9 @@ export class ClientsService {
     isAdmin: boolean,
     pagination?: { limit?: number; cursor?: number },
     filters: ClientFilters = {},
+    sort?: ClientSort,
   ): Promise<ClientConnectionModel> {
-    return this.repo.findAll(userId, isAdmin, pagination, filters);
+    return this.repo.findAll(userId, isAdmin, pagination, filters, sort);
   }
 
   findOne(id: number, userId: number): Promise<ClientModel> {

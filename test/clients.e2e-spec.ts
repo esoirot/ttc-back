@@ -147,6 +147,20 @@ describe('ClientsResolver (e2e)', () => {
       false,
       undefined,
       expect.objectContaining({ search: undefined, industry: undefined }),
+      undefined,
+    );
+  });
+
+  it('clients — passes the sort through', async () => {
+    await gql(
+      `{ clients(sort: { field: LAST_NAME, direction: DESC }) { items { id } total nextCursor } }`,
+    );
+    expect(service.findAll).toHaveBeenCalledWith(
+      1,
+      false,
+      undefined,
+      expect.anything(),
+      { field: 'LAST_NAME', direction: 'DESC' },
     );
   });
 
@@ -170,6 +184,7 @@ describe('ClientsResolver (e2e)', () => {
         lastName: 'Curie',
         firstName: 'Marie',
       }),
+      undefined,
     );
   });
 

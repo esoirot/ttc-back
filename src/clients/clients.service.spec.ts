@@ -221,13 +221,27 @@ describe('ClientsService', () => {
         false,
         { limit: 10 },
         filters,
+        undefined,
       );
+    });
+
+    it('passes the sort to the repository', async () => {
+      repo.findAll.mockResolvedValue({ items: [], nextCursor: null, total: 0 });
+      const sort = { field: 'LAST_NAME', direction: 'DESC' } as const;
+      await service.findAll(1, false, undefined, {}, sort);
+      expect(repo.findAll).toHaveBeenCalledWith(1, false, undefined, {}, sort);
     });
 
     it('defaults to no filters', async () => {
       repo.findAll.mockResolvedValue({ items: [], nextCursor: null, total: 0 });
       await service.findAll(1, true);
-      expect(repo.findAll).toHaveBeenCalledWith(1, true, undefined, {});
+      expect(repo.findAll).toHaveBeenCalledWith(
+        1,
+        true,
+        undefined,
+        {},
+        undefined,
+      );
     });
   });
 

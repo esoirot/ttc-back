@@ -16,9 +16,21 @@ import {
   ClientConnectionModel,
   ClientFilters,
   ClientRepository,
+  ClientSort,
+  ClientSortField,
 } from './client.repository';
 
 type Status = ClientModel['status'];
+const collator = new Intl.Collator(undefined, { sensitivity: 'base' });
+const SORT_KEYS: Record<
+  ClientSortField,
+  readonly ('name' | 'lastName' | 'firstName')[]
+> = {
+  NAME: ['name'],
+  LAST_NAME: ['lastName', 'firstName'],
+  FIRST_NAME: ['firstName', 'lastName'],
+};
+
 type Industry = NonNullable<
   NonNullable<
     Awaited<ReturnType<Prisma8Service['orm']['public']['Client']['first']>>
@@ -138,6 +150,7 @@ export class Prisma8ClientRepository implements ClientRepository {
     isAdmin: boolean,
     pagination?: { limit?: number; cursor?: number },
     filters: ClientFilters = {},
+    sort?: ClientSort,
   ): Promise<ClientConnectionModel> {
     const {
       search,
@@ -176,8 +189,12 @@ export class Prisma8ClientRepository implements ClientRepository {
       base = base.where((c) => c.lastName.ilike(containsPattern(lastName)));
     if (excludeStatus)
       base = base.where((c) => c.status.neq(excludeStatus as Status));
-    if (clientType === 'INDIVIDUAL')
-      return this.byPersonName(base, limit, cursor);
+    const order =
+      sort ??
+      (clientType === 'INDIVIDUAL'
+        ? ({ field: 'LAST_NAME', direction: 'ASC' } as const)
+        : undefined);
+    if (order) return this.sortedPage(base, limit, cursor, order);
     const page =
       cursor !== undefined ? base.where((c) => c.id.gt(cursor)) : base;
     const rows = await page
@@ -197,23 +214,32 @@ export class Prisma8ClientRepository implements ClientRepository {
   }
 
   /**
-   * People listed by last name, then first name (no last name last, as
-   * Postgres sorts NULLs after values). Paged in memory from the cursor's
-   * position: a keyset cursor can't step past NULL last names, and a user's
-   * individual clients are few.
+   * One page of the filtered clients in name order. Names compare ignoring
+   * case and accents (Émile next to Emile), empty names last either way,
+   * ties on the other name then oldest first. Sorted and paged in memory from
+   * the cursor's position: a keyset cursor can't do that collation nor step
+   * past NULL names, and a user's clients are few.
    */
-  private async byPersonName(
+  private async sortedPage(
     base: ReturnType<Prisma8ClientRepository['full']>,
     limit: number,
     cursor: number | undefined,
+    sort: ClientSort,
   ): Promise<ClientConnectionModel> {
-    const rows = await base
-      .orderBy([
-        (c) => c.lastName.asc(),
-        (c) => c.firstName.asc(),
-        (c) => c.id.asc(),
-      ])
-      .all();
+    const keys = SORT_KEYS[sort.field];
+    const sign = sort.direction === 'ASC' ? 1 : -1;
+    const rows = (await base.orderBy((c) => c.id.asc()).all()).sort((a, b) => {
+      for (const key of keys) {
+        const x = a[key] || null;
+        const y = b[key] || null;
+        if (x === y) continue;
+        if (x === null) return 1;
+        if (y === null) return -1;
+        const byName = collator.compare(x, y);
+        if (byName !== 0) return sign * byName;
+      }
+      return a.id - b.id;
+    });
     const start =
       cursor === undefined ? 0 : rows.findIndex((r) => r.id === cursor) + 1;
     const items = rows.slice(start, start + limit).map((r) => this.toModel(r));
