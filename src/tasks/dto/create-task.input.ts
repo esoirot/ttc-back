@@ -29,4 +29,8 @@ export class CreateTaskInput {
 
   @Field(() => Int, { nullable: true })
   wordCount?: number | null;
+
+  /** Hex colour shown on the task's row; empty clears it. */
+  @Field(() => String, { nullable: true })
+  color?: string | null;
 }

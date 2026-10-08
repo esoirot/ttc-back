@@ -3253,6 +3253,13 @@
                   "kind": "scalar"
                 }
               },
+              "color": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -3472,6 +3479,9 @@
               "fields": {
                 "checklistTitles": {
                   "column": "checklistTitles"
+                },
+                "color": {
+                  "column": "color"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -7606,6 +7616,11 @@
                   ],
                   "nullable": true
                 },
+                "color": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamp-string@1",
                   "default": {
@@ -9005,7 +9020,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ed5545fe8b201c15b947cea71571148fadd7524e7d91cd481b714a3fc5b7c37b"
+    "storageHash": "1db313cea769f420991acfd7b28bc023ebbb117ddfea3a49ce01d220e37184f4"
   },
   "capabilities": {
     "postgres": {

@@ -6,6 +6,7 @@ export type TaskModel = {
   status: string;
   dueDate: Date | null;
   wordCount: number | null;
+  color: string | null;
   sortOrder: number;
   checklistTitles: string[];
   createdAt: Date;

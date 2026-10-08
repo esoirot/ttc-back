@@ -144,6 +144,7 @@ describe('TasksResolver GraphQL schema', () => {
       'attachments',
       'totalTimeSeconds',
       'wordCount',
+      'color',
     ]) {
       expect(taskFields).toHaveProperty(name);
     }

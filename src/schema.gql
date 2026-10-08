@@ -516,7 +516,6 @@ input CreateTagInput {
 }
 
 input CreateTaskInput {
-  assigneeId: Int
   description: String
   dueDate: DateTime
   projectId: Int!
@@ -767,6 +766,12 @@ input MatchRatesInput {
   repetitionsBetweenFiles: Int!
 }
 
+input MoveTaskInput {
+  id: Int!
+  position: Int!
+  status: TaskStatus!
+}
+
 type Mutation {
   addInvoiceItem(input: AddInvoiceItemInput!): InvoiceItem!
   adminCreateClient(input: AdminCreateClientInput!): AdminClient!
@@ -822,6 +827,7 @@ type Mutation {
   generateInvoice(input: GenerateInvoiceInput!): Invoice!
   login(input: LoginInput!): LoginResponse!
   logout: Boolean!
+  moveTask(input: MoveTaskInput!): Task!
   refreshToken: Boolean!
   regenerateBackupCodes(code: String!): EnableTwoFactorResponse!
   register(input: RegisterInput!): User!
@@ -947,11 +953,10 @@ type Query {
   invoice(id: Int!): Invoice!
   invoices(clientId: Int, pagination: PaginationInput, search: String, status: InvoiceStatus): InvoiceConnection!
   me: User!
-  members: [User!]!
   myOccupations: [Occupation!]!
-  myTasks(pagination: PaginationInput): TaskConnection!
   occupation(id: Int!): Occupation!
   project(id: Int!): Project
+  projectActivities(pagination: PaginationInput, projectId: Int!): TaskActivityConnection!
   projects(pagination: PaginationInput, search: String, status: ProjectStatus): ProjectConnection!
   rateSheet(id: Int!): RateSheet!
   rateSheets: [RateSheet!]!
@@ -1038,7 +1043,6 @@ type Tag {
 
 type Task {
   activities: [TaskActivity!]!
-  assigneeId: Int
   attachments: [TaskAttachment!]!
   checklistTitles: [String!]!
   comments: [TaskComment!]!
@@ -1065,11 +1069,23 @@ type TaskActivity {
   createdAt: DateTime!
   id: Int!
   payload: String
+  task: TaskActivityTaskRef
   taskId: Int
   timeEntryId: Int
   type: String!
   user: TaskActivityUser
   userId: Int!
+}
+
+type TaskActivityConnection {
+  items: [TaskActivity!]!
+  nextCursor: Int
+  total: Int!
+}
+
+type TaskActivityTaskRef {
+  id: Int!
+  title: String!
 }
 
 type TaskActivityUser {
@@ -1365,7 +1381,6 @@ input UpdateTagInput {
 }
 
 input UpdateTaskInput {
-  assigneeId: Int
   description: String
   dueDate: DateTime
   id: Int!

@@ -37,6 +37,9 @@ export class Task {
   @Field(() => Int, { nullable: true })
   wordCount?: number | null;
 
+  @Field(() => String, { nullable: true })
+  color?: string | null;
+
   @Field(() => Date, { nullable: true })
   startDate?: Date | null;
 

@@ -29,6 +29,10 @@ function toModel(row: Row): TaskModel {
 const date = (d: Date | null | undefined) =>
   d === undefined ? undefined : toDb(d);
 
+/** An empty colour means none. */
+const colour = (c: string | null | undefined) =>
+  c === undefined ? undefined : c || null;
+
 @Injectable()
 export class Prisma8TaskRepository implements TaskRepository {
   constructor(private readonly db: Prisma8Service) {}
@@ -98,6 +102,7 @@ export class Prisma8TaskRepository implements TaskRepository {
       status: data.status ?? 'TODO',
       dueDate: date(data.dueDate),
       wordCount: data.wordCount,
+      color: colour(data.color),
       startDate: date(data.startDate),
       recurring: data.recurring,
       reminderOffset: data.reminderOffset,
@@ -112,9 +117,10 @@ export class Prisma8TaskRepository implements TaskRepository {
     data: UpdateTaskInput,
   ): Promise<TaskModel> {
     await this.findById(id, userId);
-    const { id: _id, dueDate, startDate, status, ...fields } = data;
+    const { id: _id, dueDate, startDate, status, color, ...fields } = data;
     const row = await this.tasks.where({ id }).update({
       ...fields,
+      color: colour(color),
       status: status || undefined,
       dueDate: date(dueDate),
       startDate: date(startDate),
