@@ -41,6 +41,7 @@ class DashboardProspect {
   @Field() name!: string;
   @Field(() => ClientStatus) status!: ClientStatus;
   @Field(() => String, { nullable: true }) contactedAt!: string | null;
+  @Field(() => String, { nullable: true }) dueAt!: string | null;
 }
 
 @ObjectType()

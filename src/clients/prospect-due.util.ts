@@ -42,16 +42,17 @@ export function nextStatusAfterContact(
   return NEXT_STATUS_AFTER_CONTACT[status] ?? null;
 }
 
-export function isProspectDueForContact(
+/**
+ * When a prospect needs contacting: null = now (always-due status, or no
+ * date yet), undefined = never (not a prospect status).
+ */
+export function prospectDueAt(
   status: ClientStatus,
   lastContact: Date | null,
-  now: Date = new Date(),
-): boolean {
-  if (ALWAYS_DUE.has(status)) return true;
-
+): Date | null | undefined {
+  if (ALWAYS_DUE.has(status)) return null;
   const thresholdDays = PROSPECT_DUE_THRESHOLD_DAYS[status];
-  if (thresholdDays === undefined) return false;
-  if (!lastContact) return true;
-
-  return now.getTime() - lastContact.getTime() >= thresholdDays * DAY_MS;
+  if (thresholdDays === undefined) return undefined;
+  if (!lastContact) return null;
+  return new Date(lastContact.getTime() + thresholdDays * DAY_MS);
 }
