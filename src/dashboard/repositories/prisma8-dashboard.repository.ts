@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { and } from '@prisma/orm-postgres/orm-client';
 import { ClientStatus } from '../../clients/entities/client.entity';
 import {
-  isProspectDueForContact,
   newestContactDate,
+  prospectDueAt,
 } from '../../clients/prospect-due.util';
 import { taskVisibleTo } from '../../prisma8/access';
 import { countOf } from '../../prisma8/count';
@@ -21,6 +21,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** Overdue items, plus everything due within this many days. */
 const DEADLINE_HORIZON_DAYS = 30;
 const DEADLINE_LIMIT = 20;
+/** Prospects due now, plus those coming due within this many days. */
+const PROSPECT_HORIZON_DAYS = 30;
 const FINISHED_PROJECT_STATUSES = [
   'COMPLETED',
   'CANCELLED',
@@ -95,21 +97,29 @@ export class Prisma8DashboardRepository implements DashboardRepository {
       startTime: fromDb(e.startTime).toISOString(),
       durationSeconds: e.durationSeconds,
     }));
+    const prospectHorizon = now.getTime() + PROSPECT_HORIZON_DAYS * DAY_MS;
     const prospectsToContact: DashboardProspectModel[] = prospectCandidates
       .map((c) => {
         const contactedAt = fromDb(c.contactedAt);
         const since = newestContactDate(contactedAt, fromDb(c.toRecontactAt));
-        return { ...c, contactedAt, since };
+        const dueAt = prospectDueAt(c.status as ClientStatus, since);
+        return { ...c, contactedAt, dueAt };
       })
-      .filter((c) =>
-        isProspectDueForContact(c.status as ClientStatus, c.since, now),
+      .filter(
+        (c) =>
+          c.dueAt === null ||
+          (c.dueAt !== undefined && c.dueAt.getTime() <= prospectHorizon),
       )
-      .sort((a, b) => (a.since?.getTime() ?? 0) - (b.since?.getTime() ?? 0))
+      .sort(
+        (a, b) =>
+          (a.dueAt?.getTime() ?? 0) - (b.dueAt?.getTime() ?? 0) || a.id - b.id,
+      )
       .map((c) => ({
         id: c.id,
         name: c.name,
         status: c.status,
         contactedAt: c.contactedAt?.toISOString() ?? null,
+        dueAt: c.dueAt?.toISOString() ?? null,
       }));
 
     return {

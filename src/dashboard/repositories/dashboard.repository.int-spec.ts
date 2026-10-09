@@ -361,7 +361,7 @@ describe.each([
     });
   });
 
-  it('lists prospects due for contact, longest-waiting first', async () => {
+  it('lists prospects due now or within 30 days, earliest due first, with their due date', async () => {
     const neverContacted = await seedClient(db.prisma8, owner, {
       name: 'New lead',
       status: 'TO_CONTACT',
@@ -376,10 +376,15 @@ describe.each([
       status: 'FOLLOW_UP_2',
       contactedAt: toDb(ago(30)),
     });
-    await seedClient(db.prisma8, owner, {
+    const justContacted = await seedClient(db.prisma8, owner, {
       name: 'Just contacted',
       status: 'FOLLOW_UP_1',
       contactedAt: toDb(ago(0)),
+    });
+    await seedClient(db.prisma8, owner, {
+      name: 'Due in 82 days',
+      status: 'RECONTACT_LATER',
+      contactedAt: toDb(ago(100)),
     });
     await seedClient(db.prisma8, owner, { name: 'Customer', status: 'CLIENT' });
     await seedClient(db.prisma8, stranger, { status: 'TO_CONTACT' });
@@ -392,18 +397,28 @@ describe.each([
         name: 'New lead',
         status: 'TO_CONTACT',
         contactedAt: null,
+        dueAt: null,
       },
       {
         id: waiting.id,
         name: 'Waiting',
         status: 'FOLLOW_UP_1',
         contactedAt: ago(90).toISOString(),
+        dueAt: ago(76).toISOString(),
       },
       {
         id: lessWaiting.id,
         name: 'Less waiting',
         status: 'FOLLOW_UP_2',
         contactedAt: ago(30).toISOString(),
+        dueAt: ago(16).toISOString(),
+      },
+      {
+        id: justContacted.id,
+        name: 'Just contacted',
+        status: 'FOLLOW_UP_1',
+        contactedAt: ago(0).toISOString(),
+        dueAt: ahead(14).toISOString(),
       },
     ]);
   });
@@ -433,7 +448,7 @@ describe.each([
       name: 'Undated lead',
       status: 'TO_CONTACT',
     });
-    await seedClient(db.prisma8, owner, {
+    const recontactNewer = await seedClient(db.prisma8, owner, {
       name: 'Recontact newer',
       status: 'FOLLOW_UP_1',
       contactedAt: toDb(ago(90)),
@@ -442,12 +457,15 @@ describe.each([
 
     const { prospectsToContact } = await repo.getDashboard(owner);
 
+    // Always-due rows first (oldest first), then by due date: the
+    // recontact date pushes 'Recontact newer' to 9 days from now.
     expect(prospectsToContact.map((p) => p.id)).toEqual([
+      former.id,
       undatedFormer.id,
       undatedLead.id,
       recontactOnly.id,
       contactNewer.id,
-      former.id,
+      recontactNewer.id,
     ]);
   });
 });
