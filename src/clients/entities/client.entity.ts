@@ -43,7 +43,6 @@ export enum ClientStatus {
   CONTACTED = 'CONTACTED',
   FOLLOW_UP_1 = 'FOLLOW_UP_1',
   FOLLOW_UP_2 = 'FOLLOW_UP_2',
-  FOLLOW_UP_3 = 'FOLLOW_UP_3',
   RECONTACT_LATER = 'RECONTACT_LATER',
   TALKING = 'TALKING',
   CLIENT = 'CLIENT',
@@ -150,6 +149,9 @@ export class Client {
 
   @Field(() => Date, { nullable: true })
   contactedAt?: Date;
+
+  @Field(() => Date, { nullable: true })
+  toRecontactAt?: Date;
 
   @Field(() => [ClientTagItem])
   tags!: ClientTagItem[];

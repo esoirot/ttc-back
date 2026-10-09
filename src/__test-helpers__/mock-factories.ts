@@ -152,6 +152,7 @@ export function mockClient(overrides: Partial<ClientModel> = {}): ClientModel {
     industry: null,
     status: 'CLIENT',
     contactedAt: null,
+    toRecontactAt: null,
     tags: [],
     contacts: [],
     occupations: [],

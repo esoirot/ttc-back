@@ -22,7 +22,7 @@ export class ProspectCronService {
         await this.clientRepository.findStaleFollowUpClientIds(cutoff);
       if (stale.length === 0) {
         this.logger.log(
-          'Moved 0 stale FOLLOW_UP_3 prospect(s) to RECONTACT_LATER',
+          'Moved 0 stale FOLLOW_UP_2 prospect(s) to RECONTACT_LATER',
         );
         return;
       }
@@ -34,11 +34,11 @@ export class ProspectCronService {
           clientId: c.id,
           userId: c.userId,
           type: 'STATUS_CHANGED',
-          payload: { from: 'FOLLOW_UP_3', to: 'RECONTACT_LATER' },
+          payload: { from: 'FOLLOW_UP_2', to: 'RECONTACT_LATER' },
         })),
       );
       this.logger.log(
-        `Moved ${count} stale FOLLOW_UP_3 prospect(s) to RECONTACT_LATER`,
+        `Moved ${count} stale FOLLOW_UP_2 prospect(s) to RECONTACT_LATER`,
       );
     } catch (err: unknown) {
       this.logger.error(

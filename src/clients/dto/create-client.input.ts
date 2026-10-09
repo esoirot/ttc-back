@@ -88,6 +88,9 @@ export class CreateClientInput {
   @Field(() => Date, { nullable: true })
   contactedAt?: Date;
 
+  @Field(() => Date, { nullable: true })
+  toRecontactAt?: Date;
+
   @Field(() => [Int], { nullable: true })
   tagIds?: number[];
 
