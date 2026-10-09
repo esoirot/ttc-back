@@ -21,5 +21,8 @@ export class CreateCompanyContactInput {
   jobTitle?: string;
 
   @Field(() => String, { nullable: true })
+  linkedinUrl?: string;
+
+  @Field(() => String, { nullable: true })
   color?: string;
 }
