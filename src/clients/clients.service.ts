@@ -13,6 +13,7 @@ import { UpdateClientInput } from './dto/update-client.input';
 import { CreateCompanyContactInput } from './dto/create-company-contact.input';
 import { UpdateCompanyContactInput } from './dto/update-company-contact.input';
 import { ClientStatus } from './entities/client.entity';
+import { nextStatusAfterContact } from './prospect-due.util';
 
 @Injectable()
 export class ClientsService {
@@ -52,9 +53,10 @@ export class ClientsService {
   async update(
     id: number,
     userId: number,
-    input: UpdateClientInput,
+    changes: UpdateClientInput,
   ): Promise<ClientModel> {
     const before = await this.repo.findById(id, userId);
+    const input = { ...changes, status: steppedStatus(before, changes) };
     const client = await this.repo.update(id, userId, input);
 
     if (
@@ -129,4 +131,21 @@ export class ClientsService {
     await this.repo.deleteContact(id, userId);
     return true;
   }
+}
+
+/**
+ * A newer contact date moves a prospect one step along its cycle, unless the
+ * same edit picks another status itself.
+ */
+function steppedStatus(
+  before: ClientModel,
+  input: UpdateClientInput,
+): ClientStatus | undefined {
+  const stored = before.status as ClientStatus;
+  const picked = input.status !== undefined && input.status !== stored;
+  if (picked || !input.contactedAt) return input.status;
+  const newer =
+    !before.contactedAt || new Date(input.contactedAt) > before.contactedAt;
+  if (!newer) return input.status;
+  return nextStatusAfterContact(stored) ?? input.status;
 }

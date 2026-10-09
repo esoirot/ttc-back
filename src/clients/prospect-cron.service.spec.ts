@@ -41,7 +41,7 @@ describe('ProspectCronService', () => {
   });
 
   describe('promoteStaleFollowUps', () => {
-    it('promotes FOLLOW_UP_3 clients with contactedAt older than 21 days', async () => {
+    it('promotes FOLLOW_UP_2 clients whose newest date is older than 21 days', async () => {
       clientRepository.findStaleFollowUpClientIds.mockResolvedValue([
         { id: 1, userId: 10 },
         { id: 2, userId: 20 },
@@ -70,13 +70,13 @@ describe('ProspectCronService', () => {
           clientId: 1,
           userId: 10,
           type: 'STATUS_CHANGED',
-          payload: { from: 'FOLLOW_UP_3', to: 'RECONTACT_LATER' },
+          payload: { from: 'FOLLOW_UP_2', to: 'RECONTACT_LATER' },
         },
         {
           clientId: 2,
           userId: 20,
           type: 'STATUS_CHANGED',
-          payload: { from: 'FOLLOW_UP_3', to: 'RECONTACT_LATER' },
+          payload: { from: 'FOLLOW_UP_2', to: 'RECONTACT_LATER' },
         },
       ]);
     });

@@ -47,12 +47,12 @@ export type ClientModel = {
     | 'CONTACTED'
     | 'FOLLOW_UP_1'
     | 'FOLLOW_UP_2'
-    | 'FOLLOW_UP_3'
     | 'RECONTACT_LATER'
     | 'TALKING'
     | 'CLIENT'
     | 'FORMER_CLIENT';
   contactedAt: Date | null;
+  toRecontactAt: Date | null;
   tags: { id: number; name: string }[];
   createdAt: Date;
   updatedAt: Date;

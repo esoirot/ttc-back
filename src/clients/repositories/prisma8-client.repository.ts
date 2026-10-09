@@ -1,6 +1,6 @@
 import { assertOwned } from '../../prisma8/ownership';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { or } from '@prisma/orm-postgres/orm-client';
+import { and, or } from '@prisma/orm-postgres/orm-client';
 import { occupationFromDb } from '../../occupations/repositories/prisma8-occupation.mapper';
 import { countOf } from '../../prisma8/count';
 import { containsPattern } from '../../prisma8/like';
@@ -76,6 +76,7 @@ export class Prisma8ClientRepository implements ClientRepository {
       ...c,
       taxRate: c.taxRate === null ? null : Number(c.taxRate),
       contactedAt: fromDb(c.contactedAt),
+      toRecontactAt: fromDb(c.toRecontactAt),
       createdAt: fromDb(c.createdAt),
       updatedAt: fromDb(c.updatedAt),
       contacts: contacts.map(contactFromDb),
@@ -116,13 +117,16 @@ export class Prisma8ClientRepository implements ClientRepository {
   private fields(
     data: Omit<UpdateClientInput, 'id' | 'tagIds' | 'occupationIds'>,
   ) {
-    const { taxRate, contactedAt, clientType, status, ...rest } = data;
+    const { taxRate, contactedAt, toRecontactAt, clientType, status, ...rest } =
+      data;
     return {
       ...rest,
       clientType: clientType as ClientType | undefined,
       status: status as Status | undefined,
       taxRate: toNumeric<5, 2>(taxRate),
       contactedAt: contactedAt === undefined ? undefined : toDb(contactedAt),
+      toRecontactAt:
+        toRecontactAt === undefined ? undefined : toDb(toRecontactAt),
     };
   }
 
@@ -355,11 +359,20 @@ export class Prisma8ClientRepository implements ClientRepository {
     cutoffDate: Date,
   ): Promise<{ id: number; userId: number }[]> {
     const cutoff = toDb(cutoffDate);
-    return this.clients
-      .where({ status: 'FOLLOW_UP_3' })
-      .where((c) => c.contactedAt.lt(cutoff))
-      .select('id', 'userId')
-      .all();
+    return (
+      this.clients
+        .where({ status: 'FOLLOW_UP_2' })
+        // Newest of the two dates before the cutoff: one is, none is after.
+        .where((c) => or(c.contactedAt.lt(cutoff), c.toRecontactAt.lt(cutoff)))
+        .where((c) =>
+          and(
+            or(c.contactedAt.isNull(), c.contactedAt.lt(cutoff)),
+            or(c.toRecontactAt.isNull(), c.toRecontactAt.lt(cutoff)),
+          ),
+        )
+        .select('id', 'userId')
+        .all()
+    );
   }
 
   promoteClients(ids: number[]): Promise<number> {

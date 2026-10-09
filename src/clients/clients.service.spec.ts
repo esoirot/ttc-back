@@ -5,6 +5,7 @@ import { ClientStatusHistoryService } from './client-status-history.service';
 import { ClientStatus, ClientIndustry } from './entities/client.entity';
 import { AuditService } from '../audit/audit.service';
 import { mockClient } from '../__test-helpers__/mock-factories';
+import { UpdateClientInput } from './dto/update-client.input';
 
 describe('ClientsService', () => {
   let service: ClientsService;
@@ -113,6 +114,104 @@ describe('ClientsService', () => {
       expect(statusHistory.log).toHaveBeenCalledWith(3, 1, 'STATUS_CHANGED', {
         from: 'CLIENT',
         to: ClientStatus.TALKING,
+      });
+    });
+
+    describe('newer contact date steps the prospect status', () => {
+      const may1 = new Date('2026-05-01T00:00:00.000Z');
+      const may3 = new Date('2026-05-03T00:00:00.000Z');
+
+      const save = async (
+        before: Parameters<typeof mockClient>[0],
+        input: Omit<UpdateClientInput, 'id'>,
+      ) => {
+        repo.findById.mockResolvedValue(mockClient({ id: 3, ...before }));
+        repo.update.mockResolvedValue(mockClient({ id: 3 }));
+        await service.update(3, 1, { id: 3, ...input });
+        return (
+          repo.update.mock.calls[0] as [number, number, UpdateClientInput]
+        )[2].status;
+      };
+
+      it.each([
+        ['TO_CONTACT', ClientStatus.CONTACTED],
+        ['FORMER_CLIENT', ClientStatus.CONTACTED],
+        ['CONTACTED', ClientStatus.FOLLOW_UP_1],
+        ['FOLLOW_UP_1', ClientStatus.FOLLOW_UP_2],
+        ['FOLLOW_UP_2', ClientStatus.RECONTACT_LATER],
+        ['RECONTACT_LATER', ClientStatus.CONTACTED],
+      ] as const)('%s moves to %s', async (from, to) => {
+        await expect(
+          save({ status: from, contactedAt: may1 }, { contactedAt: may3 }),
+        ).resolves.toBe(to);
+        expect(statusHistory.log).toHaveBeenCalledWith(3, 1, 'STATUS_CHANGED', {
+          from,
+          to,
+        });
+      });
+
+      it('counts a first contact date as newer', async () => {
+        await expect(
+          save(
+            { status: 'TO_CONTACT', contactedAt: null },
+            { contactedAt: may3 },
+          ),
+        ).resolves.toBe(ClientStatus.CONTACTED);
+      });
+
+      it('steps even when the form sends the unchanged status', async () => {
+        await expect(
+          save(
+            { status: 'CONTACTED', contactedAt: may1 },
+            { contactedAt: may3, status: ClientStatus.CONTACTED },
+          ),
+        ).resolves.toBe(ClientStatus.FOLLOW_UP_1);
+      });
+
+      it.each([
+        ['an older date', may1, may3],
+        ['the same date', may3, may3],
+        ['a cleared date', null as unknown as Date, may3],
+      ])('does not move on %s', async (_, date, stored) => {
+        await expect(
+          save(
+            { status: 'FOLLOW_UP_1', contactedAt: stored },
+            { contactedAt: date },
+          ),
+        ).resolves.toBeUndefined();
+        expect(statusHistory.log).not.toHaveBeenCalledWith(
+          3,
+          1,
+          'STATUS_CHANGED',
+          expect.anything(),
+        );
+      });
+
+      it.each(['TALKING', 'CLIENT'] as const)(
+        '%s never moves',
+        async (status) => {
+          await expect(
+            save({ status, contactedAt: may1 }, { contactedAt: may3 }),
+          ).resolves.toBeUndefined();
+        },
+      );
+
+      it('lets a status picked in the same edit win', async () => {
+        await expect(
+          save(
+            { status: 'CONTACTED', contactedAt: may1 },
+            { contactedAt: may3, status: ClientStatus.TALKING },
+          ),
+        ).resolves.toBe(ClientStatus.TALKING);
+      });
+
+      it('does not move when only the recontact date changes', async () => {
+        await expect(
+          save(
+            { status: 'FOLLOW_UP_1', contactedAt: may1 },
+            { toRecontactAt: may3 },
+          ),
+        ).resolves.toBeUndefined();
       });
     });
 

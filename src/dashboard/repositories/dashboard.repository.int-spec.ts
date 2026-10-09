@@ -407,4 +407,47 @@ describe.each([
       },
     ]);
   });
+
+  it('lists former clients, and counts waits from the newest of contact and recontact dates', async () => {
+    const former = await seedClient(db.prisma8, owner, {
+      name: 'Former',
+      status: 'FORMER_CLIENT',
+      contactedAt: toDb(ago(1)),
+    });
+    const recontactOnly = await seedClient(db.prisma8, owner, {
+      name: 'Recontact only',
+      status: 'RECONTACT_LATER',
+      toRecontactAt: toDb(ago(200)),
+    });
+    const contactNewer = await seedClient(db.prisma8, owner, {
+      name: 'Contact newer',
+      status: 'CONTACTED',
+      contactedAt: toDb(ago(20)),
+      toRecontactAt: toDb(ago(60)),
+    });
+    const undatedFormer = await seedClient(db.prisma8, owner, {
+      name: 'Undated former',
+      status: 'FORMER_CLIENT',
+    });
+    const undatedLead = await seedClient(db.prisma8, owner, {
+      name: 'Undated lead',
+      status: 'TO_CONTACT',
+    });
+    await seedClient(db.prisma8, owner, {
+      name: 'Recontact newer',
+      status: 'FOLLOW_UP_1',
+      contactedAt: toDb(ago(90)),
+      toRecontactAt: toDb(ago(5)),
+    });
+
+    const { prospectsToContact } = await repo.getDashboard(owner);
+
+    expect(prospectsToContact.map((p) => p.id)).toEqual([
+      undatedFormer.id,
+      undatedLead.id,
+      recontactOnly.id,
+      contactNewer.id,
+      former.id,
+    ]);
+  });
 });

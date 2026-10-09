@@ -128,6 +128,7 @@ namespace public {
     website           String?
     linkedinUrl       String?
     contactedAt       TimestampString(3)?
+    toRecontactAt     TimestampString(3)?
     status            pg.enum(ClientStatus)    @default("CLIENT")
     addressLine2      String?
     color             String?
@@ -538,7 +539,6 @@ namespace public {
     CONTACTED = "CONTACTED"
     FOLLOW_UP_1 = "FOLLOW_UP_1"
     FOLLOW_UP_2 = "FOLLOW_UP_2"
-    FOLLOW_UP_3 = "FOLLOW_UP_3"
     TALKING = "TALKING"
     CLIENT = "CLIENT"
     RECONTACT_LATER = "RECONTACT_LATER"

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { and } from '@prisma/orm-postgres/orm-client';
 import { ClientStatus } from '../../clients/entities/client.entity';
-import { isProspectDueForContact } from '../../clients/prospect-due.util';
+import {
+  isProspectDueForContact,
+  newestContactDate,
+} from '../../clients/prospect-due.util';
 import { taskVisibleTo } from '../../prisma8/access';
 import { countOf } from '../../prisma8/count';
 import { Prisma8Service } from '../../prisma8/prisma8.service';
@@ -33,6 +36,7 @@ const PROSPECT_CANDIDATE_STATUSES = [
   'FOLLOW_UP_1',
   'FOLLOW_UP_2',
   'RECONTACT_LATER',
+  'FORMER_CLIENT',
 ] as const;
 
 @Injectable()
@@ -78,7 +82,7 @@ export class Prisma8DashboardRepository implements DashboardRepository {
         .all(),
       orm.Client.where({ userId })
         .where((c) => c.status.in([...PROSPECT_CANDIDATE_STATUSES]))
-        .select('id', 'name', 'status', 'contactedAt')
+        .select('id', 'name', 'status', 'contactedAt', 'toRecontactAt')
         .all(),
       orm.TimeEntry.where({ userId })
         .where((e) => and(e.startTime.gte(yearStart), e.startTime.lt(yearEnd)))
@@ -92,14 +96,15 @@ export class Prisma8DashboardRepository implements DashboardRepository {
       durationSeconds: e.durationSeconds,
     }));
     const prospectsToContact: DashboardProspectModel[] = prospectCandidates
-      .map((c) => ({ ...c, contactedAt: fromDb(c.contactedAt) }))
+      .map((c) => {
+        const contactedAt = fromDb(c.contactedAt);
+        const since = newestContactDate(contactedAt, fromDb(c.toRecontactAt));
+        return { ...c, contactedAt, since };
+      })
       .filter((c) =>
-        isProspectDueForContact(c.status as ClientStatus, c.contactedAt, now),
+        isProspectDueForContact(c.status as ClientStatus, c.since, now),
       )
-      .sort(
-        (a, b) =>
-          (a.contactedAt?.getTime() ?? 0) - (b.contactedAt?.getTime() ?? 0),
-      )
+      .sort((a, b) => (a.since?.getTime() ?? 0) - (b.since?.getTime() ?? 0))
       .map((c) => ({
         id: c.id,
         name: c.name,

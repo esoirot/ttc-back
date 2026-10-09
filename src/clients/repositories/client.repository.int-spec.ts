@@ -548,6 +548,21 @@ describe.each([
       ).resolves.toMatchObject({ contactedAt: when });
     });
 
+    it('sets, keeps and clears the recontact date', async () => {
+      const when = new Date('2026-11-02T08:00:00.000Z');
+      const c = await repo.create(owner, { name: 'C', toRecontactAt: when });
+      expect(c.toRecontactAt).toEqual(when);
+      await expect(
+        repo.update(c.id, owner, { id: c.id, name: 'D' }),
+      ).resolves.toMatchObject({ toRecontactAt: when });
+      await expect(
+        repo.update(c.id, owner, {
+          id: c.id,
+          toRecontactAt: null as unknown as Date,
+        }),
+      ).resolves.toMatchObject({ toRecontactAt: null });
+    });
+
     it("throws NotFound for someone else's client", async () => {
       const theirs = await seedClient(db.prisma8, stranger);
       await expect(
@@ -650,43 +665,61 @@ describe.each([
   });
 
   describe('follow-up automation', () => {
-    it('finds FOLLOW_UP_3 clients contacted before the cutoff, across users', async () => {
+    it('finds FOLLOW_UP_2 clients whose newest date is before the cutoff, across users', async () => {
       const cutoff = new Date('2026-06-01T00:00:00.000Z');
+      const at = (iso: string) => toDb(new Date(iso));
       const stale = await seedClient(db.prisma8, owner, {
-        status: 'FOLLOW_UP_3',
-        contactedAt: toDb(new Date('2026-05-01T00:00:00.000Z')),
+        status: 'FOLLOW_UP_2',
+        contactedAt: at('2026-05-01T00:00:00.000Z'),
       });
       const staleOther = await seedClient(db.prisma8, stranger, {
-        status: 'FOLLOW_UP_3',
-        contactedAt: toDb(new Date('2026-05-31T23:59:59.000Z')),
+        status: 'FOLLOW_UP_2',
+        contactedAt: at('2026-05-31T23:59:59.000Z'),
       });
-      await seedClient(db.prisma8, owner, {
-        status: 'FOLLOW_UP_3',
-        contactedAt: toDb(cutoff),
+      const staleBoth = await seedClient(db.prisma8, owner, {
+        status: 'FOLLOW_UP_2',
+        contactedAt: at('2026-04-01T00:00:00.000Z'),
+        toRecontactAt: at('2026-05-15T00:00:00.000Z'),
+      });
+      const staleRecontactOnly = await seedClient(db.prisma8, owner, {
+        status: 'FOLLOW_UP_2',
+        toRecontactAt: at('2026-05-15T00:00:00.000Z'),
       });
       await seedClient(db.prisma8, owner, {
         status: 'FOLLOW_UP_2',
-        contactedAt: toDb(new Date('2026-01-01T00:00:00.000Z')),
+        contactedAt: toDb(cutoff),
       });
-      await seedClient(db.prisma8, owner, { status: 'FOLLOW_UP_3' });
+      // contactedAt is old, but the newer toRecontactAt is not.
+      await seedClient(db.prisma8, owner, {
+        status: 'FOLLOW_UP_2',
+        contactedAt: at('2026-01-01T00:00:00.000Z'),
+        toRecontactAt: at('2026-06-10T00:00:00.000Z'),
+      });
+      await seedClient(db.prisma8, owner, {
+        status: 'FOLLOW_UP_1',
+        contactedAt: at('2026-01-01T00:00:00.000Z'),
+      });
+      await seedClient(db.prisma8, owner, { status: 'FOLLOW_UP_2' });
 
       const found = await repo.findStaleFollowUpClientIds(cutoff);
 
       expect(found.sort((x, y) => x.id - y.id)).toEqual([
         { id: stale.id, userId: owner },
         { id: staleOther.id, userId: stranger },
+        { id: staleBoth.id, userId: owner },
+        { id: staleRecontactOnly.id, userId: owner },
       ]);
     });
 
     it('promotes the given clients to RECONTACT_LATER and returns the count', async () => {
-      const a = await seedClient(db.prisma8, owner, { status: 'FOLLOW_UP_3' });
-      const b = await seedClient(db.prisma8, owner, { status: 'FOLLOW_UP_3' });
+      const a = await seedClient(db.prisma8, owner, { status: 'FOLLOW_UP_2' });
+      const b = await seedClient(db.prisma8, owner, { status: 'FOLLOW_UP_2' });
       await expect(repo.promoteClients([a.id])).resolves.toBe(1);
       await expect(repo.findById(a.id, owner)).resolves.toMatchObject({
         status: 'RECONTACT_LATER',
       });
       await expect(repo.findById(b.id, owner)).resolves.toMatchObject({
-        status: 'FOLLOW_UP_3',
+        status: 'FOLLOW_UP_2',
       });
       await expect(repo.promoteClients([])).resolves.toBe(0);
     });

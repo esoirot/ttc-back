@@ -1,19 +1,22 @@
 import { ClientStatus } from './entities/client.entity';
-import { isProspectDueForContact } from './prospect-due.util';
+import {
+  isProspectDueForContact,
+  newestContactDate,
+  nextStatusAfterContact,
+} from './prospect-due.util';
 
 const NOW = new Date('2026-06-19T00:00:00.000Z');
 const daysAgo = (days: number) =>
   new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000);
 
 describe('isProspectDueForContact', () => {
-  it('TO_CONTACT is always due, regardless of contactedAt', () => {
-    expect(isProspectDueForContact(ClientStatus.TO_CONTACT, null, NOW)).toBe(
-      true,
-    );
-    expect(
-      isProspectDueForContact(ClientStatus.TO_CONTACT, daysAgo(0), NOW),
-    ).toBe(true);
-  });
+  it.each([ClientStatus.TO_CONTACT, ClientStatus.FORMER_CLIENT])(
+    '%s is always due, whatever the date',
+    (status) => {
+      expect(isProspectDueForContact(status, null, NOW)).toBe(true);
+      expect(isProspectDueForContact(status, daysAgo(0), NOW)).toBe(true);
+    },
+  );
 
   describe.each([
     ClientStatus.CONTACTED,
@@ -75,17 +78,52 @@ describe('isProspectDueForContact', () => {
     });
   });
 
-  describe.each([
-    ClientStatus.FOLLOW_UP_3,
-    ClientStatus.TALKING,
-    ClientStatus.CLIENT,
-  ])('%s — never due in this widget', (status) => {
-    it('not due even with a very old contactedAt', () => {
-      expect(isProspectDueForContact(status, daysAgo(1000), NOW)).toBe(false);
-    });
+  describe.each([ClientStatus.TALKING, ClientStatus.CLIENT])(
+    '%s — never due in this widget',
+    (status) => {
+      it('not due even with a very old contactedAt', () => {
+        expect(isProspectDueForContact(status, daysAgo(1000), NOW)).toBe(false);
+      });
 
-    it('not due with null contactedAt', () => {
-      expect(isProspectDueForContact(status, null, NOW)).toBe(false);
-    });
+      it('not due with null contactedAt', () => {
+        expect(isProspectDueForContact(status, null, NOW)).toBe(false);
+      });
+    },
+  );
+});
+
+describe('newestContactDate', () => {
+  it('is the newer of contactedAt and toRecontactAt', () => {
+    expect(newestContactDate(daysAgo(30), daysAgo(5))).toEqual(daysAgo(5));
+    expect(newestContactDate(daysAgo(5), daysAgo(30))).toEqual(daysAgo(5));
   });
+
+  it('uses whichever date is set', () => {
+    expect(newestContactDate(daysAgo(3), null)).toEqual(daysAgo(3));
+    expect(newestContactDate(null, daysAgo(3))).toEqual(daysAgo(3));
+  });
+
+  it('is null when neither date is set', () => {
+    expect(newestContactDate(null, null)).toBeNull();
+  });
+});
+
+describe('nextStatusAfterContact', () => {
+  it.each([
+    [ClientStatus.TO_CONTACT, ClientStatus.CONTACTED],
+    [ClientStatus.FORMER_CLIENT, ClientStatus.CONTACTED],
+    [ClientStatus.CONTACTED, ClientStatus.FOLLOW_UP_1],
+    [ClientStatus.FOLLOW_UP_1, ClientStatus.FOLLOW_UP_2],
+    [ClientStatus.FOLLOW_UP_2, ClientStatus.RECONTACT_LATER],
+    [ClientStatus.RECONTACT_LATER, ClientStatus.CONTACTED],
+  ])('%s moves to %s', (from, to) => {
+    expect(nextStatusAfterContact(from)).toBe(to);
+  });
+
+  it.each([ClientStatus.TALKING, ClientStatus.CLIENT])(
+    '%s does not move',
+    (status) => {
+      expect(nextStatusAfterContact(status)).toBeNull();
+    },
+  );
 });

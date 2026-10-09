@@ -515,6 +515,16 @@
                   }
                 }
               },
+              "toRecontactAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamp-string@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -782,6 +792,9 @@
                 },
                 "taxRate": {
                   "column": "taxRate"
+                },
+                "toRecontactAt": {
+                  "column": "toRecontactAt"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -5298,7 +5311,6 @@
                 "CONTACTED",
                 "FOLLOW_UP_1",
                 "FOLLOW_UP_2",
-                "FOLLOW_UP_3",
                 "TALKING",
                 "CLIENT",
                 "RECONTACT_LATER",
@@ -5723,6 +5735,14 @@
                   "typeParams": {
                     "precision": 5,
                     "scale": 2
+                  }
+                },
+                "toRecontactAt": {
+                  "codecId": "pg/timestamp-string@1",
+                  "nativeType": "timestamp",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
                   }
                 },
                 "updatedAt": {
@@ -8971,7 +8991,6 @@
                 "CONTACTED",
                 "FOLLOW_UP_1",
                 "FOLLOW_UP_2",
-                "FOLLOW_UP_3",
                 "TALKING",
                 "CLIENT",
                 "RECONTACT_LATER",
@@ -9054,7 +9073,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "2ce56dac6fdd92d55edfc15b490e62791fce9dfa41702e09bc2291049e53868b"
+    "storageHash": "3c476b1afa4d1a4f6f2d9a95582e8d0cc6adb2b0f1d43272032710f4afb70e61"
   },
   "capabilities": {
     "postgres": {

@@ -1,0 +1,125 @@
+[
+  {
+    "id": "column.public.Client.toRecontactAt",
+    "label": "Add column \"toRecontactAt\" to \"Client\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "toRecontactAt",
+        "table": "Client"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"toRecontactAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Client",
+          "toRecontactAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"toRecontactAt\"",
+        "sql": "ALTER TABLE \"public\".\"Client\" ADD COLUMN \"toRecontactAt\" timestamp(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"toRecontactAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Client",
+          "toRecontactAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "data.ClientStatus.FOLLOW_UP_3.toRecontactLater",
+    "label": "Move FOLLOW_UP_3 clients to RECONTACT_LATER",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "ClientStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "log FOLLOW_UP_3 -> RECONTACT_LATER in client status history",
+        "sql": "INSERT INTO \"public\".\"ClientStatusHistory\" (\"clientId\", \"userId\", \"type\", \"payload\") SELECT \"id\", \"userId\", 'STATUS_CHANGED', '{\"from\":\"FOLLOW_UP_3\",\"to\":\"RECONTACT_LATER\"}' FROM \"public\".\"Client\" WHERE \"status\" = 'FOLLOW_UP_3'"
+      },
+      {
+        "description": "move FOLLOW_UP_3 clients to RECONTACT_LATER",
+        "sql": "UPDATE \"public\".\"Client\" SET \"status\" = 'RECONTACT_LATER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"status\" = 'FOLLOW_UP_3'"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify no client is FOLLOW_UP_3",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"Client\" WHERE \"status\" = 'FOLLOW_UP_3') AS \"result\""
+      }
+    ]
+  },
+  {
+    "id": "recreateNativeEnum.ClientStatus.dropFOLLOW_UP_3",
+    "label": "Remove value \"FOLLOW_UP_3\" from enum type \"ClientStatus\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "ClientStatus"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure no client is FOLLOW_UP_3",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"Client\" WHERE \"status\" = 'FOLLOW_UP_3') AS \"result\""
+      }
+    ],
+    "execute": [
+      {
+        "description": "rename old type",
+        "sql": "ALTER TYPE \"public\".\"ClientStatus\" RENAME TO \"ClientStatus_old\""
+      },
+      {
+        "description": "create new type",
+        "sql": "CREATE TYPE \"public\".\"ClientStatus\" AS ENUM ('TO_CONTACT', 'CONTACTED', 'FOLLOW_UP_1', 'FOLLOW_UP_2', 'TALKING', 'CLIENT', 'RECONTACT_LATER', 'FORMER_CLIENT')"
+      },
+      {
+        "description": "drop status default",
+        "sql": "ALTER TABLE \"public\".\"Client\" ALTER COLUMN \"status\" DROP DEFAULT"
+      },
+      {
+        "description": "convert status column",
+        "sql": "ALTER TABLE \"public\".\"Client\" ALTER COLUMN \"status\" TYPE \"public\".\"ClientStatus\" USING \"status\"::text::\"public\".\"ClientStatus\""
+      },
+      {
+        "description": "restore status default",
+        "sql": "ALTER TABLE \"public\".\"Client\" ALTER COLUMN \"status\" SET DEFAULT 'CLIENT'::\"public\".\"ClientStatus\""
+      },
+      {
+        "description": "drop old type",
+        "sql": "DROP TYPE \"public\".\"ClientStatus_old\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FOLLOW_UP_3 is gone from enum type \"ClientStatus\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"pg_enum\" AS \"e\" INNER JOIN \"pg_type\" AS \"t\" ON \"t\".\"oid\" = \"e\".\"enumtypid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE \"n\".\"nspname\" = 'public' AND \"t\".\"typname\" = 'ClientStatus' AND \"e\".\"enumlabel\" = 'FOLLOW_UP_3') AS \"result\""
+      }
+    ]
+  }
+]
