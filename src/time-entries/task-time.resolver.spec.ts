@@ -48,16 +48,4 @@ describe('TaskTimeResolver', () => {
 
     expect(result).toBeNull();
   });
-
-  it('totalWordsProcessed — delegates to the totalWordsProcessedByTask loader', async () => {
-    const load = jest.fn().mockResolvedValue(300);
-
-    const result = await resolver.totalWordsProcessed(
-      { id: 3 },
-      makeLoaderCtx(load),
-    );
-
-    expect(load).toHaveBeenCalledWith(3);
-    expect(result).toBe(300);
-  });
 });

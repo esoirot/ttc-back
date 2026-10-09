@@ -41,7 +41,9 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
       t.include('tag', (tag) => tag.select('id', 'name')),
     )
       .include('task', (t) => t.select('id', 'title'))
-      .include('subtask', (s) => s.select('id', 'title', 'checklistTitle'))
+      .include('subtask', (s) =>
+        s.select('id', 'title', 'checklistTitle', 'wordCount', 'countInTotal'),
+      )
       .include('occupation');
   }
 
@@ -298,21 +300,19 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
   private async sumByTask(
     taskIds: number[],
     userId: number,
-    field: 'durationSeconds' | 'wordsProcessed',
   ): Promise<Map<number, number>> {
     const rows = await this.entries
       .where((e) =>
         and(e.taskId.in(taskIds), e.task.some(taskVisibleTo(userId))),
       )
       .groupBy('taskId')
-      .aggregate((a) => ({ sum: a.sum(field) }));
+      .aggregate((a) => ({ sum: a.sum('durationSeconds') }));
     return new Map(rows.map((r) => [r.taskId!, r.sum ?? 0]));
   }
 
   private async sumByProject(
     projectIds: number[],
     userId: number,
-    field: 'durationSeconds' | 'wordsProcessed',
   ): Promise<Map<number, number>> {
     const rows = await this.entries
       .where((e) =>
@@ -322,7 +322,7 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
         ),
       )
       .groupBy('projectId')
-      .aggregate((a) => ({ sum: a.sum(field) }));
+      .aggregate((a) => ({ sum: a.sum('durationSeconds') }));
     return new Map(rows.map((r) => [r.projectId!, r.sum ?? 0]));
   }
 
@@ -330,27 +330,13 @@ export class Prisma8TimeEntryRepository implements TimeEntryRepository {
     taskIds: number[],
     userId: number,
   ): Promise<Map<number, number>> {
-    return this.sumByTask(taskIds, userId, 'durationSeconds');
+    return this.sumByTask(taskIds, userId);
   }
 
   sumDurationByProjectIds(
     projectIds: number[],
     userId: number,
   ): Promise<Map<number, number>> {
-    return this.sumByProject(projectIds, userId, 'durationSeconds');
-  }
-
-  sumWordsProcessedByTaskIds(
-    taskIds: number[],
-    userId: number,
-  ): Promise<Map<number, number>> {
-    return this.sumByTask(taskIds, userId, 'wordsProcessed');
-  }
-
-  sumWordsProcessedByProjectIds(
-    projectIds: number[],
-    userId: number,
-  ): Promise<Map<number, number>> {
-    return this.sumByProject(projectIds, userId, 'wordsProcessed');
+    return this.sumByProject(projectIds, userId);
   }
 }

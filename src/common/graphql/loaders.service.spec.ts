@@ -18,7 +18,6 @@ describe('LoadersService', () => {
   let timeEntriesService: {
     getTotalDurationByTaskIds: jest.Mock;
     getTotalDurationByProjectIds: jest.Mock;
-    getTotalWordsProcessedByTaskIds: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -29,7 +28,6 @@ describe('LoadersService', () => {
     timeEntriesService = {
       getTotalDurationByTaskIds: jest.fn().mockResolvedValue(new Map()),
       getTotalDurationByProjectIds: jest.fn().mockResolvedValue(new Map()),
-      getTotalWordsProcessedByTaskIds: jest.fn().mockResolvedValue(new Map()),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -128,23 +126,5 @@ describe('LoadersService', () => {
     );
     expect(one).toBe(700);
     expect(two).toBeNull();
-  });
-
-  it('batches time-entry word totals per task, null when a task has none', async () => {
-    timeEntriesService.getTotalWordsProcessedByTaskIds.mockResolvedValue(
-      new Map([[3, 300]]),
-    );
-    const loaders = service.createLoaders(() => 9);
-
-    const [three, four] = await Promise.all([
-      loaders.totalWordsProcessedByTask.load(3),
-      loaders.totalWordsProcessedByTask.load(4),
-    ]);
-
-    expect(
-      timeEntriesService.getTotalWordsProcessedByTaskIds,
-    ).toHaveBeenCalledWith([3, 4], 9);
-    expect(three).toBe(300);
-    expect(four).toBeNull();
   });
 });

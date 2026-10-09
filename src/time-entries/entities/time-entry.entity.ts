@@ -29,6 +29,12 @@ class TimeEntrySubtaskRef {
 
   @Field(() => String, { nullable: true })
   checklistTitle?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  wordCount?: number | null;
+
+  @Field(() => Boolean)
+  countInTotal!: boolean;
 }
 
 @ObjectType()

@@ -11,13 +11,4 @@ export class TaskTimeResolver {
   ): Promise<number | null> {
     return ctx.loaders.totalSecondsByTask.load(task.id);
   }
-
-  /** Words logged on this task's time entries. */
-  @ResolveField(() => Int, { nullable: true })
-  totalWordsProcessed(
-    @Parent() task: { id: number },
-    @Context() ctx: GqlContext,
-  ): Promise<number | null> {
-    return ctx.loaders.totalWordsProcessedByTask.load(task.id);
-  }
 }

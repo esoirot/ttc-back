@@ -19,4 +19,8 @@ export class UpdateSubtaskInput {
 
   @Field(() => Int, { nullable: true })
   wordCount?: number | null;
+
+  /** Whether the words count toward the task's total (default yes). */
+  @Field(() => Boolean, { nullable: true })
+  countInTotal?: boolean;
 }

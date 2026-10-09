@@ -20,13 +20,19 @@ describe.each([
   const item = (
     taskId: number,
     title: string,
-    data: { checklistTitle?: string; wordCount?: number; minute?: number } = {},
+    data: {
+      checklistTitle?: string;
+      wordCount?: number;
+      countInTotal?: boolean;
+      minute?: number;
+    } = {},
   ) =>
     db.prisma8.orm.public.Subtask.create({
       taskId,
       title,
       checklistTitle: data.checklistTitle ?? null,
       wordCount: data.wordCount ?? null,
+      countInTotal: data.countInTotal,
       createdAt: at(data.minute ?? 0),
       updatedAt: at(data.minute ?? 0),
     });
@@ -69,6 +75,7 @@ describe.each([
         done: false,
         dueDate: null,
         wordCount: 300,
+        countInTotal: true,
         createdAt: new Date('2026-01-01T00:01:00.000Z'),
         updatedAt: new Date('2026-01-01T00:01:00.000Z'),
       });
@@ -101,11 +108,13 @@ describe.each([
           checklistTitle: 'C',
           dueDate: due,
           wordCount: 120,
+          countInTotal: false,
         }),
       ).resolves.toMatchObject({
         checklistTitle: 'C',
         dueDate: due,
         wordCount: 120,
+        countInTotal: false,
         done: false,
       });
       await expect(
@@ -114,6 +123,7 @@ describe.each([
         checklistTitle: null,
         dueDate: null,
         wordCount: null,
+        countInTotal: true,
       });
     });
   });
@@ -126,12 +136,20 @@ describe.each([
         title: 'new',
         done: true,
         wordCount: null,
+        countInTotal: false,
       });
       expect(updated).toMatchObject({
         title: 'new',
         done: true,
         wordCount: null,
+        countInTotal: false,
       });
+      await expect(
+        repo.update(id, s.owner, { id, title: 'again' }),
+      ).resolves.toMatchObject({ countInTotal: false });
+      await expect(
+        repo.update(id, s.owner, { id, countInTotal: true }),
+      ).resolves.toMatchObject({ countInTotal: true });
       expect(updated.updatedAt.getTime()).toBeGreaterThan(
         updated.createdAt.getTime(),
       );
@@ -202,13 +220,17 @@ describe.each([
   });
 
   describe('sumWordsByProjectIds', () => {
-    it("adds tasks' own words and their items' words per project, for the owner only", async () => {
+    it("adds tasks' own words and their counted items' words per project, for the owner only", async () => {
       await db.prisma8.orm.public.Task.where({ id: s.task }).update({
         wordCount: 1000,
       });
       await item(s.task, 'i1', { wordCount: 200 });
       await item(s.otherTask, 'i2', { wordCount: 50 });
       await item(s.otherTask, 'no words');
+      await item(s.otherTask, 'not counted', {
+        wordCount: 7000,
+        countInTotal: false,
+      });
       const empty = await seedProject(db.prisma8, s.owner);
       await seedTask(db.prisma8, empty.id);
 

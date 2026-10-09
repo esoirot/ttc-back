@@ -118,6 +118,8 @@ describe.each([
           id: subtask.id,
           title: 'Section A',
           checklistTitle: 'Sections',
+          wordCount: null,
+          countInTotal: true,
         },
       });
       expect(created.occupation).toMatchObject({
@@ -521,14 +523,6 @@ describe.each([
         ]),
       );
       await expect(
-        repo.sumWordsProcessedByTaskIds([s.task, s.otherTask], s.owner),
-      ).resolves.toEqual(
-        new Map([
-          [s.task, 15],
-          [s.otherTask, 0],
-        ]),
-      );
-      await expect(
         repo.sumDurationByTaskIds([s.task], s.stranger),
       ).resolves.toEqual(new Map());
     });
@@ -549,9 +543,6 @@ describe.each([
 
       await expect(
         repo.sumDurationByProjectIds([p.id, other.id], owner),
-      ).resolves.toEqual(new Map([[p.id, 100]]));
-      await expect(
-        repo.sumWordsProcessedByProjectIds([p.id], owner),
       ).resolves.toEqual(new Map([[p.id, 100]]));
       await expect(
         repo.sumDurationByProjectIds([p.id], stranger),

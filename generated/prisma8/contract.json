@@ -3042,6 +3042,13 @@
                   "kind": "scalar"
                 }
               },
+              "countInTotal": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -3145,6 +3152,9 @@
               "fields": {
                 "checklistTitle": {
                   "column": "checklistTitle"
+                },
+                "countInTotal": {
+                  "column": "countInTotal"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -7492,6 +7502,15 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "countInTotal": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
                 "createdAt": {
                   "codecId": "pg/timestamp-string@1",
                   "default": {
@@ -9073,7 +9092,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3c476b1afa4d1a4f6f2d9a95582e8d0cc6adb2b0f1d43272032710f4afb70e61"
+    "storageHash": "5685fc026342ce1864a7932deacd4602ee4c1e80150bd8488a88170d0d182763"
   },
   "capabilities": {
     "postgres": {
