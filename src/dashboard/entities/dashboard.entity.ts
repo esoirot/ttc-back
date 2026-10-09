@@ -1,12 +1,30 @@
-import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
+import {
+  ObjectType,
+  Field,
+  Int,
+  Float,
+  registerEnumType,
+} from '@nestjs/graphql';
 import { ClientStatus } from '../../clients/entities/client.entity';
+
+enum DeadlineKind {
+  PROJECT = 'PROJECT',
+  TASK = 'TASK',
+  CHECKLIST_ITEM = 'CHECKLIST_ITEM',
+}
+
+registerEnumType(DeadlineKind, { name: 'DeadlineKind' });
 
 @ObjectType()
 class DashboardDeadline {
+  @Field(() => DeadlineKind) kind!: DeadlineKind;
   @Field(() => Int) id!: number;
   @Field() title!: string;
   @Field() deadline!: string;
-  @Field() status!: string;
+  @Field(() => Int) projectId!: number;
+  @Field() projectTitle!: string;
+  @Field(() => Int, { nullable: true }) taskId!: number | null;
+  @Field(() => String, { nullable: true }) taskTitle!: string | null;
 }
 
 @ObjectType()

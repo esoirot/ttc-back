@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { and } from '@prisma/orm-postgres/orm-client';
 import { ClientStatus } from '../../clients/entities/client.entity';
 import { isProspectDueForContact } from '../../clients/prospect-due.util';
+import { taskVisibleTo } from '../../prisma8/access';
 import { countOf } from '../../prisma8/count';
 import { Prisma8Service } from '../../prisma8/prisma8.service';
 import { fromDb, toDb } from '../../prisma8/timestamp';
@@ -12,6 +13,19 @@ import type {
   DashboardProspectModel,
 } from '../types/dashboard.type';
 import { DashboardRepository } from './dashboard.repository';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Overdue items, plus everything due within this many days. */
+const DEADLINE_HORIZON_DAYS = 30;
+const DEADLINE_LIMIT = 20;
+const FINISHED_PROJECT_STATUSES = [
+  'COMPLETED',
+  'CANCELLED',
+  'ARCHIVED',
+  'INVOICE_SENT',
+  'INVOICE_PAID',
+] as const;
+const FINISHED_TASK_STATUSES = ['DONE', 'PAID'] as const;
 
 const PROSPECT_CANDIDATE_STATUSES = [
   'TO_CONTACT',
@@ -31,15 +45,13 @@ export class Prisma8DashboardRepository implements DashboardRepository {
     const monthStart = toDb(new Date(now.getFullYear(), now.getMonth(), 1));
     const yearStart = toDb(new Date(now.getFullYear(), 0, 1));
     const yearEnd = toDb(new Date(now.getFullYear() + 1, 0, 1));
-    const nowDb = toDb(now);
-    const weekLater = toDb(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
 
     const [
       activeProjectCount,
       unpaidInvoiceCount,
       monthTime,
       monthRevenue,
-      deadlineProjects,
+      upcomingDeadlines,
       recentEntries,
       prospectCandidates,
       yearWords,
@@ -58,12 +70,7 @@ export class Prisma8DashboardRepository implements DashboardRepository {
           and(i.userId.eq(userId), i.issuedAt.gte(monthStart)),
         ),
       ).aggregate((a) => ({ total: a.sum('total') })),
-      orm.Project.where({ userId })
-        .where((p) => and(p.deadline.gte(nowDb), p.deadline.lte(weekLater)))
-        .where((p) => p.status.notIn(['COMPLETED', 'CANCELLED', 'ARCHIVED']))
-        .orderBy((p) => p.deadline.asc())
-        .select('id', 'title', 'deadline', 'status')
-        .all(),
+      this.deadlines(userId, now),
       orm.TimeEntry.where({ userId })
         .orderBy((e) => e.startTime.desc())
         .limit(5)
@@ -78,14 +85,6 @@ export class Prisma8DashboardRepository implements DashboardRepository {
         .aggregate((a) => ({ words: a.sum('wordsProcessed') })),
     ]);
 
-    const upcomingDeadlines: DashboardDeadlineModel[] = deadlineProjects.map(
-      (p) => ({
-        id: p.id,
-        title: p.title,
-        deadline: fromDb(p.deadline!).toISOString(),
-        status: p.status,
-      }),
-    );
     const recentTimeEntries: DashboardEntryModel[] = recentEntries.map((e) => ({
       id: e.id,
       description: e.description,
@@ -118,5 +117,80 @@ export class Prisma8DashboardRepository implements DashboardRepository {
       recentTimeEntries,
       prospectsToContact,
     };
+  }
+
+  /**
+   * Open projects, tasks and checklist items that are overdue or due within
+   * DEADLINE_HORIZON_DAYS, earliest first, at most DEADLINE_LIMIT in all.
+   */
+  private async deadlines(
+    userId: number,
+    now: Date,
+  ): Promise<DashboardDeadlineModel[]> {
+    const orm = this.db.orm.public;
+    const horizon = toDb(
+      new Date(now.getTime() + DEADLINE_HORIZON_DAYS * DAY_MS),
+    );
+    const [projects, tasks, items] = await Promise.all([
+      orm.Project.where({ userId })
+        .where((p) => p.deadline.lte(horizon))
+        .where((p) => p.status.notIn([...FINISHED_PROJECT_STATUSES]))
+        .orderBy((p) => p.deadline.asc())
+        .limit(DEADLINE_LIMIT)
+        .all(),
+      orm.Task.where(taskVisibleTo(userId))
+        .where((t) => t.dueDate.lte(horizon))
+        .where((t) => t.status.notIn([...FINISHED_TASK_STATUSES]))
+        .include('project', (p) => p.select('id', 'title'))
+        .orderBy((t) => t.dueDate.asc())
+        .limit(DEADLINE_LIMIT)
+        .all(),
+      orm.Subtask.where({ done: false })
+        .where((s) => s.dueDate.lte(horizon))
+        .where((s) => s.task.some(taskVisibleTo(userId)))
+        .include('task', (t) =>
+          t
+            .select('id', 'title', 'projectId')
+            .include('project', (p) => p.select('id', 'title')),
+        )
+        .orderBy((s) => s.dueDate.asc())
+        .limit(DEADLINE_LIMIT)
+        .all(),
+    ]);
+    const due = (d: string | null) => fromDb(d!).toISOString();
+    return [
+      ...projects.map((p) => ({
+        kind: 'PROJECT' as const,
+        id: p.id,
+        title: p.title,
+        deadline: due(p.deadline),
+        projectId: p.id,
+        projectTitle: p.title,
+        taskId: null,
+        taskTitle: null,
+      })),
+      ...tasks.map((t) => ({
+        kind: 'TASK' as const,
+        id: t.id,
+        title: t.title,
+        deadline: due(t.dueDate),
+        projectId: t.projectId,
+        projectTitle: t.project!.title,
+        taskId: t.id,
+        taskTitle: t.title,
+      })),
+      ...items.map((s) => ({
+        kind: 'CHECKLIST_ITEM' as const,
+        id: s.id,
+        title: s.title,
+        deadline: due(s.dueDate),
+        projectId: s.task!.projectId,
+        projectTitle: s.task!.project!.title,
+        taskId: s.task!.id,
+        taskTitle: s.task!.title,
+      })),
+    ]
+      .sort((a, b) => a.deadline.localeCompare(b.deadline))
+      .slice(0, DEADLINE_LIMIT);
   }
 }

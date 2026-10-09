@@ -1,8 +1,15 @@
+type DeadlineKind = 'PROJECT' | 'TASK' | 'CHECKLIST_ITEM';
+
+/** Something with a due date: a project, a task or a checklist item. */
 export interface DashboardDeadlineModel {
+  kind: DeadlineKind;
   id: number;
   title: string;
   deadline: string;
-  status: string;
+  projectId: number;
+  projectTitle: string;
+  taskId: number | null;
+  taskTitle: string | null;
 }
 
 export interface DashboardEntryModel {
