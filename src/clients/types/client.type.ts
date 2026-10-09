@@ -8,6 +8,7 @@ export type CompanyContactModel = {
   email: string | null;
   phone: string | null;
   jobTitle: string | null;
+  linkedinUrl: string | null;
   color: string | null;
   createdAt: Date;
   updatedAt: Date;

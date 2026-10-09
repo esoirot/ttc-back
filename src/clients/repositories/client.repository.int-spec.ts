@@ -457,6 +457,35 @@ describe.each([
     });
   });
 
+  describe('contact linkedinUrl', () => {
+    it("stores, changes and clears a contact's LinkedIn URL", async () => {
+      const client = await seedClient(db.prisma8, owner);
+      const contact = await repo.createContact(
+        {
+          clientId: client.id,
+          firstName: 'Jane',
+          linkedinUrl: 'https://www.linkedin.com/in/jane',
+        },
+        owner,
+      );
+      expect(contact.linkedinUrl).toBe('https://www.linkedin.com/in/jane');
+      await expect(
+        repo.updateContact(contact.id, owner, {
+          id: contact.id,
+          linkedinUrl: 'https://www.linkedin.com/in/j',
+        }),
+      ).resolves.toMatchObject({
+        linkedinUrl: 'https://www.linkedin.com/in/j',
+      });
+      await expect(
+        repo.updateContact(contact.id, owner, {
+          id: contact.id,
+          linkedinUrl: null,
+        }),
+      ).resolves.toMatchObject({ linkedinUrl: null });
+    });
+  });
+
   describe('linkedinUrl', () => {
     it('stores, changes and clears the LinkedIn URL', async () => {
       const url = 'https://www.linkedin.com/company/acme';

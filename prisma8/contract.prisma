@@ -212,6 +212,7 @@ namespace public {
     updatedAt TimestampString(3)
     color     String?
     jobTitle  String?
+    linkedinUrl String?
     client    Client             @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "CompanyContact_clientId_fkey", index: false)
   }
 

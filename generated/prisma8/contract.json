@@ -1253,6 +1253,13 @@
                   "kind": "scalar"
                 }
               },
+              "linkedinUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "phone": {
                 "nullable": true,
                 "type": {
@@ -1314,6 +1321,9 @@
                 },
                 "lastName": {
                   "column": "lastName"
+                },
+                "linkedinUrl": {
+                  "column": "linkedinUrl"
                 },
                 "phone": {
                   "column": "phone"
@@ -6174,6 +6184,11 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "linkedinUrl": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "phone": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -9039,7 +9054,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "508b4261cd40679046ee84df40df2ed8d6e24364a87516997fa8b6f712f7abca"
+    "storageHash": "2ce56dac6fdd92d55edfc15b490e62791fce9dfa41702e09bc2291049e53868b"
   },
   "capabilities": {
     "postgres": {
