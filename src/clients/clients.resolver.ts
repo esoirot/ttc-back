@@ -1,3 +1,4 @@
+import { ClientSortInput } from './dto/client-sort.input';
 import {
   Resolver,
   Query,
@@ -48,16 +49,30 @@ export class ClientsResolver {
     status?: ClientStatus,
     @Args('industry', { type: () => ClientIndustry, nullable: true })
     industry?: ClientIndustry,
+    @Args('companyName', { type: () => String, nullable: true })
+    companyName?: string,
+    @Args('firstName', { type: () => String, nullable: true })
+    firstName?: string,
+    @Args('lastName', { type: () => String, nullable: true })
+    lastName?: string,
+    @Args('sort', { type: () => ClientSortInput, nullable: true })
+    sort?: ClientSortInput,
   ) {
     return this.clientsService.findAll(
       user.id,
       user.role === 'ADMIN',
       pagination,
-      search,
-      clientType,
-      excludeStatus,
-      status,
-      industry,
+      {
+        search,
+        companyName,
+        firstName,
+        lastName,
+        clientType,
+        status,
+        excludeStatus,
+        industry,
+      },
+      sort,
     );
   }
 

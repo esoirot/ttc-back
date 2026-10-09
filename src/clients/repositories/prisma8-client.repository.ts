@@ -12,9 +12,25 @@ import { CreateCompanyContactInput } from '../dto/create-company-contact.input';
 import { UpdateClientInput } from '../dto/update-client.input';
 import { UpdateCompanyContactInput } from '../dto/update-company-contact.input';
 import { ClientModel, CompanyContactModel } from '../types/client.type';
-import { ClientConnectionModel, ClientRepository } from './client.repository';
+import {
+  ClientConnectionModel,
+  ClientFilters,
+  ClientRepository,
+  ClientSort,
+  ClientSortField,
+} from './client.repository';
 
 type Status = ClientModel['status'];
+const collator = new Intl.Collator(undefined, { sensitivity: 'base' });
+const SORT_KEYS: Record<
+  ClientSortField,
+  readonly ('name' | 'lastName' | 'firstName')[]
+> = {
+  NAME: ['name'],
+  LAST_NAME: ['lastName', 'firstName'],
+  FIRST_NAME: ['firstName', 'lastName'],
+};
+
 type Industry = NonNullable<
   NonNullable<
     Awaited<ReturnType<Prisma8Service['orm']['public']['Client']['first']>>
@@ -133,12 +149,19 @@ export class Prisma8ClientRepository implements ClientRepository {
     userId: number,
     isAdmin: boolean,
     pagination?: { limit?: number; cursor?: number },
-    search?: string,
-    clientType?: string,
-    excludeStatus?: string,
-    status?: string,
-    industry?: string,
+    filters: ClientFilters = {},
+    sort?: ClientSort,
   ): Promise<ClientConnectionModel> {
+    const {
+      search,
+      companyName,
+      firstName,
+      lastName,
+      clientType,
+      status,
+      excludeStatus,
+      industry,
+    } = filters;
     const limit = pagination?.limit ?? 20;
     const cursor = pagination?.cursor;
     let base = this.full().where({
@@ -158,8 +181,20 @@ export class Prisma8ClientRepository implements ClientRepository {
         ),
       );
     }
+    if (companyName)
+      base = base.where((c) => c.name.ilike(containsPattern(companyName)));
+    if (firstName)
+      base = base.where((c) => c.firstName.ilike(containsPattern(firstName)));
+    if (lastName)
+      base = base.where((c) => c.lastName.ilike(containsPattern(lastName)));
     if (excludeStatus)
       base = base.where((c) => c.status.neq(excludeStatus as Status));
+    const order =
+      sort ??
+      (clientType === 'INDIVIDUAL'
+        ? ({ field: 'LAST_NAME', direction: 'ASC' } as const)
+        : undefined);
+    if (order) return this.sortedPage(base, limit, cursor, order);
     const page =
       cursor !== undefined ? base.where((c) => c.id.gt(cursor)) : base;
     const rows = await page
@@ -175,6 +210,44 @@ export class Prisma8ClientRepository implements ClientRepository {
       items,
       nextCursor: hasMore ? items[items.length - 1].id : null,
       total,
+    };
+  }
+
+  /**
+   * One page of the filtered clients in name order. Names compare ignoring
+   * case and accents (Émile next to Emile), empty names last either way,
+   * ties on the other name then oldest first. Sorted and paged in memory from
+   * the cursor's position: a keyset cursor can't do that collation nor step
+   * past NULL names, and a user's clients are few.
+   */
+  private async sortedPage(
+    base: ReturnType<Prisma8ClientRepository['full']>,
+    limit: number,
+    cursor: number | undefined,
+    sort: ClientSort,
+  ): Promise<ClientConnectionModel> {
+    const keys = SORT_KEYS[sort.field];
+    const sign = sort.direction === 'ASC' ? 1 : -1;
+    const rows = (await base.orderBy((c) => c.id.asc()).all()).sort((a, b) => {
+      for (const key of keys) {
+        const x = a[key] || null;
+        const y = b[key] || null;
+        if (x === y) continue;
+        if (x === null) return 1;
+        if (y === null) return -1;
+        const byName = collator.compare(x, y);
+        if (byName !== 0) return sign * byName;
+      }
+      return a.id - b.id;
+    });
+    const start =
+      cursor === undefined ? 0 : rows.findIndex((r) => r.id === cursor) + 1;
+    const items = rows.slice(start, start + limit).map((r) => this.toModel(r));
+    return {
+      items,
+      nextCursor:
+        start + limit < rows.length ? items[items.length - 1].id : null,
+      total: rows.length,
     };
   }
 
