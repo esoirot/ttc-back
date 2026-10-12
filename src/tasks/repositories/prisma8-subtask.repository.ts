@@ -58,6 +58,7 @@ export class Prisma8SubtaskRepository implements SubtaskRepository {
       title: data.title,
       dueDate: data.dueDate === undefined ? undefined : toDb(data.dueDate),
       wordCount: data.wordCount,
+      countInTotal: data.countInTotal ?? undefined,
       updatedAt: nowDb(),
     });
     return toModel(row);
@@ -75,6 +76,7 @@ export class Prisma8SubtaskRepository implements SubtaskRepository {
       done: data.done,
       dueDate: data.dueDate === undefined ? undefined : toDb(data.dueDate),
       wordCount: data.wordCount,
+      countInTotal: data.countInTotal ?? undefined,
       updatedAt: nowDb(),
     });
     return toModel(row!);
@@ -116,6 +118,7 @@ export class Prisma8SubtaskRepository implements SubtaskRepository {
         .groupBy('projectId')
         .aggregate((a) => ({ words: a.sum('wordCount') })),
       this.subtasks
+        .where({ countInTotal: true })
         .where((s) =>
           s.task.some((t) =>
             and(

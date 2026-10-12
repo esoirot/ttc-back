@@ -95,7 +95,7 @@ describe.each([
     });
   });
 
-  it('sums month-to-date time and revenue, and year-to-date words', async () => {
+  it('sums month-to-date time and revenue, never time entry words', async () => {
     await seedTimeEntry(db.prisma8, owner, {
       startTime: toDb(ago(3)),
       durationSeconds: 3600,
@@ -148,7 +148,53 @@ describe.each([
     await expect(repo.getDashboard(owner)).resolves.toMatchObject({
       monthToDateSeconds: 5400,
       monthToDateRevenue: 200,
-      yearToDateWords: 750,
+      yearToDateWords: 0,
+    });
+  });
+
+  it("counts this year's words from done tasks: own words plus counted checklist items", async () => {
+    const p = await seedProject(db.prisma8, owner);
+    const task = (data: Parameters<typeof seedTask>[2]) =>
+      seedTask(db.prisma8, p.id, data);
+    const items = (taskId: number, ...words: [number, boolean][]) =>
+      Promise.all(
+        words.map(([wordCount, countInTotal]) =>
+          db.prisma8.orm.public.Subtask.create({
+            taskId,
+            title: `${wordCount} words`,
+            wordCount,
+            countInTotal,
+            updatedAt: toDb(NOW),
+          }),
+        ),
+      );
+    const done = await task({
+      status: 'DONE',
+      dueDate: toDb(ago(10)),
+      wordCount: 50,
+    });
+    await items(done.id, [100, true], [200, true], [7000, false]);
+    await task({ status: 'PAID', dueDate: toDb(ahead(20)), wordCount: 10 });
+    const open = await task({
+      status: 'TODO',
+      dueDate: toDb(ago(1)),
+      wordCount: 999,
+    });
+    await items(open.id, [500, true]);
+    await task({ status: 'DONE', dueDate: toDb(ago(400)), wordCount: 999 });
+    await task({ status: 'DONE', wordCount: 999 });
+    await seedTask(db.prisma8, (await seedProject(db.prisma8, stranger)).id, {
+      status: 'DONE',
+      dueDate: toDb(ago(1)),
+      wordCount: 999,
+    });
+    await seedTimeEntry(db.prisma8, owner, {
+      startTime: toDb(ago(1)),
+      wordsProcessed: 5000,
+    });
+
+    await expect(repo.getDashboard(owner)).resolves.toMatchObject({
+      yearToDateWords: 360,
     });
   });
 

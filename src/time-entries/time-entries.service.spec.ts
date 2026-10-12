@@ -541,12 +541,7 @@ describe('TimeEntriesService', () => {
       const sums = new Map([[1, 60]]);
       repo.findAll.mockResolvedValue(page);
       const r = repo as unknown as Record<string, jest.Mock>;
-      for (const m of [
-        'sumDurationByTaskIds',
-        'sumDurationByProjectIds',
-        'sumWordsProcessedByTaskIds',
-        'sumWordsProcessedByProjectIds',
-      ]) {
+      for (const m of ['sumDurationByTaskIds', 'sumDurationByProjectIds']) {
         r[m] = jest.fn().mockResolvedValue(sums);
       }
 
@@ -566,14 +561,6 @@ describe('TimeEntriesService', () => {
         sums,
       );
       expect(r.sumDurationByProjectIds).toHaveBeenCalledWith([4], 1);
-      await expect(
-        service.getTotalWordsProcessedByTaskIds([5], 1),
-      ).resolves.toBe(sums);
-      expect(r.sumWordsProcessedByTaskIds).toHaveBeenCalledWith([5], 1);
-      await expect(
-        service.getTotalWordsProcessedByProjectIds([6], 1),
-      ).resolves.toBe(sums);
-      expect(r.sumWordsProcessedByProjectIds).toHaveBeenCalledWith([6], 1);
     });
   });
 });

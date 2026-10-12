@@ -1,0 +1,44 @@
+[
+  {
+    "id": "column.public.Subtask.countInTotal",
+    "label": "Add column \"countInTotal\" to \"Subtask\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "countInTotal",
+        "table": "Subtask"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"countInTotal\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Subtask",
+          "countInTotal"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"countInTotal\"",
+        "sql": "ALTER TABLE \"public\".\"Subtask\" ADD COLUMN \"countInTotal\" bool DEFAULT true NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"countInTotal\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Subtask",
+          "countInTotal"
+        ]
+      }
+    ]
+  }
+]

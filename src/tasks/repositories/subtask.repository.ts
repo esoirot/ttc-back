@@ -9,6 +9,7 @@ export type SubtaskModel = {
   done: boolean;
   dueDate: Date | null;
   wordCount: number | null;
+  countInTotal: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -26,7 +27,7 @@ export abstract class SubtaskRepository {
     data: UpdateSubtaskInput,
   ): Promise<SubtaskModel>;
   abstract delete(id: number, userId: number): Promise<SubtaskModel>;
-  /** Per project: tasks' own word counts plus their checklist items' words. */
+  /** Per project: tasks' own word counts plus their counted checklist items' words. */
   abstract sumWordsByProjectIds(
     projectIds: number[],
     userId: number,

@@ -95,10 +95,8 @@ describe('nested field loaders: who sees what', () => {
       attachments: (await l.attachmentsByTask.load(ids.task)).length,
       taskActivities: (await l.activitiesByTask.load(ids.task)).length,
       taskSeconds: await l.totalSecondsByTask.load(ids.task),
-      taskWords: await l.totalWordsProcessedByTask.load(ids.task),
       entryActivities: (await l.activitiesByTimeEntry.load(ids.entry)).length,
       projectSeconds: await l.totalSecondsByProject.load(ids.project),
-      projectWords: await l.totalWordsProcessedByProject.load(ids.project),
       projectTaskWords: await l.totalTaskWordsByProject.load(ids.project),
       statusHistory: (await l.statusHistoryByClient.load(ids.client)).length,
     };
@@ -112,10 +110,8 @@ describe('nested field loaders: who sees what', () => {
       attachments: 1,
       taskActivities: 1,
       taskSeconds: 600,
-      taskWords: 200,
       entryActivities: 1,
       projectSeconds: 600,
-      projectWords: 200,
       projectTaskWords: 300,
       statusHistory: 1,
     });
@@ -129,10 +125,8 @@ describe('nested field loaders: who sees what', () => {
       attachments: 0,
       taskActivities: 0,
       taskSeconds: null,
-      taskWords: null,
       entryActivities: 0,
       projectSeconds: null,
-      projectWords: null,
       projectTaskWords: null,
       statusHistory: 0,
     });

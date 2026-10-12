@@ -331,6 +331,7 @@ namespace public {
     dueDate        TimestampString(3)?
     checklistTitle String?
     wordCount      Int?
+    countInTotal   Boolean             @default(true)
     timeEntries    TimeEntry[]
     task           Task                @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Subtask_taskId_fkey", index: false)
   }

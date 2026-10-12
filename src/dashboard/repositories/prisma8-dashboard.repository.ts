@@ -86,9 +86,7 @@ export class Prisma8DashboardRepository implements DashboardRepository {
         .where((c) => c.status.in([...PROSPECT_CANDIDATE_STATUSES]))
         .select('id', 'name', 'status', 'contactedAt', 'toRecontactAt')
         .all(),
-      orm.TimeEntry.where({ userId })
-        .where((e) => and(e.startTime.gte(yearStart), e.startTime.lt(yearEnd)))
-        .aggregate((a) => ({ words: a.sum('wordsProcessed') })),
+      this.yearTaskWords(userId, yearStart, yearEnd),
     ]);
 
     const recentTimeEntries: DashboardEntryModel[] = recentEntries.map((e) => ({
@@ -127,11 +125,41 @@ export class Prisma8DashboardRepository implements DashboardRepository {
       unpaidInvoiceCount,
       monthToDateSeconds: monthTime.seconds ?? 0,
       monthToDateRevenue: Number(monthRevenue.total ?? 0),
-      yearToDateWords: yearWords.words ?? 0,
+      yearToDateWords: yearWords,
       upcomingDeadlines,
       recentTimeEntries,
       prospectsToContact,
     };
+  }
+
+  /**
+   * Words of the tasks finished this year (DONE / PAID, due date in the
+   * year): each task's own words plus its counted checklist items' words.
+   * Time entry words never count.
+   */
+  private async yearTaskWords(
+    userId: number,
+    yearStart: ReturnType<typeof toDb>,
+    yearEnd: ReturnType<typeof toDb>,
+  ): Promise<number> {
+    const orm = this.db.orm.public;
+    const tasks = await orm.Task.where(taskVisibleTo(userId))
+      .where((t) =>
+        and(
+          t.status.in([...FINISHED_TASK_STATUSES]),
+          t.dueDate.gte(yearStart),
+          t.dueDate.lt(yearEnd),
+        ),
+      )
+      .select('id', 'wordCount')
+      .all();
+    if (tasks.length === 0) return 0;
+    const items = await orm.Subtask.where({ countInTotal: true })
+      .where((s) => s.taskId.in(tasks.map((t) => t.id)))
+      .aggregate((a) => ({ words: a.sum('wordCount') }));
+    return (
+      tasks.reduce((sum, t) => sum + (t.wordCount ?? 0), 0) + (items.words ?? 0)
+    );
   }
 
   /**

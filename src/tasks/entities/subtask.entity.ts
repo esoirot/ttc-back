@@ -23,6 +23,9 @@ export class Subtask {
   @Field(() => Int, { nullable: true })
   wordCount?: number | null;
 
+  @Field(() => Boolean)
+  countInTotal!: boolean;
+
   @Field()
   createdAt!: Date;
 

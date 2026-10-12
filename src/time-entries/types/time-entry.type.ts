@@ -18,7 +18,13 @@ export type TimeEntryModel = {
   tags: { id: number; name: string }[];
   task: { id: number; title: string } | null;
   subtaskId: number | null;
-  subtask: { id: number; title: string; checklistTitle: string | null } | null;
+  subtask: {
+    id: number;
+    title: string;
+    checklistTitle: string | null;
+    wordCount: number | null;
+    countInTotal: boolean;
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 };

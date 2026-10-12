@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3c476b1afa4d1a4f6f2d9a95582e8d0cc6adb2b0f1d43272032710f4afb70e61'>;
+  StorageHashBase<'5685fc026342ce1864a7932deacd4602ee4c1e80150bd8488a88170d0d182763'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -491,6 +491,7 @@ export type FieldOutputTypes = {
     };
     readonly Subtask: {
       readonly checklistTitle: CodecTypes['pg/text@1']['output'] | null;
+      readonly countInTotal: CodecTypes['pg/bool@1']['output'];
       readonly createdAt: TimestampString<3>;
       readonly done: CodecTypes['pg/bool@1']['output'];
       readonly dueDate: TimestampString<3> | null;
@@ -881,6 +882,7 @@ export type FieldInputTypes = {
     };
     readonly Subtask: {
       readonly checklistTitle: CodecTypes['pg/text@1']['input'] | null;
+      readonly countInTotal: CodecTypes['pg/bool@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
       readonly done: CodecTypes['pg/bool@1']['input'];
       readonly dueDate: CodecTypes['pg/timestamp-string@1']['input'] | null;
@@ -1271,6 +1273,7 @@ export type StorageColumnTypes = {
     };
     readonly Subtask: {
       readonly checklistTitle: CodecTypes['pg/text@1']['output'] | null;
+      readonly countInTotal: CodecTypes['pg/bool@1']['output'];
       readonly createdAt: TimestampString<3>;
       readonly done: CodecTypes['pg/bool@1']['output'];
       readonly dueDate: TimestampString<3> | null;
@@ -1661,6 +1664,7 @@ export type StorageColumnInputTypes = {
     };
     readonly Subtask: {
       readonly checklistTitle: CodecTypes['pg/text@1']['input'] | null;
+      readonly countInTotal: CodecTypes['pg/bool@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
       readonly done: CodecTypes['pg/bool@1']['input'];
       readonly dueDate: CodecTypes['pg/timestamp-string@1']['input'] | null;
@@ -2138,6 +2142,7 @@ export namespace Models {
   };
   export type public_Subtask = {
     checklistTitle: CodecTypes['pg/text@1']['output'] | null;
+    countInTotal: CodecTypes['pg/bool@1']['output'];
     createdAt: TimestampString<3>;
     done: CodecTypes['pg/bool@1']['output'];
     dueDate: TimestampString<3> | null;
@@ -4058,6 +4063,15 @@ type ContractBase = Omit<
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
+                };
+                readonly countInTotal: {
+                  readonly nativeType: 'bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
                 };
                 readonly createdAt: {
                   readonly nativeType: 'timestamp';
@@ -7243,6 +7257,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly countInTotal: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -7315,6 +7333,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly checklistTitle: { readonly column: 'checklistTitle' };
+                readonly countInTotal: { readonly column: 'countInTotal' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly done: { readonly column: 'done' };
                 readonly dueDate: { readonly column: 'dueDate' };

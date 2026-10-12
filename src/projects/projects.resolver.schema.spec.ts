@@ -33,9 +33,6 @@ describe('ProjectsResolver GraphQL schema', () => {
               totalSecondsByProject: {
                 load: jest.fn().mockResolvedValue(60),
               },
-              totalWordsProcessedByProject: {
-                load: jest.fn().mockResolvedValue(1200),
-              },
               totalTaskWordsByProject: {
                 load: jest.fn().mockResolvedValue(700),
               },
@@ -105,7 +102,8 @@ describe('ProjectsResolver GraphQL schema', () => {
     };
     const projectFields = projectType.getFields();
     expect(projectFields).toHaveProperty('occupations');
-    expect(projectFields).toHaveProperty('totalWordsProcessed');
+    // Time entry words are never counted: only task words make a total.
+    expect(projectFields).not.toHaveProperty('totalWordsProcessed');
     expect(projectFields).toHaveProperty('totalTaskWords');
 
     const createInputType = schema.getType('CreateProjectInput') as unknown as {
@@ -132,18 +130,18 @@ describe('ProjectsResolver GraphQL schema', () => {
     expect(body.data?.project?.totalTimeSeconds).toBe(60);
   });
 
-  it('resolves totalWordsProcessed through a live query', async () => {
+  it('resolves totalTaskWords through a live query', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/graphql',
-      payload: { query: '{ project(id: 1) { id totalWordsProcessed } }' },
+      payload: { query: '{ project(id: 1) { id totalTaskWords } }' },
     });
 
     const body = JSON.parse(res.payload) as {
-      data?: { project?: { totalWordsProcessed: number | null } };
+      data?: { project?: { totalTaskWords: number | null } };
       errors?: { message: string }[];
     };
     expect(body.errors).toBeUndefined();
-    expect(body.data?.project?.totalWordsProcessed).toBe(1200);
+    expect(body.data?.project?.totalTaskWords).toBe(700);
   });
 });
