@@ -95,7 +95,19 @@ pnpm run prune          # unused exports (ts-prune)
 pnpm run format         # Prettier write
 pnpm run format:check   # Prettier check
 pnpm run lint           # ESLint with auto-fix — see note below
-pnpm run check          # all of the above in sequence
+pnpm run check          # full gate (below)
+```
+
+`pnpm run check` (`scripts/check.mjs`) runs, in order, stopping at the first
+failure: `typecheck`, `circular`, `depcheck`, `prune`, `format`, `lint` (no
+auto-fix — it fails instead), `audit`, `unit`, `integration`, `e2e`, `build`,
+`mutation` (Stryker on lines changed since `origin/main`). `integration` and
+`mutation` need the `ttc_test` database (`docker compose up -d`).
+
+```bash
+pnpm run check --list                       # step names
+pnpm run check --skip e2e                   # skip one step
+pnpm run check --skip integration,mutation  # skip several (or repeat --skip)
 ```
 
 ### Linting on TypeScript 7
@@ -116,6 +128,20 @@ cd .lint-tools && npm install
 After that, `pnpm run lint` / `pnpm run check` work as usual. Once
 `typescript-eslint` ships TS7 support, `.lint-tools/` can be deleted and the
 `lint` script pointed back at the root `eslint.config.mjs`.
+
+### Known `pnpm audit` findings (2026-10-14)
+
+Three advisories can't be fixed with a patch or override yet. They are listed in
+`auditConfig.ignoreGhsas` (`pnpm-workspace.yaml`) so `pnpm run audit` passes;
+any **new** advisory still fails it. Remove an entry once its way out below is
+done. Everything else is fixed through direct upgrades and the `overrides` in
+`pnpm-workspace.yaml`.
+
+| Package                | Severity | Advisory                                                                                        | Pulled in by                        | Why still open / way out                                                                                                                       |
+| ---------------------- | -------- | ----------------------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@graphql-tools/utils` | high     | [GHSA-7mx3-vvmw-hjmv](https://github.com/advisories/GHSA-7mx3-vvmw-hjmv) (prototype pollution)  | `@nestjs/graphql`, `@apollo/server` | Fixed in 12.0.1, which only `@nestjs/graphql` 14 accepts (13.x pins 11.1.0). Fix = upgrade `@nestjs/graphql` + `@nestjs/apollo` to 14 (major). |
+| `braces`               | high     | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) (stack-exhaustion DoS) | `@nestjs/graphql`, `ts-prune`       | Fix 3.0.4 not published yet (latest 3.0.3). Add an override once it is.                                                                        |
+| `sprintf-js`           | moderate | [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) (DoS)                  | `jest` (dev only)                   | Fix 1.1.4 not published yet (latest 1.1.3). Dev-only, never shipped. Add an override once it is.                                               |
 
 ## Tests
 
