@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { seedUser } from '../prisma8/testing/seed';
 import { useTestDb } from '../prisma8/testing/test-db';
 import { AuditService } from './audit.service';
@@ -50,9 +51,22 @@ describe.each([['prisma8', () => new AuditService(db.prisma8)]])(
       });
     });
 
-    it('never throws, even when the write fails', async () => {
+    it('never throws, and logs the error, when the write fails', async () => {
+      const logError = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+
       expect(() => service.log(999999, 'X', 'Y')).not.toThrow();
-      await new Promise((r) => setTimeout(r, 100));
+
+      await eventually(
+        () => Promise.resolve(logError.mock.calls.length),
+        (n) => n > 0,
+      );
+      expect(logError).toHaveBeenCalledWith(
+        'Audit log write failed',
+        expect.stringContaining('AuditLog_userId_fkey'),
+      );
+      logError.mockRestore();
       await expect(service.findAll({})).resolves.toEqual({
         items: [],
         nextCursor: null,
