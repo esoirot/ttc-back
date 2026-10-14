@@ -1,180 +1,127 @@
-# CLAUDE.md
+# CLAUDE.md — the-translator-companion (backend, repo `ttc-back`)
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Stack
-
-NestJS 11 + Fastify v5, GraphQL (code-first, Apollo), Prisma 8 (`@prisma/orm-postgres`) + PostgreSQL, Redis (throttler + pub/sub), JWT via HTTP-only cookies.
+NestJS 11 + Fastify 5, GraphQL code-first (Apollo), Prisma 8 (`@prisma/orm-postgres`) + PostgreSQL, Redis (throttler + pub/sub), JWT in HTTP-only cookies, TypeScript 7. Frontend: `../ttc-front` (its own `CLAUDE.md`). Workspace map: `../CLAUDE.md`.
 
 ## Working rules
 
-- Never start or stop the dev server (`pnpm run start:dev`) yourself. The operator runs it. Do not run/verify against it unless the operator explicitly asks — rely on `pnpm run test`/`pnpm run check` instead.
-- **Swagger docs are mandatory for every REST change** — see below. Not optional, not a follow-up task. A PR touching a `*.controller.ts` or its DTOs is incomplete without it.
+- Never start or stop the dev server (`pnpm run start:dev`); the operator runs it. Don't verify against it unless asked — use tests.
+- **Swagger is mandatory on every REST change** (see **REST + Swagger**): a change to a `*.controller.ts` or its DTOs is incomplete without it.
+- Always **pnpm**.
+
+## Workflow and done checklist
+
+Test-first, red → green → refactor; bug fixes start with a failing test that reproduces them. BDD-style titles ("delegates to the service with the user id"), given/when/then in complex specs. Done when:
+
+1. Failing spec written first (unit `*.spec.ts` for services/resolvers, `*.int-spec.ts` for repositories, `test/*.e2e-spec.ts` for endpoints), then passing.
+2. REST change → Swagger decorators updated. GraphQL change → `src/schema.gql` regenerated (operator restarts the server) and committed — the frontend mirrors it.
+3. Schema change → Prisma 8 migration generated and committed (see **Prisma 8**).
+4. Targeted tests pass (`pnpm run test <path>`, `pnpm run test:integration <path>`).
+5. `pnpm run check` passes (`scripts/check.mjs`): typecheck, circular, depcheck, prune, format, lint (no fix — fails), audit (known findings ignored in `pnpm-workspace.yaml`, see README), unit, integration, e2e, build, then mutation on lines changed since `origin/main` in folders with an `*.int-spec.ts` (`scripts/mutate-changed.mjs`), which ends by listing the surviving mutants on those lines only. `integration` and `mutation` need `ttc_test`. Use `pnpm run test:mutation --mutate <files> --force` by hand after test-only changes. Skip steps with `--skip a,b` (`--list` for names) — say which steps you skipped and why.
 
 ## Commands
 
 ```bash
-# Dev
-pnpm run start:dev          # watch mode (requires .env + docker compose up -d)
-docker compose up -d        # start postgres + redis
-
-# DB (Prisma 8, see "Prisma 8" below)
-pnpm prisma contract emit                  # re-emit generated/prisma8/ after editing prisma8/contract.prisma
-pnpm prisma migration plan --name <name> --from <latest migrations/app dir>   # ALWAYS pass --from: without it the plan starts from refs/db.json (the baseline) and re-applies older migrations
-pnpm run prisma:miggen                     # deploy: guard (refuses a Prisma 7 database never signed), then prisma db migrate
-
-# Quality (run all at once)
-pnpm run check              # typecheck + circular + audit + prune + format:check + lint
-
-# Individual checks
-pnpm run typecheck          # tsc --noEmit
-pnpm run circular           # madge circular dep detection
-pnpm run prune              # ts-prune unused exports
-pnpm run lint               # ESLint --fix
-
-# Tests
-pnpm run test               # unit (Jest, files: src/**/*.spec.ts)
-pnpm run test:watch
-pnpm run test:e2e           # config: test/jest-e2e.json
-pnpm run test:integration   # real Postgres (ttc_test), *.int-spec.ts
-pnpm run test:mutation --mutate <files>  # StrykerJS over the integration tests, incremental, one at a time (shared test DB)
+pnpm run test [path]               # unit (Jest, src/**/*.spec.ts)
+pnpm run test:integration [path]   # repositories against real Postgres `ttc_test` (*.int-spec.ts, one worker)
+pnpm run test:e2e                  # test/*.e2e-spec.ts (config test/jest-e2e.json)
+pnpm run test:mutation:changed     # Stryker on changed integration-tested lines (part of check)
+pnpm run test:mutation --mutate <files> [--force]   # by hand; integration suite, incremental, concurrency 1
+pnpm run check [--skip a,b] [--list]    # full gate (see checklist)
+pnpm run typecheck | lint | format | format:check | circular | prune
+docker compose up -d               # postgres + redis (operator)
+pnpm prisma contract emit          # after editing prisma8/contract.prisma
+pnpm prisma migration plan --name <n> --from <latest migrations/app dir>   # ALWAYS --from
+pnpm run prisma:miggen             # deploy: migrate-guard, then prisma db migrate
 ```
 
-## Working process
+- Runtime: TypeScript 7 has no JS compiler API, so nothing runs through `ts-node` or the Nest CLI. `start*` = `node -r ./swc-register.cjs` (SWC with decorator metadata — tsx/esbuild would break DI), `build` = `tsc -p tsconfig.build.json`, Jest uses `@swc/jest`. ESLint lives in `.lint-tools/` with its own `node_modules` (use `pnpm run lint`).
+- Scripts: `src/scripts/` (`db:dump`, `db:export`, `db:import`, `import:tholemac`).
 
-Test-first, always. Red → green → refactor:
+## Where things live
 
-1. Write failing spec first (unit test for services/resolvers; e2e for endpoints). Confirm it fails for right reason.
-2. Write minimal code to pass it.
-3. Refactor under green tests.
+| What                      | Path                                                                                                                                                              |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Feature module            | `src/<domain>/` — `*.module.ts`, `*.resolver.ts`, `*.service.ts`, `*.controller.ts` (REST), `entities/`, `dto/`, `repositories/`, `types/`                        |
+| Repository port / adapter | `repositories/<name>.repository.ts` (abstract) / `repositories/prisma8-<name>.repository.ts`, bound with `{ provide: XRepository, useClass: Prisma8XRepository }` |
+| Prisma 8 helpers          | `src/prisma8/` — `Prisma8Service`, `ownership.ts`, `access.ts`, `timestamp.ts`, `numeric.ts`, `like.ts`, `count.ts`, `testing/`                                   |
+| Schema / migrations       | `prisma8/contract.prisma`, `generated/prisma8/`, `migrations/app/` (Prisma 7 history: `prisma/migrations/`, read-only)                                            |
+| GraphQL loaders           | `src/common/graphql/` — `loaders.service.ts`, `batch-loader.util.ts`                                                                                              |
+| Shared infra              | `src/common/` — `realtime/` (SSE), `oauth-token/`, `crypto.util.ts`, `guards/`, `cleanup/`, `db-backup/`                                                          |
+| Unit mock factories       | `src/__test-helpers__/mock-factories.ts`                                                                                                                          |
+| Generated GraphQL schema  | `src/schema.gql` (never edit; regenerated on server start)                                                                                                        |
+| Architecture notes        | `docs/final-arch.txt`, `docs/arch-todo.txt`, `docs/architecture/backend-architecture.md`                                                                          |
 
-No prod code without a preceding failing test. Applies to bug fixes too — reproduce as failing test before patching.
+## Principles
 
-### Principles
+- **Hexagonal** — services depend on repository abstractions, never on Prisma/HTTP/Redis directly; new external deps get a port + adapter.
+- **DDD** — `src/<domain>/` mirrors the domain; entities carry rules; cross-module access goes through the other module's service, never its repository.
+- **SOLID** — one reason to change per class; extend with new providers/strategies; substitutable behind abstractions; slim interfaces; inject concretes via `useClass`.
+- **ACID** — multi-step writes that must agree (entity + history/audit…) run in one `db.transaction(async (tx) => …)`.
+- **KISS / DRY** — simplest thing; extract on the second duplication.
 
-- **KISS** — simplest thing that works. No speculative abstraction.
-- **DRY** — extract shared logic once duplication appears twice, not before.
-- **Hexagonal (ports & adapters)** — domain/service logic depends on abstractions, not Prisma/HTTP/Redis directly. Existing `repositories/<name>.repository.ts` (abstract) + `repositories/prisma-<name>.repository.ts` (adapter) pattern is the port/adapter boundary — extend it for new external deps rather than reaching for Prisma client in services directly.
-- **SOLID** — one reason to change per class (S); extend via new providers/strategies not edits to existing ones where feasible (O); mocks/impls substitutable behind repository abstractions (L); slim focused interfaces not fat ones (I); depend on `XRepository` abstraction, inject concrete via module `useClass` (D).
-- **ACID** — multi-step DB writes that must be atomic go in a Prisma `$transaction`. Never leave related writes (e.g. entity + audit trail that must be consistent) split across unguarded awaits.
-- **TDD** — see test-first workflow above; drives design, not just verification.
-- **BDD** — spec `describe`/`it` blocks read as behavior ("delegates to service with user id", not "test1"). Favor given/when/then structuring in complex specs.
-- **DDD** — module boundaries in `src/<feature>/` mirror domain boundaries (Projects, Tasks, Invoices, Rates...). Entities carry domain rules, not just data shape; keep cross-module reach-through to a minimum (go through the other module's service, not its repository).
+## Prisma 8 (data access)
 
-## Architecture
+- One client app-wide: inject `Prisma8Service` (global `Prisma8Module`; modules don't list it) and query `this.db.orm.public.<Model>`. Prisma 7 is gone.
+- **Ownership**: ids taken from input (`clientId`, `taskId`, `tagIds`…) must belong to the caller — call `assertOwned` / `assertTasksVisible` / `assertSubtasksVisible` (`src/prisma8/ownership.ts`) in the repository write before storing them. Unknown and foreign ids both throw NotFound.
+- **Timestamps** are `TimestampString(3)` in the contract: convert at the repository boundary with `fromDb`/`toDb` (`src/prisma8/timestamp.ts`); the app uses `Date`. No automatic `updatedAt` — set it on every update.
+- **Decimals** come back as strings: `Number(...)` on read, `toNumeric(...)` (`src/prisma8/numeric.ts`) on write.
+- **Search**: `.ilike(containsPattern(text))` (`src/prisma8/like.ts` escapes `%`/`_`).
+- **Danger**: a single-row `where(...).update()`/`.delete()` with a missing or empty filter hits one arbitrary row (lowest id). In tests never make the target the first row, so a dropped filter fails.
+- Relation field names in `contract.prisma` keep the Prisma 7 names (`contacts`, `items`, `tags`…); GraphQL types and mappers rely on them.
+- GraphQL enums are TS enums declared next to their `registerEnumType` in the entity file.
+- **Schema change**: edit `prisma8/contract.prisma` → `pnpm prisma contract emit` → `pnpm prisma migration plan --name <n> --from <latest migrations/app dir>` (without `--from` it starts from the baseline and re-applies old migrations; check the new `migration.json` `from` equals the previous `to`) → commit `generated/prisma8/` and `migrations/`. Both are generated: excluded from tsconfig and Prettier. Never `prisma db init`/`db update` on a real database.
+- **Removing an enum value**: `migration plan` refuses it — `prisma migration new --name <n> --from <previous to-hash>`, write the ops in `migration.ts` with `rawSql({...})` (move rows, rename type, create new, convert column `USING col::text::"Type"`, restore default, drop old), then `node migrations/app/<dir>/migration.ts` to emit `ops.json`. Example: `20261009T1003_prospect_cycle_v2`.
+- **Deploy guard**: `prisma:miggen` runs `src/scripts/migrate-guard.ts` first — an unsigned database with tables (a Prisma 7 database that skipped `prisma db sign`) stops with instructions instead of running the baseline.
+- Pin `@prisma/orm-postgres` to the `@prisma/orm-toolchain` version the `prisma` CLI depends on (`pnpm view prisma@<v> dependencies`); a mismatch crashes `contract infer`/`emit` with "Malformed authoring pslBlock contribution".
 
-### Module structure
+## GraphQL
 
-Each feature lives in `src/<feature>/` with: `*.module.ts`, `*.resolver.ts` (GraphQL), `*.service.ts`, `*.controller.ts` (REST if any), `entities/`, `dto/`, `repositories/`.
+- `src/schema.gql` is generated (`autoSchemaFile`) and committed — never edit it; edit entities/resolvers, then it regenerates on server start.
+- Orphaned union members (`TranslatorOccupation`, `CorrectorOccupation`, `CustomOccupation`) are listed in `AppModule` `buildSchemaOptions.orphanedTypes` (code-first drops types unreachable from root resolvers).
+- Depth limit: `graphql-depth-limit` in `GraphQLModule.forRootAsync` (`app.module.ts`), `GRAPHQL_MAX_DEPTH` (default 10).
+- **Field resolvers re-check ownership** — never trust the parent query. Relations without their own `userId` (`Subtask`, `TaskComment`, `TaskLabel`, `TaskAttachment`, `TaskActivity`) scope through the parent task's project owner (`taskVisibleTo`, `src/prisma8/access.ts`; tasks have no assignee since 2026-10-08); relations with a direct owner (`ClientStatusHistory` via `client.userId`, time-entry `TaskActivity` via `timeEntry.userId`) scope through it. Aggregates (`Project.totalTimeSeconds`, `Task.totalTimeSeconds`) sum **all** contributors — `userId` gates access to the parent, never which rows are summed.
+- **Field resolvers go through DataLoaders** (`@Context() ctx: GqlContext`, `ctx.loaders.<name>.load(id)`), never a service per row (N+1). New one: add a scoped batch method `findByXIds(ids, userId)` to the repository, a loader in `LoadersService.createLoaders()` with `createGroupedListLoader`/`createMappedValueLoader`, then `ctx.loaders.<name>.load(id)` in the resolver.
+- **Naming**: `Occupation` (`src/occupations/`) is the user's business line (renamed from `Activity`); `TaskActivity` (`src/tasks/activities.service.ts`, the `activities` field) is the unrelated task history log.
 
-Repository pattern used throughout: abstract class in `repositories/<name>.repository.ts`, Prisma impl in `repositories/prisma-<name>.repository.ts`. Modules bind via `{ provide: XRepository, useClass: PrismaXRepository }`.
+## REST + Swagger
 
-### Auth flow
+Swagger UI at `/api` (`DocumentBuilder` in `src/main.ts`). It is the only REST documentation. GraphQL is a single generic `/graphql` stub pointing at `schema.gql` and the Sandbox — don't expand it or list modules in it.
 
-- JWT access token (15m) + refresh token stored as HTTP-only cookies
-- Passport strategies: `local`, `jwt`, `google-oauth20`
-- Guards: `GqlAuthGuard` (resolvers), `JwtAuthGuard` (REST), `RolesGuard` (RBAC via `@Roles()` decorator)
-- 2FA: TOTP (speakeasy) + backup codes; both stored hashed
-- Session events (login/logout/token-refresh broadcasts) via SSE through `AuthEventsService` backed by Redis pub/sub — replaces previous WebSocket approach
-- Auth repository pattern: `AuthRepository` → `PrismaAuthRepository` for testability
+No `@nestjs/swagger` CLI plugin (no Nest CLI), so nothing is inferred: a DTO field without `@ApiProperty` is missing from `/api`. Every REST change adds/updates:
 
-### REST API documentation (Swagger) — mandatory on every change
+- **Controller**: `@ApiTags('<feature>')`; `@ApiCookieAuth('access_token')` on the class (all routes authed) or per method — cookie auth, never `@ApiBearerAuth`.
+- **Endpoint**: `@ApiOperation({ summary })` (one line, incl. access restriction like "ADMIN only"); `@ApiParam`/`@ApiQuery` per param; `@ApiConsumes`/`@ApiBody` with a schema for uploads or inline bodies; `@ApiExcludeEndpoint()` + one-line reason for OAuth callbacks, HMAC-verified webhooks, debug routes.
+- **DTO field**: `@ApiProperty({ description, example })` (`required: false` when optional, `nullable: true` for `X | null`, `enum: [...]` for string unions). Inline object types become their own exported class with `@ApiProperty`s (plain TS types produce no schema).
 
-Swagger UI lives at `/api`, built from `DocumentBuilder` config in `src/main.ts` plus decorators on controllers/DTOs. GraphQL resolvers can't be introspected by `@nestjs/swagger` (single `POST /graphql` endpoint, not a REST resource tree) — `src/main.ts`'s `documentFactory` manually stubs one `/graphql` path pointing at `src/schema.gql` and the Apollo Sandbox, so `/api` doesn't silently omit the core domain API. Don't try to expand that stub into per-query/mutation entries — `src/schema.gql` + Sandbox introspection is the real GraphQL doc surface. The stub's description is deliberately generic (no module names) so it never needs updating when a new top-level GraphQL module ships — don't reintroduce a per-module enumeration there.
+## Auth, realtime, security
 
-The `@nestjs/swagger` CLI plugin is enabled in `nest-cli.json` (`introspectComments: true`) — it auto-infers each DTO field's `type`/`required` from the TS AST, so raw field shape always shows up even with zero decorators. That covers _shape_, not _meaning_ — decorators below are still required by hand:
+- JWT access token (15 min, `JWT_EXPIRES_IN`) + refresh token in HTTP-only cookies. Passport: `local`, `jwt`, `google-oauth20`. Guards: `GqlAuthGuard` (resolvers), `JwtAuthGuard` (REST), `RolesGuard` + `@Roles()`. 2FA: TOTP + backup codes, both hashed. `AuthRepository` → `Prisma8AuthRepository`.
+- **SSE, not subscriptions**: `TimerEventsService` and `AuthEventsService` use `src/common/realtime/` — `createRedisClientPair()` (one pair per service), `RealtimeChannelRegistry<T>` (`gated: true` for the timer's staged lifecycle, `false` for auth's immediate delivery — keep the two modes distinct), `writeSseStream()` (`sse-stream.util.ts`). Redis pub/sub keeps instances in sync.
+- **Encryption**: Clockify API key and HubSpot/Google OAuth tokens encrypted with `APP_ENCRYPTION_KEY` (64 hex chars) via `src/common/crypto.util.ts`. OAuth refresh (expiry, coalescing concurrent refreshes, token exchange) shared in `OAuthTokenRefreshService` (`src/common/oauth-token/`); provider-specific success/failure stays in callbacks (Google clears credentials on `invalid_grant` and keeps the old refresh token if none is reissued; HubSpot overwrites both).
+- **Throttling**: global 100 req/60 s per IP (Redis); sensitive operations (login, register, password changes, admin writes…) override it per method with `@Throttle` (mostly 5–10/60 s) — read the decorator. `GqlThrottlerGuard` bridges the throttler to GraphQL.
+- **Audit log**: fire-and-forget `AuditLog` writes (HubSpot, Clockify, Clients, Projects, Invoices) — never `await` them. Retention job in `CleanupModule` (`AUDIT_RETENTION_DAYS`, default 90). `GET /admin/audit` is unused legacy — leave it.
 
-Any commit that adds/changes a REST endpoint or its DTO **must** also add/update:
+## Domain rules
 
-- **Controller** (one-time per controller, not per endpoint):
-  - `@ApiTags('<feature>')` on the class
-  - `@ApiCookieAuth('access_token')` on the class if every route needs auth, or per-method if mixed (auth is an HTTP-only JWT cookie — **not** Bearer, don't add `@ApiBearerAuth`)
-- **Every endpoint method:**
-  - `@ApiOperation({ summary: '...' })` — one line, states what it does and any access restriction (e.g. "ADMIN only", "owner only")
-  - `@ApiParam(...)` for each path param, `@ApiQuery(...)` for each query param
-  - `@ApiExcludeEndpoint()` for routes not meant to be called directly by API clients (OAuth provider callbacks, webhook receivers verified by HMAC not JWT, debug routes) — exclude with a one-line comment explaining why, don't just leave undocumented
-  - `@ApiConsumes`/`@ApiBody` with an explicit schema for multipart/file uploads or inline (non-DTO-class) request bodies
-- **Every DTO field:** `@ApiProperty({ description, example })` (or `@ApiPropertyOptional`-equivalent via `required: false`) — the plugin gives the type, but description + example are never inferred and must be written. `nullable: true` for fields typed `X | null`.
-- **Nested request shapes:** if a DTO field's type is a plain inline object/union (not a class), promote it to its own exported class with its own `@ApiProperty`s — plain TS types don't generate schema refs, only classes do. String-literal unions become `enum: [...]` on the property, not a bare `string`.
+- **Clients** `clients(search, companyName, firstName, lastName, clientType, status, excludeStatus, industry, sort)` → one `ClientFilters` object. `search` matches company `name` or a person's first/last name; the three name filters each target their column. `sort: { field: NAME | LAST_NAME | FIRST_NAME, direction }` orders by that name, then the other, then oldest; `Intl.Collator` (case/accents ignored), empty names last; individuals default to LAST_NAME ASC, unsorted lists oldest first. Sorted lists page in memory from the cursor (`sortedPage`). Clients page asks `status: CLIENT`, the prospect board `excludeStatus: CLIENT` (so `FORMER_CLIENT` only shows there). `linkedinUrl`/`website` stored as given (frontend validates).
+- **Prospect cycle** (`src/clients/prospect-due.util.ts`): TO_CONTACT → CONTACTED → FOLLOW_UP_1 → FOLLOW_UP_2 → RECONTACT_LATER (no FOLLOW_UP_3). Waits count from the newer of `contactedAt`/`toRecontactAt` (`newestContactDate`). `prospectDueAt`: null (due now) for TO_CONTACT, FORMER_CLIENT or no date; +14 days for CONTACTED/FOLLOW_UP_1/FOLLOW_UP_2; +182 for RECONTACT_LATER; never for TALKING/CLIENT. Dashboard lists prospects due now or within 30 days (due-now first, then earliest, ties by id). `ProspectCronService` (05:00) moves FOLLOW_UP_2 → RECONTACT_LATER after 21 days. `ClientsService.update`: a newer (or first) `contactedAt` steps the status (`nextStatusAfterContact`: TO_CONTACT/FORMER_CLIENT/RECONTACT_LATER → CONTACTED, FOLLOW_UP_2 → RECONTACT_LATER, TALKING/CLIENT stay) unless the same input sets another status.
+- **Words**: time-entry `wordsProcessed` is stored, never counted. Task words = own `wordCount` + checklist items with `Subtask.countInTotal` (default true); `Project.totalTaskWords` sums per project (`SubtasksService.getTotalWordsByProjectIds`). Dashboard `yearToDateWords` = those totals for DONE/PAID tasks due this year. `Project.wordCount` is the hand-entered target used by `generateInvoice`.
+- **Dashboard deadlines**: open projects (`deadline`), tasks (`dueDate`, not DONE/PAID) and unticked checklist items, overdue or due within 30 days, earliest first, max 20; rows carry `kind` (PROJECT/TASK/CHECKLIST_ITEM) and project/task ids and titles.
+- **Kanban**: `moveTask(id, status, position)` is the only write that moves a card; it renumbers the target column 0..n (and the source on a status change) in one transaction. `updateTask.sortOrder` is for the flat list only. `Task.color`: nullable hex, empty string clears.
+- **Project history**: `projectActivities(projectId, pagination)` pages task activity newest first (keyset on createdAt + id, with `task { id title }`).
+- **Invoices**: amounts (`numeric(10,4)`) only through `lineAmounts()`/`hoursOf()` (`src/invoices/line-amounts.ts`) — exact 1/10000 integer maths, half away from zero, never `quantity * unitPrice` in floats. `generateInvoice` refuses a project with nothing to bill ("Nothing to invoice"). Status machine: `DRAFT→SENT|CANCELLED`, `SENT→PAID|OVERDUE`, `OVERDUE→PAID`; SENT sets `issuedAt`, PAID sets `paidAt`.
+- **Pricing**: `Project.unitPrice` is deprecated (no write path; keep the column) — use `fixedFee`/`hourlyRate`/`perWordRate` (each optional).
+- **Rates**: `TranslationRate` (user catalog, optionally per client), `ClientRate` (per-client override), `RateSheet` (CAT match rates as JSON).
 
-Rationale: this is the only REST surface documentation that exists in the repo — no separate API reference doc, no Postman collection. If it's not in the decorators, it's not documented anywhere.
+## Testing
 
-### GraphQL schema
-
-`src/schema.gql` is **auto-generated** — never edit it directly. Edit the TypeScript entity/resolver files, then restart the server to regenerate.
-
-Orphaned union types (`TranslatorOccupation`, `CorrectorOccupation`, `CustomOccupation`) registered explicitly in `AppModule.buildSchemaOptions.orphanedTypes` — required because NestJS code-first won't include types not reachable from root resolvers.
-
-Naming: `Occupation` (`src/occupations/`, table `Occupation`) is the user's business line (translator, corrector...) — renamed from `Activity` in migration `20261006120000_rename_activity_to_occupation`. `TaskActivity` (`src/tasks/activities.service.ts`, the `activities` field on `Task`/`TimeEntry`) is the unrelated task history log and keeps its name.
-
-Query depth capped via `graphql-depth-limit` (`validationRules` in `GraphQLModule.forRootAsync`, `src/app.module.ts`) — `GRAPHQL_MAX_DEPTH` env var, default 10. Prevents an unbounded nested query over the Client → Project → Task → {Subtask, Comment, Activity, Attachment, TimeEntry} graph.
-
-### GraphQL field resolvers — ownership + DataLoader (mandatory pattern)
-
-Every `@ResolveField()` must independently re-derive scope from the current user, the same as top-level queries — never trust that the parent query already filtered correctly. Nested relations that don't carry their own `userId` (`Subtask`, `TaskComment`, `TaskLabel`, `TaskAttachment`, `TaskActivity`) scope through the parent `Task`'s ownership check (the task's project must belong to the user, see `taskVisibleTo` in `src/prisma8/access.ts`; tasks have no assignee since 2026-10-08); relations with their own direct owner (`ClientStatusHistory` via `client.userId`, `TimeEntry`-linked `TaskActivity` via `timeEntry.userId`) scope through that instead. Aggregates (`Project.totalTimeSeconds`, `Task.totalTimeSeconds`) sum **all** contributors' data, not just the requesting user's own rows — the `userId` only gates _access_ to the parent resource, it must never also restrict which rows get aggregated.
-
-Field resolvers must go through the per-request `GqlLoaders` (`@Context() ctx: GqlContext`, `ctx.loaders.<name>.load(id)`) rather than calling a service directly — calling a service per-row reintroduces N+1. Loaders are built in `LoadersService.createLoaders()` (`src/common/graphql/loaders.service.ts`), wired into the GraphQL context in `app.module.ts`'s `GraphQLModule.forRootAsync`. Adding a new field resolver that fetches by parent id: add a batch method (`findByXIds(ids, userId)`) to the relevant repository (scoped per the ownership rules above), wire a loader for it in `LoadersService` using `createGroupedListLoader`/`createMappedValueLoader` (`src/common/graphql/batch-loader.util.ts`), then call `ctx.loaders.<name>.load(id)` from the resolver — don't call the service/repository directly from a field resolver.
-
-### Real-time (SSE)
-
-`TimerEventsService` and `AuthEventsService` both build on shared infra in `src/common/realtime/`: `createRedisClientPair()` (each service still constructs its own publisher/subscriber pair — not a shared singleton) and `RealtimeChannelRegistry<T>` (ref-counted Redis pub/sub channel registry with a `gated` option — `true` for timer's staged subscribing/active/cleaning lifecycle with a delivery gate, `false` for auth's simpler immediate-delivery/immediate-cleanup behavior; don't unify these two modes, they're intentionally different). Controllers write the SSE HTTP response via the shared `writeSseStream()` helper (`src/common/realtime/sse-stream.util.ts`). Timer state/auth events published through Redis so multiple server instances stay in sync. Not migrated to GraphQL subscriptions — one-way server push with no client-to-server messages needed, SSE is the right transport for both (see `docs/final-arch.txt`).
-
-### Encryption
-
-Third-party credentials (Clockify API key, HubSpot/Google Calendar OAuth tokens) encrypted at rest using `APP_ENCRYPTION_KEY` (32-byte hex → 64 char string) via `src/common/crypto.util.ts`. HubSpot's and Google Calendar's OAuth access-token refresh (expiry check, concurrent-refresh coalescing, token-endpoint exchange) shares `OAuthTokenRefreshService` (`src/common/oauth-token/`) — each provider still owns its own failure/success handling (Google clears credentials on `invalid_grant` and conditionally preserves the refresh token if not reissued; HubSpot always overwrites both tokens) via callbacks passed into `refresh()`, so provider-specific behavior stays provider-specific. Clockify uses a static API key, no refresh logic needed.
-
-### Audit log
-
-Fire-and-forget `AuditLog` writes in HubSpot, Clockify, Clients, Projects, and Invoices services. Never `await` these — they must not block requests. Retention cleaned by scheduled job in `CleanupModule` (`AUDIT_RETENTION_DAYS`, default 90).
-
-`GET /admin/audit` (`src/audit/audit.controller.ts`) — **UNUSED**. No active consumer. It's the one REST endpoint left over from before the GraphQL admin surface existed (see `docs/final-arch.txt` §4); migrating it to `admin.resolver.ts` was considered and explicitly deprioritized (`docs/arch-todo.txt` item 4). Leave as-is, don't spend effort on it.
-
-### Prisma 8
-
-Ported from Prisma 7 following Prisma's 7 -> 8 guide (https://www.prisma.io/docs/guides/upgrade-prisma-orm/postgresql). Every repository, service and script runs on Prisma 8 (`Prisma8Service`, one client app-wide via the `@Global` `Prisma8Module`). Prisma 7 is gone; `prisma/migrations/` is its read-only history (never edited, never applied again).
-
-Migrations: `migrations/app/` holds Prisma 8 packages, starting with a baseline that creates the whole schema (applied only to an empty database). Databases built by Prisma 7 were adopted by release A (commit `633e552`, `prisma db sign`), so `prisma db migrate` skips the baseline for them. `pnpm run prisma:miggen` runs `src/scripts/migrate-guard.ts` first: an unsigned database that already has tables means release A was skipped, and it stops with instructions instead of running the baseline against existing tables. Schema change: edit `prisma8/contract.prisma`, `pnpm prisma contract emit`, `pnpm prisma migration plan --name <name> --from <latest migrations/app dir>` (check the new `migration.json` `from` is the previous migration's `to`), commit `generated/prisma8/` and `migrations/`. `migrations/` and `pnpm-lock.yaml` are generated: excluded from tsconfig and Prettier. Never run `prisma db init` / `db update` against a real database. Pin `@prisma/orm-postgres` to the `@prisma/orm-toolchain` version the `prisma` CLI depends on (`pnpm view prisma@<v> dependencies`): a mismatched pair crashes `contract infer`/`emit` with "Malformed authoring pslBlock contribution". Port plan: `../docs/plans/step1.25/prisma8-port.md` (phases A-E). Port conventions:
-
-- Client: inject `Prisma8Service` (`src/prisma8/`), query via `this.db.orm.public.<Model>`.
-- Timestamps: the contract types every `timestamp(3)` column as `TimestampString(3)` (no `Temporal`, no polyfill). Convert at the repository boundary with `fromDb`/`toDb` (`src/prisma8/timestamp.ts`); the app keeps using `Date`. No automatic `updatedAt` on Postgres: set it on every update.
-- Relation field names in `prisma8/contract.prisma` kept the Prisma 7 names (`contacts`, `items`, `tags`...); the GraphQL types and mappers rely on them.
-- Ids taken from input (`clientId`, `taskId`, `tagIds`...) must be the caller's: call `assertOwned` / `assertTasksVisible` / `assertSubtasksVisible` (`src/prisma8/ownership.ts`) in the repository write before storing them, or another user's data leaks back through nested fields. Unknown and foreign ids both throw NotFound.
-- Invoice amounts (`quantity`, `unitPrice`, `total`, all `numeric(10,4)`) go through `lineAmounts()` / `hoursOf()` (`src/invoices/line-amounts.ts`): exact decimal maths on 1/10000 integers, half away from zero, never `quantity * unitPrice` in floats (0.15 × 0.359 gives 0.0538 in floats, 0.0539 exact). `generateInvoice` refuses a project with nothing to bill ("Nothing to invoice") instead of creating an empty draft.
-- Kanban order: `moveTask(id, status, position)` is the only write that changes a card's place; it renumbers the target column 0..n (and the source column on a status change) in one transaction. `updateTask.sortOrder` stays only for the flat task list.
-- Clients: `clients(search, companyName, firstName, lastName, clientType, status, excludeStatus, industry)`; the repository and service take them as one `ClientFilters` object. `search` matches the company `name` or a person's `firstName` / `lastName` (ilike; pickers, prospect board); `companyName` / `firstName` / `lastName` each filter their own column (Clients page). `clients(sort: { field: NAME | LAST_NAME | FIRST_NAME, direction: ASC | DESC })` (`ClientSortInput`) orders by that name, then the other name, then oldest first, comparing with `Intl.Collator` (case and accents ignored) and empty names last either way; individuals default to LAST_NAME ASC, other lists without `sort` stay oldest first. Sorted lists are sorted and paged in memory from the cursor's position (`sortedPage`), as a keyset cursor can't do that collation nor step past NULL names. Industries include `TRANSLATION_AGENCY` (migration `add_translation_agency_industry`). Status `FORMER_CLIENT` (migration `add_former_client_status`) is a past client to contact again: the Clients page asks for `status: CLIENT` and the prospect board for `excludeStatus: CLIENT`, so it only shows on the board. `Client.linkedinUrl` (migration `add_client_linkedin_url`) and `CompanyContact.linkedinUrl` (migration `add_contact_linkedin_url`) are stored as given, like `website`; the frontend checks both are http(s) links.
-- Prospect cycle (`src/clients/prospect-due.util.ts`): statuses TO_CONTACT → CONTACTED → FOLLOW_UP_1 → FOLLOW_UP_2 → RECONTACT_LATER (FOLLOW_UP_3 removed by migration `prospect_cycle_v2`, its clients moved to RECONTACT_LATER with a history row). `Client.toRecontactAt` (nullable) sits beside `contactedAt`; every wait counts from the newer of the two (`newestContactDate`). `prospectDueAt` gives each prospect's due date: null (due now) for TO_CONTACT, FORMER_CLIENT or no date; that date + 14 days for CONTACTED / FOLLOW_UP_1 / FOLLOW_UP_2, + 182 for RECONTACT_LATER; undefined (never) for TALKING / CLIENT. Dashboard prospects-to-contact lists those due now or within 30 days with `dueAt`, due-now first, then earliest, ties by id. `ProspectCronService` (05:00) moves FOLLOW_UP_2 to RECONTACT_LATER once that date is over 21 days old (no date: left alone). `ClientsService.update`: a `contactedAt` newer than the stored one (or a first one) moves the stored status one step (`nextStatusAfterContact`; TO_CONTACT / FORMER_CLIENT / RECONTACT_LATER → CONTACTED, FOLLOW_UP_2 → RECONTACT_LATER, TALKING / CLIENT stay), unless the same input sets a different status.
-- Removing a native enum value: `migration plan` refuses it. Use `prisma migration new --name <n> --from <previous to-hash>`, write the ops in `migration.ts` with `rawSql({...})` (move the rows first, then rename the type, create the new one, convert the column with `USING col::text::"Type"`, restore the default, drop the old type), then `node migrations/app/<dir>/migration.ts` to emit `ops.json`. See `20261009T1003_prospect_cycle_v2`.
-- Words: time entry `wordsProcessed` is stored but never counted anywhere (no `totalWordsProcessed` field any more). A task's words = its own `wordCount` + its checklist items' `wordCount` where `Subtask.countInTotal` (default true, migration `add_subtask_count_in_total`); `Project.totalTaskWords` sums that per project (`SubtasksService.getTotalWordsByProjectIds`). Dashboard `yearToDateWords` = those totals for DONE / PAID tasks due in the current year. `TimeEntry.subtask` exposes the item's `wordCount` / `countInTotal` (the frontend's interim per-word invoice line uses them). `Project.wordCount` stays the hand-entered target, used by `generateInvoice`.
-- Dashboard deadlines: `dashboard.upcomingDeadlines` merges open projects (`deadline`), tasks (`dueDate`, not DONE/PAID) and unticked checklist items (`Subtask.dueDate`), overdue or due within 30 days, earliest first, 20 max. Each row has `kind` (PROJECT / TASK / CHECKLIST_ITEM), `projectId`/`projectTitle` and `taskId`/`taskTitle` for linking.
-- Task colour: `Task.color` (nullable hex text, migration `add_task_color`), set through `createTask`/`updateTask`; an empty string clears it (stored as null).
-- Project history: `projectActivities(projectId, pagination)` pages a project's task activity newest first (keyset on createdAt + id, each item with `task { id title }`); task lists don't load activities.
-- Case-insensitive search: `.ilike(...)` (escape `%`/`_` in user input). Transactions: `db.transaction(async (tx) => ...)`. Decimals come back as strings: `Number(...)` on read, `toNumeric(...)` (`src/prisma8/numeric.ts`) on write. GraphQL enums are TS enums declared next to their `registerEnumType` in the entity file (e.g. `RateType` in `client-rate.entity.ts`).
-- Single-row `where(...).update()` / `.delete()` with a missing or empty filter silently hits one arbitrary row (the lowest id): in tests, never make the target the first row, so a dropped filter fails. One `Prisma8Module` (`@Global`) provides the single `Prisma8Service`; repositories inject it, modules don't list it.
-- Mutation testing: `stryker.config.json` points `tsconfigFile` at a missing file on purpose (TypeScript 7 has no JS compiler API; Stryker only needs it to rewrite tsconfig references) and loads `@stryker-mutator/jest-runner` explicitly (pnpm isolation). After changing tests, run with `--force`: incremental mode can reuse stale results when a test change is not a new/edited `it` (e.g. an `afterEach`). Accepted survivors: error-message text, and `.some(...)` -> `.every(...)` on a required to-one relation (equivalent: exactly one related row). Suites with update/delete keep a decoy row created first and assert it unchanged in `afterEach`.
-- Tests: `pnpm run test:integration` (`*.int-spec.ts`, real Postgres `ttc_test` from `.env.test`, migrated by `test/integration-setup.js`, which refuses any other database). Test kit in `src/prisma8/testing/`: `useTestDb()` (one Prisma 8 client per file, tables emptied before each test), `seed*` helpers (written through Prisma 8), `seedTaskAccess` (owner / stranger), typed matchers (`anyNumber`, `anyDate`... — `expect.any` is `any` and fails lint). Repository suites keep a single-entry `describe.each` over implementations (the Prisma 7 entry was removed with release B). `test/integration-setup.js` migrates `ttc_test` with `prisma db migrate`. The runtime is ESM-only: `test/esm-transformer.js` compiles only ESM files from `node_modules` for Jest; the app itself loads it through Node's `require(esm)` (Node 22.12+).
-
-### Rates system
-
-Three rate models serve different scopes:
-
-- `TranslationRate` — user's personal rate catalog (optionally scoped to a client)
-- `ClientRate` — per-client override rates
-- `RateSheet` — structured rate sheets with CAT-tool match rates stored as JSON
-
-### Project pricing model
-
-`Project.unitPrice` (`Decimal(14,8)`) is **deprecated** for translation activity — no write path exists anywhere in the app (frontend or resolver logic beyond the raw DTO field), so any value on it is stale/legacy data. Current model: `fixedFee` / `hourlyRate` / `perWordRate` (each `Decimal(10,4)?` on `Project`), set independently, project can have any subset. Don't add new features against `unitPrice`; don't remove the column yet (still schema-present for old rows) but treat it as dead going forward.
-
-### Invoice status machine
-
-Valid transitions only: `DRAFT→SENT|CANCELLED`, `SENT→PAID|OVERDUE`, `OVERDUE→PAID`. Side effects: `SENT` sets `issuedAt`, `PAID` sets `paidAt`.
-
-### Throttling
-
-Global: 100 req/60s per IP (Redis-backed). Auth mutations (login, register, password reset): 5 req/60s. `GqlThrottlerGuard` bridges NestJS throttler to GraphQL execution context.
+- **Unit** (`*.spec.ts`): mock repositories; factories in `src/__test-helpers__/mock-factories.ts`.
+- **Integration** (`*.int-spec.ts`, `pnpm run test:integration`): real Postgres `ttc_test` from `.env.test`, migrated by `test/integration-setup.js` (refuses any other database). Kit in `src/prisma8/testing/`: `useTestDb()` (one client per file, tables emptied before each test), `seed*` helpers + `at(minute)`, `seedTaskAccess` (owner/stranger), typed matchers (`anyNumber`, `anyString`, `anyDate`, `isoTimestamp` — `expect.any` is `any` and fails lint). Repository suites keep a single-entry `describe.each` over implementations. Suites with update/delete create a decoy row first and assert it unchanged in `afterEach`.
+- ESM-only deps: `test/esm-transformer.js` compiles ESM files from `node_modules` for Jest; the app loads them via Node's `require(esm)` (Node ≥ 22.12).
+- **Mutation** (`stryker.config.json`): runs the integration config, one at a time (shared DB). `tsconfigFile` points at a missing file on purpose (TS 7) and `@stryker-mutator/jest-runner` is loaded explicitly. Use `--force` after test changes that aren't new/edited `it`s (e.g. an `afterEach`) — incremental mode may reuse stale results. Accepted survivors: error-message text; `.some → .every` on a required to-one relation.
 
 ## Environment
 
-Required at startup (app aborts if missing): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `COOKIE_SECRET`, `APP_ENCRYPTION_KEY`.
+Required (startup aborts): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `COOKIE_SECRET`, `APP_ENCRYPTION_KEY`. Optional: `GOOGLE_CLIENT_ID/SECRET`, `HUBSPOT_*`, `SMTP_*`, `SENTRY_DSN`, `GRAPHQL_MAX_DEPTH` (10), `AUDIT_RETENTION_DAYS` (90), `JWT_EXPIRES_IN` (15m), `GRAPHQL_SANDBOX` (true), `REDIS_URL` (`redis://localhost:6379`). Attachments: `STORAGE_DRIVER` = `local` (default) | `s3` | `azure`; `s3` requires `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`. All validated by the Joi schema in `src/app.module.ts` — add new variables there.
 
-Optional: `GOOGLE_CLIENT_ID/SECRET`, `HUBSPOT_*`, `SMTP_*`, `SENTRY_DSN`, `GRAPHQL_MAX_DEPTH` (default 10).
+History: Prisma 8 port plan `../docs/plans/step1.25/prisma8-port.md`.

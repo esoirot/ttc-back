@@ -64,6 +64,11 @@ describe('AuthEventsController', () => {
   });
 
   describe('sseEvents', () => {
+    // Every test opens a stream it never closes: fake timers keep the
+    // 25 s heartbeat interval from outliving the test.
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
     it('hijacks reply and writes SSE headers', () => {
       const subject = new Subject();
       eventsService.subscribe.mockReturnValue(subject.asObservable());
@@ -231,10 +236,7 @@ describe('AuthEventsController', () => {
     });
 
     describe('heartbeat', () => {
-      afterEach(() => jest.useRealTimers());
-
       it('writes a ping on each heartbeat tick while writable', () => {
-        jest.useFakeTimers();
         const subject = new Subject();
         eventsService.subscribe.mockReturnValue(subject.asObservable());
         const raw = makeRaw();
@@ -246,7 +248,6 @@ describe('AuthEventsController', () => {
       });
 
       it('closes when raw becomes unwritable before a heartbeat tick', () => {
-        jest.useFakeTimers();
         const subject = new Subject();
         eventsService.subscribe.mockReturnValue(subject.asObservable());
         const raw = makeRaw();
@@ -259,7 +260,6 @@ describe('AuthEventsController', () => {
       });
 
       it('closes when the ping write throws', () => {
-        jest.useFakeTimers();
         const subject = new Subject();
         eventsService.subscribe.mockReturnValue(subject.asObservable());
         const raw = makeRaw();
