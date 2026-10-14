@@ -91,7 +91,7 @@ pnpm run db:dump                           # pg_dump backup before deploying
 pnpm run typecheck      # TypeScript — tsc --noEmit
 pnpm run circular       # circular dependency detection (madge)
 pnpm run audit          # pnpm audit
-pnpm run prune          # unused exports (ts-prune)
+pnpm run knip           # unused files, exports, dependencies (knip.json)
 pnpm run format         # Prettier write
 pnpm run format:check   # Prettier check
 pnpm run lint           # ESLint with auto-fix — see note below
@@ -99,10 +99,15 @@ pnpm run check          # full gate (below)
 ```
 
 `pnpm run check` (`scripts/check.mjs`) runs, in order, stopping at the first
-failure: `typecheck`, `circular`, `depcheck`, `prune`, `format`, `lint` (no
+failure: `typecheck`, `circular`, `knip`, `format`, `lint` (no
 auto-fix — it fails instead), `audit`, `unit`, `integration`, `e2e`, `build`,
 `mutation` (Stryker on lines changed since `origin/main`). `integration` and
 `mutation` need the `ttc_test` database (`docker compose up -d`).
+
+`knip` replaces depcheck and ts-prune. `knip.json` adds the entries Jest and
+the Prisma CLI load on their own (integration/e2e specs, migrations) and turns
+off unused enum members (GraphQL enums are only used through the schema).
+Delete what it reports rather than ignoring it.
 
 ```bash
 pnpm run check --list                       # step names
@@ -140,7 +145,7 @@ done. Everything else is fixed through direct upgrades and the `overrides` in
 | Package                | Severity | Advisory                                                                                        | Pulled in by                        | Why still open / way out                                                                                                                       |
 | ---------------------- | -------- | ----------------------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@graphql-tools/utils` | high     | [GHSA-7mx3-vvmw-hjmv](https://github.com/advisories/GHSA-7mx3-vvmw-hjmv) (prototype pollution)  | `@nestjs/graphql`, `@apollo/server` | Fixed in 12.0.1, which only `@nestjs/graphql` 14 accepts (13.x pins 11.1.0). Fix = upgrade `@nestjs/graphql` + `@nestjs/apollo` to 14 (major). |
-| `braces`               | high     | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) (stack-exhaustion DoS) | `@nestjs/graphql`, `ts-prune`       | Fix 3.0.4 not published yet (latest 3.0.3). Add an override once it is.                                                                        |
+| `braces`               | high     | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) (stack-exhaustion DoS) | `@nestjs/apollo` 13                 | No fixed `braces` published (latest 3.0.3). `@nestjs/apollo` 14 no longer uses it — gone with the NestJS 12 upgrade.                           |
 | `sprintf-js`           | moderate | [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) (DoS)                  | `jest` (dev only)                   | Fix 1.1.4 not published yet (latest 1.1.3). Dev-only, never shipped. Add an override once it is.                                               |
 
 ## Tests

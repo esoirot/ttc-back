@@ -40,5 +40,5 @@ minimumReleaseAgeExclude:
 auditConfig:
   ignoreGhsas:
     - GHSA-7mx3-vvmw-hjmv # @graphql-tools/utils 11 (fix needs @nestjs/graphql 14)
-    - GHSA-vfj7-8cjw-p6xm # braces 3.0.3 (no fixed version published)
-    - GHSA-hp3w-g68c-fv3c # sprintf-js 1.0.3 (no fixed version published, dev only)
+    - GHSA-vfj7-8cjw-p6xm # braces 3.0.3 via @nestjs/apollo 13 (no fixed braces; gone with @nestjs/apollo 14)
+    - GHSA-hp3w-g68c-fv3c # sprintf-js 1.0.3 via jest (no fixed version published, dev only)

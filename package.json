@@ -12,7 +12,6 @@
     "typecheck": "tsc --noEmit",
     "circular": "madge --circular --extensions ts --exclude 'generated/' src/",
     "audit": "pnpm audit",
-    "prune": "ts-prune -e -i 'generated|prisma.config|roles.decorator'",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "start": "node -r ./swc-register.cjs --env-file .env src/main.ts",
@@ -33,7 +32,8 @@
     "db:dump": "tsx --env-file .env src/scripts/pg-dump.ts",
     "db:export": "tsx --env-file .env src/scripts/export-db.ts",
     "db:import": "tsx --env-file .env src/scripts/import-db.ts",
-    "import:tholemac": "tsx src/scripts/import-tholemac.ts"
+    "import:tholemac": "tsx src/scripts/import-tholemac.ts",
+    "knip": "knip"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
@@ -78,20 +78,6 @@
     "rxjs": "^7.8.2",
     "speakeasy": "^2.0.0"
   },
-  "depcheck": {
-    "ignores": [
-      "@stryker-mutator/jest-runner",
-      "depcheck"
-    ],
-    "ignorePatterns": [
-      "dist",
-      "generated",
-      "coverage",
-      ".stryker-tmp",
-      ".lint-tools",
-      "db_dump"
-    ]
-  },
   "devDependencies": {
     "@as-integrations/fastify": "^3.1.0",
     "@eslint/js": "^10.0.1",
@@ -113,17 +99,16 @@
     "@types/qrcode": "^1.5.6",
     "@types/speakeasy": "^2.0.10",
     "@types/supertest": "^7.2.0",
-    "depcheck": "^1.4.7",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
     "globals": "^17.7.0",
     "jest": "^30.4.2",
+    "knip": "^6.41.0",
     "madge": "^8.0.0",
     "prettier": "^3.8.4",
     "prisma": "8.0.0-rc.19",
     "supertest": "^7.2.2",
-    "ts-prune": "^0.10.3",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2",
     "typescript-eslint": "^8.62.0"

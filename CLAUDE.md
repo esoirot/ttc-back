@@ -16,7 +16,7 @@ Test-first, red → green → refactor; bug fixes start with a failing test that
 2. REST change → Swagger decorators updated. GraphQL change → `src/schema.gql` regenerated (operator restarts the server) and committed — the frontend mirrors it.
 3. Schema change → Prisma 8 migration generated and committed (see **Prisma 8**).
 4. Targeted tests pass (`pnpm run test <path>`, `pnpm run test:integration <path>`).
-5. `pnpm run check` passes (`scripts/check.mjs`): typecheck, circular, depcheck, prune, format, lint (no fix — fails), audit (known findings ignored in `pnpm-workspace.yaml`, see README), unit, integration, e2e, build, then mutation on lines changed since `origin/main` in folders with an `*.int-spec.ts` (`scripts/mutate-changed.mjs`), which ends by listing the surviving mutants on those lines only. `integration` and `mutation` need `ttc_test`. Use `pnpm run test:mutation --mutate <files> --force` by hand after test-only changes. Skip steps with `--skip a,b` (`--list` for names) — say which steps you skipped and why.
+5. `pnpm run check` passes (`scripts/check.mjs`): typecheck, circular, knip (unused files, exports and dependencies — `knip.json`), format, lint (no fix — fails), audit (known findings ignored in `pnpm-workspace.yaml`, see README), unit, integration, e2e, build, then mutation on lines changed since `origin/main` in folders with an `*.int-spec.ts` (`scripts/mutate-changed.mjs`), which ends by listing the surviving mutants on those lines only. `integration` and `mutation` need `ttc_test`. Use `pnpm run test:mutation --mutate <files> --force` by hand after test-only changes. Skip steps with `--skip a,b` (`--list` for names) — say which steps you skipped and why.
 
 ## Commands
 
@@ -27,7 +27,7 @@ pnpm run test:e2e                  # test/*.e2e-spec.ts (config test/jest-e2e.js
 pnpm run test:mutation:changed     # Stryker on changed integration-tested lines (part of check)
 pnpm run test:mutation --mutate <files> [--force]   # by hand; integration suite, incremental, concurrency 1
 pnpm run check [--skip a,b] [--list]    # full gate (see checklist)
-pnpm run typecheck | lint | format | format:check | circular | prune
+pnpm run typecheck | lint | format | format:check | circular | knip
 docker compose up -d               # postgres + redis (operator)
 pnpm prisma contract emit          # after editing prisma8/contract.prisma
 pnpm prisma migration plan --name <n> --from <latest migrations/app dir>   # ALWAYS --from

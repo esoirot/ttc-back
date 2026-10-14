@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/**/*.int-spec.ts",
+    "test/**/*.e2e-spec.ts",
+    "migrations/app/*/migration.ts"
+  ],
+  "ignore": [
+    "prisma8/contract.prisma",
+    "migrations/snapshots/**",
+    ".lint-tools/**"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "enumMembers": "off"
+  }
+}
