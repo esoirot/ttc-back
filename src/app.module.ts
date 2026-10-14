@@ -115,7 +115,6 @@ import { Prisma8Module } from './prisma8/prisma8.module';
           otherwise: Joi.string().optional(),
         }),
       }),
-      validationOptions: { allowUnknown: true, abortEarly: false },
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({
@@ -141,16 +140,24 @@ import { Prisma8Module } from './prisma8/prisma8.module';
             CustomOccupation,
           ],
         },
-        // playground: false stops @nestjs/apollo from injecting its own
-        // deprecated GraphQL Playground landing-page plugin, which would
-        // collide with ours below (Apollo Server allows only one plugin
-        // implementing renderLandingPage).
-        playground: false,
+        // graphiql: false stops @nestjs/apollo from injecting its own
+        // GraphiQL landing-page plugin, which would collide with ours below
+        // (Apollo Server allows only one plugin implementing
+        // renderLandingPage).
+        graphiql: false,
         // Apollo's default landing page swaps to a link-out-only page when
         // NODE_ENV === 'production'. Force the embedded Sandbox everywhere
         // (still full introspection either way) unless explicitly opted out.
+        // The cast bridges @apollo/server's CommonJS types (this file) and the
+        // ESM types @nestjs/apollo 14 sees: same plugin, two declarations.
         plugins: config.get('GRAPHQL_SANDBOX', true)
-          ? [ApolloServerPluginLandingPageLocalDefault({ embed: true })]
+          ? [
+              ApolloServerPluginLandingPageLocalDefault({
+                embed: true,
+              }) as unknown as NonNullable<
+                ApolloDriverConfig['plugins']
+              >[number],
+            ]
           : [],
         // Caps query nesting so a client can't build an unbounded-cost query
         // over the Client -> Project -> Task -> {Subtask,Comment,...} graph.

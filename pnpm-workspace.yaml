@@ -21,6 +21,13 @@ overrides:
   brace-expansion@>=2.0.0 <2.1.7: ^2.1.7
   brace-expansion@>=4.0.0 <5.0.12: ^5.0.12
 
+# No Nest 12 release yet; it only implements @nestjs/throttler's storage
+# interface, which Nest 12 did not change. Remove once it widens its range.
+peerDependencyRules:
+  allowedVersions:
+    '@nest-lab/throttler-storage-redis>@nestjs/common': '12'
+    '@nest-lab/throttler-storage-redis>@nestjs/core': '12'
+
 allowBuilds:
   '@apollo/protobufjs': true
   '@prisma/engines': true
@@ -39,6 +46,4 @@ minimumReleaseAgeExclude:
 # Can't be fixed by an override yet; see README "Known pnpm audit findings".
 auditConfig:
   ignoreGhsas:
-    - GHSA-7mx3-vvmw-hjmv # @graphql-tools/utils 11 (fix needs @nestjs/graphql 14)
-    - GHSA-vfj7-8cjw-p6xm # braces 3.0.3 via @nestjs/apollo 13 (no fixed braces; gone with @nestjs/apollo 14)
     - GHSA-hp3w-g68c-fv3c # sprintf-js 1.0.3 via jest (no fixed version published, dev only)

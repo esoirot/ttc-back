@@ -5,7 +5,7 @@ NestJS + Fastify backend for the TranslatorAssistant platform. Exposes a GraphQL
 ## Stack
 
 - **TypeScript 7**
-- **NestJS 11** on **Fastify v5**
+- **NestJS 12** on **Fastify v5** (Nest packages are ESM-only; the app stays CommonJS and loads them through Node's `require(esm)` — Node ≥ 22.12, Jest needs Node ≥ 24.9)
 - **GraphQL** (code-first, Apollo driver) — auto-generates `src/schema.gql`
 - **Prisma 8** (`@prisma/orm-postgres`) + PostgreSQL — contract in `prisma8/contract.prisma`, emitted to `generated/prisma8/`, migrations in `migrations/app/`
 - **Passport.js** — local, JWT, and Google OAuth strategies
@@ -134,19 +134,20 @@ After that, `pnpm run lint` / `pnpm run check` work as usual. Once
 `typescript-eslint` ships TS7 support, `.lint-tools/` can be deleted and the
 `lint` script pointed back at the root `eslint.config.mjs`.
 
-### Known `pnpm audit` findings (2026-10-14)
+### Known `pnpm audit` finding (2026-10-14)
 
-Three advisories can't be fixed with a patch or override yet. They are listed in
+One advisory can't be fixed with a patch or override yet. It is listed in
 `auditConfig.ignoreGhsas` (`pnpm-workspace.yaml`) so `pnpm run audit` passes;
-any **new** advisory still fails it. Remove an entry once its way out below is
-done. Everything else is fixed through direct upgrades and the `overrides` in
-`pnpm-workspace.yaml`.
+any **new** advisory still fails it. Everything else is fixed through direct
+upgrades and the `overrides` in `pnpm-workspace.yaml`.
 
-| Package                | Severity | Advisory                                                                                        | Pulled in by                        | Why still open / way out                                                                                                                       |
-| ---------------------- | -------- | ----------------------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@graphql-tools/utils` | high     | [GHSA-7mx3-vvmw-hjmv](https://github.com/advisories/GHSA-7mx3-vvmw-hjmv) (prototype pollution)  | `@nestjs/graphql`, `@apollo/server` | Fixed in 12.0.1, which only `@nestjs/graphql` 14 accepts (13.x pins 11.1.0). Fix = upgrade `@nestjs/graphql` + `@nestjs/apollo` to 14 (major). |
-| `braces`               | high     | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) (stack-exhaustion DoS) | `@nestjs/apollo` 13                 | No fixed `braces` published (latest 3.0.3). `@nestjs/apollo` 14 no longer uses it — gone with the NestJS 12 upgrade.                           |
-| `sprintf-js`           | moderate | [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) (DoS)                  | `jest` (dev only)                   | Fix 1.1.4 not published yet (latest 1.1.3). Dev-only, never shipped. Add an override once it is.                                               |
+| Package      | Severity | Advisory                                                                       | Pulled in by      | Way out                                                                                   |
+| ------------ | -------- | ------------------------------------------------------------------------------ | ----------------- | ----------------------------------------------------------------------------------------- |
+| `sprintf-js` | moderate | [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) (DoS) | `jest` (dev only) | No fix published (latest 1.1.3). Dev-only, never shipped. Add an override once one ships. |
+
+`@nest-lab/throttler-storage-redis` has no NestJS 12 release; its peer range is
+widened in `peerDependencyRules` (`pnpm-workspace.yaml`) — drop that once it
+accepts Nest 12.
 
 ## Tests
 

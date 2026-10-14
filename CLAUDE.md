@@ -1,6 +1,6 @@
 # CLAUDE.md — the-translator-companion (backend, repo `ttc-back`)
 
-NestJS 11 + Fastify 5, GraphQL code-first (Apollo), Prisma 8 (`@prisma/orm-postgres`) + PostgreSQL, Redis (throttler + pub/sub), JWT in HTTP-only cookies, TypeScript 7. Frontend: `../ttc-front` (its own `CLAUDE.md`). Workspace map: `../CLAUDE.md`.
+NestJS 12 + Fastify 5, GraphQL code-first (Apollo), Prisma 8 (`@prisma/orm-postgres`) + PostgreSQL, Redis (throttler + pub/sub), JWT in HTTP-only cookies, TypeScript 7. Frontend: `../ttc-front` (its own `CLAUDE.md`). Workspace map: `../CLAUDE.md`.
 
 ## Working rules
 
@@ -35,6 +35,7 @@ pnpm run prisma:miggen             # deploy: migrate-guard, then prisma db migra
 ```
 
 - Runtime: TypeScript 7 has no JS compiler API, so nothing runs through `ts-node` or the Nest CLI. `start*` = `node -r ./swc-register.cjs` (SWC with decorator metadata — tsx/esbuild would break DI), `build` = `tsc -p tsconfig.build.json`, Jest uses `@swc/jest`. ESLint lives in `.lint-tools/` with its own `node_modules` (use `pnpm run lint`).
+- Nest 12 packages (and `@nestjs/apollo`'s view of `@apollo/server`) are ESM-only; the app stays CommonJS and loads them through `require(esm)` — Node ≥ 22.12 to run, ≥ 24.9 for Jest. A type from a dual package (`@apollo/server`) imported here is the CommonJS declaration and won't match the ESM one Nest expects: derive the type from the Nest config (`NonNullable<ApolloDriverConfig['plugins']>[number]`, see `app.module.ts`) instead of importing it. Don't convert the project to ESM.
 - Scripts: `src/scripts/` (`db:dump`, `db:export`, `db:import`, `import:tholemac`).
 
 ## Where things live
